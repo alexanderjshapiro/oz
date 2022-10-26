@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
-const double toolbarIconSize = 36;
+const double toolbarIconSize = 48;
+const double gridSize = 20;
 
 void main() {
   runApp(const Oz());
@@ -41,19 +42,8 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
   String _whichDropped = 'none';
-
-  void _incrementCounter() {
-    setState(() {
-      // This call to setState tells the Flutter framework that something has
-      // changed in this State, which causes it to rerun the build method below
-      // so that the display can reflect the updated values. If we changed
-      // _counter without calling setState(), then the build method would not be
-      // called again, and so nothing would appear to happen.
-      _counter++;
-    });
-  }
+  Offset offset = Offset.zero;
 
   @override
   Widget build(BuildContext context) {
@@ -72,11 +62,11 @@ class _MyHomePageState extends State<MyHomePage> {
                   Row(
                     children: const [
                       Text('Toolbar'),
-                      Icon(Icons.square_outlined, size: 36),
-                      Icon(Icons.square_outlined, size: 36),
-                      Icon(Icons.square_outlined, size: 36),
-                      Icon(Icons.square_outlined, size: 36),
-                      Icon(Icons.square_outlined, size: 36),
+                      Icon(Icons.square_outlined, size: toolbarIconSize),
+                      Icon(Icons.square_outlined, size: toolbarIconSize),
+                      Icon(Icons.square_outlined, size: toolbarIconSize),
+                      Icon(Icons.square_outlined, size: toolbarIconSize),
+                      Icon(Icons.square_outlined, size: toolbarIconSize),
                     ],
                   ),
                 ),
@@ -84,26 +74,27 @@ class _MyHomePageState extends State<MyHomePage> {
                 Row(
                   children: [
                     Expanded(child:
-                    GridPaper(
-                      divisions: 1,
-                      subdivisions: 1,
-                      interval: 20.0,
-                      color: Colors.black12,
-                      child:
-                          DragTarget<String>(
-                            builder: (BuildContext context, List accepted, List rejected) {
-                              return _whichDropped == 'square' ? Icon(Icons.square, size: 256) : _whichDropped == 'circle' ? Icon(Icons.circle, size: 256) : Container();
-                            },
-                            onWillAccept: (data) {
-                              return data == 'square' || data == 'circle';
-                            },
-                            onAccept: (data) {
-                              setState(() {
-                                _whichDropped = data;
-                              });
-                            },
-                          )
-                    ),
+                      Stack(children: <Widget>[
+                        GridPaper(
+                          divisions: 1,
+                          subdivisions: 1,
+                          interval: gridSize,
+                          color: Colors.black12,
+                          child: Container(),
+                        ),
+                        Positioned(
+                          left: (offset.dx/gridSize).roundToDouble()*gridSize,
+                          top: (offset.dy/gridSize).roundToDouble()*gridSize,
+                          child: GestureDetector(
+                          onPanUpdate: (details) {
+                            setState(() {
+                              offset = Offset(offset.dx + details.delta.dx, offset.dy + details.delta.dy);
+                            });
+                          },
+                          child: Container(width: 100, height: 100, color: Colors.blue),
+                          ),
+                        )
+                      ])
                     ),
                     Container(
                       decoration: const BoxDecoration(
@@ -137,7 +128,13 @@ class _MyHomePageState extends State<MyHomePage> {
                   ),
                   child:
                   Row(
-                    children: const [Text('Status Bar')],
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text('Status:'),
+                      Text('$offset'),
+                      Text('$_whichDropped'),
+                      Text('Last State Update: ${DateTime.now()}')
+                    ],
                   ),
                 ),
               ],
