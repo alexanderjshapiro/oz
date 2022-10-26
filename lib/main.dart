@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'component.dart';
+
 const double toolbarIconSize = 48;
 const double gridSize = 20;
 
@@ -42,8 +44,7 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  String _whichDropped = 'none';
-  Offset offset = Offset.zero;
+  List<Component> components = [];
 
   @override
   Widget build(BuildContext context) {
@@ -82,17 +83,18 @@ class _MyHomePageState extends State<MyHomePage> {
                           color: Colors.black12,
                           child: Container(),
                         ),
-                        Positioned(
-                          left: (offset.dx/gridSize).roundToDouble()*gridSize,
-                          top: (offset.dy/gridSize).roundToDouble()*gridSize,
-                          child: GestureDetector(
-                          onPanUpdate: (details) {
+                        DragTarget<Component>(
+                          builder: (BuildContext context, List candidate, List rejected) {
+                            return Stack(children: components.isNotEmpty ? components : [Container()]);
+                          },
+                          onWillAccept: (data) {
+                            return true;
+                          },
+                          onAccept: (data) {
                             setState(() {
-                              offset = Offset(offset.dx + details.delta.dx, offset.dy + details.delta.dy);
+                              components.add(data);
                             });
                           },
-                          child: Container(width: 100, height: 100, color: Colors.blue),
-                          ),
                         )
                       ])
                     ),
@@ -102,19 +104,25 @@ class _MyHomePageState extends State<MyHomePage> {
                       ),
                       child:
                       Column(
-                        children: const [
+                        children: [
                           Text('Library'),
                           Draggable(
-                            data: 'square',
-                            feedback: Icon(Icons.square_outlined, size: 256),
-                            childWhenDragging: Icon(Icons.square, size: 256, color: Colors.grey),
-                            child: Icon(Icons.square, size: 256),
+                            data: Component(name: 'square', color: Colors.red),
+                            feedback: Container(height: 100, width: 100, color: Colors.red),
+                            childWhenDragging: Container(height: 100, width: 100, color: Colors.redAccent),
+                            child: Container(height: 100, width: 100, color: Colors.red),
                           ),
                           Draggable(
-                            data: 'circle',
-                            feedback: Icon(Icons.circle_outlined, size: 256),
-                            childWhenDragging: Icon(Icons.circle, size: 256, color: Colors.grey),
-                            child: Icon(Icons.circle, size: 256),
+                            data: Component(name: 'circle', color: Colors.green),
+                            feedback: Container(height: 100, width: 100, color: Colors.green),
+                            childWhenDragging: Container(height: 100, width: 100, color: Colors.greenAccent),
+                            child: Container(height: 100, width: 100, color: Colors.green),
+                          ),
+                          Draggable(
+                            data: Component(name: 'circle', color: Colors.blue),
+                            feedback: Container(height: 100, width: 100, color: Colors.blue),
+                            childWhenDragging: Container(height: 100, width: 100, color: Colors.blueAccent),
+                            child: Container(height: 100, width: 100, color: Colors.blue),
                           )
                         ],
                       ),
@@ -128,11 +136,9 @@ class _MyHomePageState extends State<MyHomePage> {
                   ),
                   child:
                   Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text('Status:'),
-                      Text('$offset'),
-                      Text('$_whichDropped'),
+                      const Text('Status:'),
+                      const Spacer(),
                       Text('Last State Update: ${DateTime.now()}')
                     ],
                   ),
