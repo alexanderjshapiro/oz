@@ -1,0 +1,22 @@
+[gd_scene load_steps=3 format=2]
+
+[ext_resource path="res://Scripts/wireNode.gd" type="Script" id=1]
+[ext_resource path="res://Scripts/ClickAble.gd" type="Script" id=2]
+
+[node name="wire" type="Control"]
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+script = ExtResource( 1 )
+
+[node name="Line2D" type="Line2D" parent="."]
+visible = false
+points = PoolVector2Array( -1, -13, 1233, 665 )
+script = ExtResource( 2 )
+
+[node name="StaticBody2D" type="StaticBody2D" parent="Line2D"]
+visible = false
+input_pickable = true
+
+[node name="CollisionPolygon2D" type="CollisionPolygon2D" parent="Line2D/StaticBody2D"]
+visible = false

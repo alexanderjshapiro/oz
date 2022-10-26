@@ -1,0 +1,274 @@
+[gd_scene load_steps=13 format=2]
+
+[ext_resource path="res://Scripts/gate.gd" type="Script" id=1]
+[ext_resource path="res://Styles/Main_Theme.tres" type="Theme" id=2]
+[ext_resource path="res://Scripts/workspace.gd" type="Script" id=3]
+[ext_resource path="res://icon.png" type="Texture" id=4]
+[ext_resource path="res://Icons/plus.svg" type="Texture" id=5]
+[ext_resource path="res://Scripts/MasterController.gd" type="Script" id=7]
+[ext_resource path="res://Icons/save.svg" type="Texture" id=8]
+
+[sub_resource type="StyleBoxFlat" id=4]
+bg_color = Color( 0.152, 0.1596, 0.38, 1 )
+corner_radius_bottom_right = 10
+corner_radius_bottom_left = 10
+
+[sub_resource type="StyleBoxFlat" id=6]
+bg_color = Color( 0.1092, 0.114893, 0.28, 1 )
+corner_radius_top_right = 10
+corner_radius_bottom_right = 10
+corner_radius_bottom_left = 10
+
+[sub_resource type="StyleBoxFlat" id=2]
+bg_color = Color( 0.478431, 0.27451, 0.682353, 1 )
+corner_radius_top_right = 10
+corner_radius_bottom_right = 10
+
+[sub_resource type="StyleBoxFlat" id=1]
+bg_color = Color( 0.580392, 0.580392, 0.580392, 1 )
+corner_radius_top_left = 10
+corner_radius_top_right = 10
+
+[sub_resource type="StyleBoxFlat" id=3]
+bg_color = Color( 0.478431, 0.27451, 0.682353, 1 )
+corner_radius_top_left = 10
+corner_radius_bottom_left = 10
+
+[node name="Control" type="Control"]
+anchor_right = 1.0
+anchor_bottom = 1.0
+script = ExtResource( 7 )
+__meta__ = {
+"_edit_use_anchors_": true
+}
+
+[node name="Background" type="ColorRect" parent="."]
+anchor_right = 1.0
+anchor_bottom = 1.0
+color = Color( 0.333333, 0.0941176, 0.4, 1 )
+
+[node name="Main Window" type="VSplitContainer" parent="."]
+anchor_right = 1.0
+anchor_bottom = 1.0
+custom_constants/separation = 5
+
+[node name="Option Bar" type="Panel" parent="Main Window"]
+margin_right = 1920.0
+margin_bottom = 50.0
+rect_min_size = Vector2( 0, 50 )
+rect_clip_content = true
+size_flags_horizontal = 3
+custom_styles/panel = SubResource( 4 )
+
+[node name="TabContainer" type="TabContainer" parent="Main Window/Option Bar"]
+visible = false
+anchor_right = 1.0
+anchor_bottom = 1.0
+custom_styles/panel = SubResource( 6 )
+tab_align = 0
+
+[node name="Thing 1" type="Tabs" parent="Main Window/Option Bar/TabContainer"]
+anchor_right = 1.0
+anchor_bottom = 1.0
+margin_top = 24.0
+
+[node name="HFlowContainer" type="HSplitContainer" parent="Main Window/Option Bar/TabContainer/Thing 1"]
+anchor_right = 1.0
+anchor_bottom = 1.0
+margin_left = 10.0
+margin_top = 5.0
+margin_right = -10.0
+grow_horizontal = 0
+size_flags_horizontal = 3
+
+[node name="Label" type="Label" parent="Main Window/Option Bar/TabContainer/Thing 1/HFlowContainer"]
+margin_right = 12.0
+margin_bottom = 31.0
+text = "hi
+"
+
+[node name="Label2" type="Label" parent="Main Window/Option Bar/TabContainer/Thing 1/HFlowContainer"]
+margin_left = 24.0
+margin_right = 1900.0
+margin_bottom = 31.0
+text = "hi
+"
+
+[node name="Thing 2" type="Tabs" parent="Main Window/Option Bar/TabContainer"]
+visible = false
+anchor_right = 1.0
+anchor_bottom = 1.0
+margin_left = 4.0
+margin_top = 32.0
+margin_right = -4.0
+margin_bottom = -4.0
+
+[node name="Label" type="Label" parent="Main Window/Option Bar/TabContainer/Thing 2"]
+margin_right = 40.0
+margin_bottom = 14.0
+text = "hello
+"
+
+[node name="Editor Windows" type="HSplitContainer" parent="Main Window"]
+margin_top = 58.0
+margin_right = 1920.0
+margin_bottom = 1080.0
+size_flags_horizontal = 3
+size_flags_vertical = 3
+custom_constants/separation = 5
+
+[node name="LeftSideBar" type="Panel" parent="Main Window/Editor Windows"]
+margin_right = 150.0
+margin_bottom = 1022.0
+rect_min_size = Vector2( 150, 0 )
+custom_styles/panel = SubResource( 2 )
+
+[node name="Tools Container" type="VBoxContainer" parent="Main Window/Editor Windows/LeftSideBar"]
+anchor_right = 1.0
+anchor_bottom = 1.0
+margin_top = 5.0
+margin_right = -5.0
+size_flags_horizontal = 3
+size_flags_vertical = 3
+custom_constants/separation = 5
+
+[node name="Tool 1" type="Button" parent="Main Window/Editor Windows/LeftSideBar/Tools Container"]
+margin_right = 145.0
+margin_bottom = 50.0
+rect_min_size = Vector2( 0, 50 )
+size_flags_horizontal = 3
+size_flags_vertical = 8
+theme = ExtResource( 2 )
+text = "Focus"
+icon = ExtResource( 5 )
+clip_text = true
+expand_icon = true
+
+[node name="Tool 4" type="Button" parent="Main Window/Editor Windows/LeftSideBar/Tools Container"]
+margin_top = 55.0
+margin_right = 145.0
+margin_bottom = 105.0
+rect_min_size = Vector2( 0, 50 )
+size_flags_horizontal = 3
+size_flags_vertical = 8
+theme = ExtResource( 2 )
+text = "Select"
+icon = ExtResource( 5 )
+clip_text = true
+expand_icon = true
+
+[node name="Tool 2" type="Button" parent="Main Window/Editor Windows/LeftSideBar/Tools Container"]
+margin_top = 110.0
+margin_right = 145.0
+margin_bottom = 160.0
+rect_min_size = Vector2( 0, 50 )
+size_flags_horizontal = 3
+size_flags_vertical = 8
+theme = ExtResource( 2 )
+text = "Delete"
+icon = ExtResource( 5 )
+clip_text = true
+expand_icon = true
+
+[node name="Tool 3" type="Button" parent="Main Window/Editor Windows/LeftSideBar/Tools Container"]
+margin_top = 165.0
+margin_right = 145.0
+margin_bottom = 215.0
+rect_min_size = Vector2( 0, 50 )
+size_flags_horizontal = 3
+size_flags_vertical = 8
+theme = ExtResource( 2 )
+text = "Wire"
+icon = ExtResource( 5 )
+clip_text = true
+expand_icon = true
+
+[node name="Save" type="Button" parent="Main Window/Editor Windows/LeftSideBar/Tools Container"]
+visible = false
+margin_top = 55.0
+margin_right = 145.0
+margin_bottom = 105.0
+rect_min_size = Vector2( 0, 50 )
+size_flags_horizontal = 3
+size_flags_vertical = 8
+theme = ExtResource( 2 )
+disabled = true
+text = "Save"
+icon = ExtResource( 8 )
+clip_text = true
+expand_icon = true
+
+[node name="Gate 1" type="TextureRect" parent="Main Window/Editor Windows/LeftSideBar/Tools Container"]
+margin_top = 220.0
+margin_right = 145.0
+margin_bottom = 284.0
+texture = ExtResource( 4 )
+script = ExtResource( 1 )
+workspacePath = NodePath("../../../Secondary Windows/Container/Workspace")
+
+[node name="Secondary Windows" type="HSplitContainer" parent="Main Window/Editor Windows"]
+margin_left = 158.0
+margin_right = 1920.0
+margin_bottom = 1022.0
+
+[node name="Container" type="VSplitContainer" parent="Main Window/Editor Windows/Secondary Windows"]
+margin_right = 1600.0
+margin_bottom = 1022.0
+rect_min_size = Vector2( 750, 0 )
+size_flags_horizontal = 3
+
+[node name="Workspace" type="Panel" parent="Main Window/Editor Windows/Secondary Windows/Container"]
+margin_right = 1600.0
+margin_bottom = 960.0
+rect_clip_content = true
+mouse_filter = 1
+size_flags_horizontal = 3
+size_flags_vertical = 3
+custom_styles/panel = SubResource( 1 )
+script = ExtResource( 3 )
+
+[node name="Panel" type="Panel" parent="Main Window/Editor Windows/Secondary Windows/Container"]
+margin_top = 972.0
+margin_right = 1600.0
+margin_bottom = 1022.0
+rect_min_size = Vector2( 0, 50 )
+
+[node name="RightSideBar" type="Panel" parent="Main Window/Editor Windows/Secondary Windows"]
+margin_left = 1612.0
+margin_right = 1762.0
+margin_bottom = 1022.0
+rect_min_size = Vector2( 150, 0 )
+size_flags_vertical = 3
+custom_styles/panel = SubResource( 3 )
+
+[node name="SaveMenuPopup" type="Popup" parent="."]
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+margin_left = -20.0
+margin_top = -20.0
+margin_right = 20.0
+margin_bottom = 20.0
+
+[node name="SaveMenu" type="FileDialog" parent="SaveMenuPopup"]
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+margin_left = -400.0
+margin_top = -300.0
+margin_right = 400.0
+margin_bottom = 300.0
+rect_min_size = Vector2( 300, 105 )
+theme = ExtResource( 2 )
+popup_exclusive = true
+access = 2
+filters = PoolStringArray( "*.circuit" )
+
+[connection signal="pressed" from="Main Window/Editor Windows/LeftSideBar/Tools Container/Tool 1" to="Main Window/Editor Windows/Secondary Windows/Container/Workspace" method="focusWorkspace"]
+[connection signal="pressed" from="Main Window/Editor Windows/LeftSideBar/Tools Container/Tool 4" to="Main Window/Editor Windows/Secondary Windows/Container/Workspace" method="setMode" binds= [ "Select" ]]
+[connection signal="pressed" from="Main Window/Editor Windows/LeftSideBar/Tools Container/Tool 2" to="Main Window/Editor Windows/Secondary Windows/Container/Workspace" method="setMode" binds= [ "Delete" ]]
+[connection signal="pressed" from="Main Window/Editor Windows/LeftSideBar/Tools Container/Tool 3" to="Main Window/Editor Windows/Secondary Windows/Container/Workspace" method="setMode" binds= [ "Wire" ]]
+[connection signal="pressed" from="Main Window/Editor Windows/LeftSideBar/Tools Container/Save" to="." method="_on_Save_pressed"]
+[connection signal="file_selected" from="SaveMenuPopup/SaveMenu" to="." method="_on_SaveMenu_file_selected"]
