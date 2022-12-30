@@ -13,9 +13,9 @@ var currentMode = STATE.DEFAULT
 
 func _ready():
 	self.connect("gui_input", self, "workspace_gui_input")
-		#draw_line(Vector2((linked[0].get("coords")[0] * zoomlevel) + pan[0],(linked[0].get("coords")[1] * zoomlevel) + pan[1]), Vector2((linked[0].get("coords")[0] * zoomlevel) + pan[0],(linked[1].get("coords")[1] * zoomlevel) + pan[1]), Color(255, 0, 0), 1)
-		#draw_line(Vector2((linked[0].get("coords")[0] * zoomlevel) + pan[0],(linked[1].get("coords")[1] * zoomlevel) + pan[1]), Vector2((linked[1].get("coords")[0] * zoomlevel) + pan[0],(linked[1].get("coords")[1] * zoomlevel) + pan[1]), Color(255, 0, 0), 1)
+
 func _input(event):
+			#draw_line(Vect		#draw_line(Vector2((linked[0].get("coords")[0] * zoomlevel) + pan[0],(linked[1].get("coords")[1] * zoomlevel) + pan[1]), Vector2((linked[1].get("coords")[0] * zoomlevel) + pan[0],(linked[1].get("coords")[1] * zoomlevel) + pan[1]), Color(255, 0, 0), 1)or2((linked[0].get("coords")[0] * zoomlevel) + pan[0],(linked[1].get("coords")[1] * zoomlevel) + pan[1]), Vector2((linked[1].get("coords")[0] * zoomlevel) + pan[0],(linked[1].get("coords")[1] * zoomlevel) + pan[1]), Color(255, 0, 0), 1)
 	if event is InputEventMouseButton and event.button_index == BUTTON_WHEEL_UP:
 		zoomlevel += zoomSensitivity
 		updateWorkspace()
@@ -61,11 +61,12 @@ func drop_data(pos, _data):
 	# Runs when an object is dropped into the workspace window
 	# Places the object on the screen in correct position
 	Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
-	var newObject = load("res://gateObj.tscn").instance()
-	newObject.texture = load("res://icon.png")
+	var newObject = load("res://GateObj.tscn").instance()
+	#newObject.texture = load("res://icon.png")
 	#newObject.set_script(load("res://Scripts/object.gd"))
 	newObject.coords = (pos-pan)/zoomlevel
 	objects.append(newObject)
+	newObject.setType(_data)
 	updateWorkspace()
 	self.add_child(newObject)
 	newObject.connect("gui_input", self, "nodeEvent",[newObject])
@@ -94,16 +95,20 @@ func selectNode(node):
 	#node.modulate(Color(255,255,0))
 
 var firstlink
+var firstlinkid
 func wireNode(node):
 	if firstlink == null:
 		firstlink = node
+		firstlinkid = firstlink.recentClickedConnector
 	elif node == firstlink:
 		firstlink = null
 	else:
 		var wiring = wirePrefab.instance()
 		electricalNodes.append(wiring)
-		wiring.connections.append(firstlink)
-		wiring.connections.append(node)
+		wiring.linkedNodes.append(firstlink)
+		wiring.linkedNodes.append(node)
+		wiring.nodePortIDs.append(firstlinkid)
+		wiring.nodePortIDs.append(node.recentClickedConnector)
 		firstlink.addWire(wiring)
 		node.addWire(wiring)
 		firstlink = null

@@ -3,24 +3,19 @@ extends TextureRect
 var dragging = false
 export(NodePath) var workspacePath # set in the inspector once
 onready var workspace = get_node(workspacePath)#$"/root/Control/VBoxContainer/Main Area/HSplitContainer/VBoxContainer/Workspace"
-
-func _ready():
-	pass
-
+export var dragTexture: Texture
+enum gateTypes {AND, HIGH, LOW}
+export(gateTypes) var gateType
 
 func get_drag_data(_pos):
-	# Use another colorpicker as drag preview.
-
 	var cpb = TextureRect.new()
-	cpb.texture = self.texture
+	cpb.texture = dragTexture
 	var zl = workspace.get("zoomlevel")
 	cpb.rect_scale = Vector2(zl,zl)
 	Input.set_mouse_mode(Input.MOUSE_MODE_HIDDEN)
 	dragging = true
-	#cpb.texture = self.texture
 	set_drag_preview(cpb)
-	# Return color as drag data.
-	return "OR"
+	return gateType
 
 func _input(event):
 	if dragging && event is InputEventMouseButton:

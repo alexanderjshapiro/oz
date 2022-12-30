@@ -8,7 +8,7 @@ func _ready():
 
 #func _on_Tool_1_toggled(button_pressed):
 	#vw.get_child(0)
-	#vw.get_node("Cube").visible = !button_pressed
+	#vw.get_node("Cube").visib		print (closest_conn)le = !button_pressed
 
 
 func _on_Save_pressed():

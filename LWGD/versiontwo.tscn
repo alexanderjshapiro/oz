@@ -1,10 +1,11 @@
-[gd_scene load_steps=13 format=2]
+[gd_scene load_steps=14 format=2]
 
-[ext_resource path="res://Scripts/gate.gd" type="Script" id=1]
+[ext_resource path="res://Scripts/gateButton.gd" type="Script" id=1]
 [ext_resource path="res://Styles/Main_Theme.tres" type="Theme" id=2]
 [ext_resource path="res://Scripts/workspace.gd" type="Script" id=3]
 [ext_resource path="res://icon.png" type="Texture" id=4]
 [ext_resource path="res://Icons/plus.svg" type="Texture" id=5]
+[ext_resource path="res://logic_gate_svg/and.svg" type="Texture" id=6]
 [ext_resource path="res://Scripts/MasterController.gd" type="Script" id=7]
 [ext_resource path="res://Icons/save.svg" type="Texture" id=8]
 
@@ -198,13 +199,28 @@ icon = ExtResource( 8 )
 clip_text = true
 expand_icon = true
 
-[node name="Gate 1" type="TextureRect" parent="Main Window/Editor Windows/LeftSideBar/Tools Container"]
+[node name="And Gate" type="TextureRect" parent="Main Window/Editor Windows/LeftSideBar/Tools Container"]
 margin_top = 220.0
 margin_right = 145.0
-margin_bottom = 284.0
-texture = ExtResource( 4 )
+margin_bottom = 270.0
+rect_min_size = Vector2( 0, 50 )
+texture = ExtResource( 6 )
+expand = true
 script = ExtResource( 1 )
 workspacePath = NodePath("../../../Secondary Windows/Container/Workspace")
+dragTexture = ExtResource( 6 )
+
+[node name="HIGH Gate" type="TextureRect" parent="Main Window/Editor Windows/LeftSideBar/Tools Container"]
+margin_top = 275.0
+margin_right = 145.0
+margin_bottom = 325.0
+rect_min_size = Vector2( 0, 50 )
+texture = ExtResource( 4 )
+expand = true
+script = ExtResource( 1 )
+workspacePath = NodePath("../../../Secondary Windows/Container/Workspace")
+dragTexture = ExtResource( 4 )
+gateType = 1
 
 [node name="Secondary Windows" type="HSplitContainer" parent="Main Window/Editor Windows"]
 margin_left = 158.0

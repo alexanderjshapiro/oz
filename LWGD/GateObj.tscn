@@ -1,13 +1,15 @@
 [gd_scene load_steps=3 format=2]
 
 [ext_resource path="res://Scripts/gateObj.gd" type="Script" id=1]
-[ext_resource path="res://icon.png" type="Texture" id=2]
+[ext_resource path="res://logic_gate_svg/and.svg" type="Texture" id=2]
 
 [node name="Gate" type="TextureRect"]
-margin_right = -478.0
-margin_bottom = -172.0
+margin_right = 213.0
+margin_bottom = 62.0
+rect_pivot_offset = Vector2( 57, 39 )
 size_flags_horizontal = 0
 size_flags_vertical = 0
 texture = ExtResource( 2 )
 stretch_mode = 3
 script = ExtResource( 1 )
+wire_connector_pos = [ Vector2( 23, 14 ), Vector2( 23, 48 ), Vector2( 190, 32 ) ]

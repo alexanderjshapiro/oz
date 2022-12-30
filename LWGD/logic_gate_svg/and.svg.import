@@ -2,15 +2,15 @@
 
 importer="texture"
 type="StreamTexture"
-path="res://.import/antialiased_line2d.svg-9243613cd101e058db6c37ff468932c4.stex"
+path="res://.import/and.svg-9d47f94854fd9aa755606b3d1ed6a514.stex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://addons/antialiased_line2d/antialiased_line2d.svg"
-dest_files=[ "res://.import/antialiased_line2d.svg-9243613cd101e058db6c37ff468932c4.stex" ]
+source_file="res://logic_gate_svg/and.svg"
+dest_files=[ "res://.import/and.svg-9d47f94854fd9aa755606b3d1ed6a514.stex" ]
 
 [params]
 
