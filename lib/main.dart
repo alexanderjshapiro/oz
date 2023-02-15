@@ -62,12 +62,11 @@ class _MyHomePageState extends State<MyHomePage> {
                   child:
                   Row(
                     children: const [
-                      Text('Toolbar'),
-                      Icon(Icons.square_outlined, size: toolbarIconSize),
-                      Icon(Icons.square_outlined, size: toolbarIconSize),
-                      Icon(Icons.square_outlined, size: toolbarIconSize),
-                      Icon(Icons.square_outlined, size: toolbarIconSize),
-                      Icon(Icons.square_outlined, size: toolbarIconSize),
+                      Icon(Icons.add, size: toolbarIconSize),
+                      Icon(Icons.save, size: toolbarIconSize),
+                      Icon(Icons.print, size: toolbarIconSize),
+                      Icon(Icons.add_card, size: toolbarIconSize),
+                      Icon(Icons.close, size: toolbarIconSize),
                     ],
                   ),
                 ),
@@ -107,7 +106,7 @@ class _MyHomePageState extends State<MyHomePage> {
                         children: [
                           Text('Library'),
                           Draggable(
-                            data: Component(name: 'square', color: Colors.red),
+                            data: Component(name: 'circle', color: Colors.red),
                             feedback: Container(height: 100, width: 100, color: Colors.red),
                             childWhenDragging: Container(height: 100, width: 100, color: Colors.redAccent),
                             child: Container(height: 100, width: 100, color: Colors.red),
@@ -123,6 +122,12 @@ class _MyHomePageState extends State<MyHomePage> {
                             feedback: Container(height: 100, width: 100, color: Colors.blue),
                             childWhenDragging: Container(height: 100, width: 100, color: Colors.blueAccent),
                             child: Container(height: 100, width: 100, color: Colors.blue),
+                          ),
+                          Draggable(
+                            data: Component(name: 'circle', color: Colors.yellow),
+                            feedback: Container(height: 100, width: 100, color: Colors.yellow),
+                            childWhenDragging: Container(height: 100, width: 100, color: Colors.yellowAccent),
+                            child: Container(height: 100, width: 100, color: Colors.yellow),
                           )
                         ],
                       ),
