@@ -1,0 +1,5 @@
+Full Adder
+A B Cin
+Sum Cout
+0 1 2 ^ ^
+0 1 ^ 2 & 0 1 & |
