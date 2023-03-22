@@ -1,156 +1,193 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:rohd/rohd.dart' as rohd;
 
-import 'component.dart';
+var ins = [rohd.Logic(name: 'in0'), rohd.Logic(name: 'in1')];
+var xor = rohd.Xor2Gate(ins[0], ins[1]);
 
-const double toolbarIconSize = 48;
-const double gridSize = 20;
-
-void main() {
-  runApp(const Oz());
+void main() async {
+  //var clk = rohd.SimpleClockGenerator(100).clk;
+  //var not = rohd.NotGate(clk);
+  xor.build();
+  ins[0].changed.listen((event) {
+    debugPrint("in0: $event");
+  });
+  ins[1].changed.listen((event) {
+    debugPrint("in1: $event");
+  });
+  //await rohd.Simulator.run();
+  //xor.out.negedge.listen((event) {_toggleRightCircleColor(0);});
+  runApp(const MyApp());
 }
 
-class Oz extends StatelessWidget {
-  const Oz({super.key});
+class MyApp extends StatefulWidget {
+  const MyApp({super.key});
+  @override
+  MyAppState createState() => MyAppState();
+}
 
-  // This widget is the root of your application.
+class MyAppState extends State<MyApp> {
+  bool _isRunning = false;
+  late Timer _timer;
+
+  void _startSimulation() async {
+    setState(() {
+      _isRunning = true;
+    });
+    _timer = Timer.periodic(const Duration(milliseconds: 10), (timer) {
+      setState(() {
+        debugPrint("tick");
+        rohd.Simulator.tick();
+      });
+    });
+    /*rohd.Simulator.setMaxSimTime(100);
+    await rohd.Simulator.run();
+    rohd.Simulator.simulationEnded.then((value) => debugPrint("sim ended"));*/
+  }
+
+  void _stopSimulation() {
+    _timer.cancel();
+    setState(() {
+      _isRunning = false;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Oz',
+      title: 'ROHD Demo',
       theme: ThemeData(
-        primarySwatch: Colors.blue,
+        primarySwatch: Colors.indigo,
+        canvasColor: Colors.blueGrey[200],
       ),
-      home: const MyHomePage(title: 'Oz'),
+      home: Scaffold(
+        appBar: AppBar(
+          title: const Text('XOR - ROHD'),
+        ),
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const ComponentBox(
+                leftCirclesCount: 2,
+                rightCirclesCount: 1,
+              ),
+              const SizedBox(height: 20),
+              if (!_isRunning)
+                ElevatedButton(
+                  onPressed: _startSimulation,
+                  child: const Text('Start Simulation'),
+                )
+              else
+                ElevatedButton(
+                  onPressed: _stopSimulation,
+                  child: const Text('Stop Simulation'),
+                ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
 
-class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key, required this.title});
+class ComponentBox extends StatefulWidget {
+  final int leftCirclesCount;
+  final int rightCirclesCount;
 
-  // This widget is the home page of your application. It is stateful, meaning
-  // that it has a State object (defined below) that contains fields that affect
-  // how it looks.
-
-  // This class is the configuration for the state. It holds the values (in this
-  // case the title) provided by the parent (in this case the App widget) and
-  // used by the build method of the State. Fields in a Widget subclass are
-  // always marked "final".
-
-  final String title;
+  const ComponentBox({super.key, 
+    this.leftCirclesCount = 1,
+    this.rightCirclesCount = 1,
+  });
 
   @override
-  State<MyHomePage> createState() => _MyHomePageState();
+  ComponentBoxState createState() => ComponentBoxState();
 }
 
-class _MyHomePageState extends State<MyHomePage> {
-  List<Component> components = [];
+class ComponentBoxState extends State<ComponentBox> {
+  late List<bool> _isLeftCircleRedList;
+  late List<bool> _isRightCircleRedList;
+
+  @override
+  void initState() {
+    super.initState();
+    _isLeftCircleRedList = List.filled(widget.leftCirclesCount, false);
+    _isRightCircleRedList = List.filled(widget.rightCirclesCount, false);
+    xor.out.posedge.listen((event) {
+      _setRightCircleColor(0, true);
+    });
+    xor.out.negedge.listen((event) {
+      _setRightCircleColor(0, false);
+    });
+  }
+
+  void _toggleLeftCircleColor(int index) {
+    setState(() {
+      _isLeftCircleRedList[index] = !_isLeftCircleRedList[index];
+      debugPrint("toggle element $index");
+      ins[index].inject(_isLeftCircleRedList[index]);
+      //rohd.Simulator.tick();
+    });
+  }
+
+  void _setRightCircleColor(int index, bool status) {
+    setState(() {
+      _isRightCircleRedList[index] = status;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body:
-        Container(
-          color: Colors.white,
-          child:
-            Column(
-              children: [
-                Container(
-                  decoration: const BoxDecoration(
-                    border: Border(bottom: BorderSide(color: Colors.black))
-                  ),
-                  child:
-                  Row(
-                    children: const [
-                      Icon(Icons.add, size: toolbarIconSize),
-                      Icon(Icons.save, size: toolbarIconSize),
-                      Icon(Icons.print, size: toolbarIconSize),
-                      Icon(Icons.add_card, size: toolbarIconSize),
-                      Icon(Icons.close, size: toolbarIconSize),
-                    ],
-                  ),
-                ),
-                Expanded(child:
-                Row(
-                  children: [
-                    Expanded(child:
-                      Stack(children: <Widget>[
-                        GridPaper(
-                          divisions: 1,
-                          subdivisions: 1,
-                          interval: gridSize,
-                          color: Colors.black12,
-                          child: Container(),
-                        ),
-                        DragTarget<Component>(
-                          builder: (BuildContext context, List candidate, List rejected) {
-                            return Stack(children: components.isNotEmpty ? components : [Container()]);
-                          },
-                          onWillAccept: (data) {
-                            return true;
-                          },
-                          onAccept: (data) {
-                            setState(() {
-                              components.add(data);
-                            });
-                          },
-                        )
-                      ])
-                    ),
-                    Container(
-                      decoration: const BoxDecoration(
-                          border: Border(left: BorderSide(color: Colors.black))
-                      ),
-                      child:
-                      Column(
-                        children: [
-                          Text('Library'),
-                          Draggable(
-                            data: Component(name: 'circle', color: Colors.red),
-                            feedback: Container(height: 100, width: 100, color: Colors.red),
-                            childWhenDragging: Container(height: 100, width: 100, color: Colors.redAccent),
-                            child: Container(height: 100, width: 100, color: Colors.red),
-                          ),
-                          Draggable(
-                            data: Component(name: 'circle', color: Colors.green),
-                            feedback: Container(height: 100, width: 100, color: Colors.green),
-                            childWhenDragging: Container(height: 100, width: 100, color: Colors.greenAccent),
-                            child: Container(height: 100, width: 100, color: Colors.green),
-                          ),
-                          Draggable(
-                            data: Component(name: 'circle', color: Colors.blue),
-                            feedback: Container(height: 100, width: 100, color: Colors.blue),
-                            childWhenDragging: Container(height: 100, width: 100, color: Colors.blueAccent),
-                            child: Container(height: 100, width: 100, color: Colors.blue),
-                          ),
-                          Draggable(
-                            data: Component(name: 'circle', color: Colors.yellow),
-                            feedback: Container(height: 100, width: 100, color: Colors.yellow),
-                            childWhenDragging: Container(height: 100, width: 100, color: Colors.yellowAccent),
-                            child: Container(height: 100, width: 100, color: Colors.yellow),
-                          )
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-                ),
-                Container(
-                  decoration: const BoxDecoration(
-                    border: Border(top: BorderSide(color: Colors.black))
-                  ),
-                  child:
-                  Row(
-                    children: [
-                      const Text('Status:'),
-                      const Spacer(),
-                      Text('Last State Update: ${DateTime.now()}')
-                    ],
+    double circleSize = 40.0;
+    double paddingSize = 10.0;
+
+    double boxWidth = (circleSize * 2) +
+        (paddingSize * 3) +
+        (widget.leftCirclesCount + widget.rightCirclesCount - 2) * paddingSize;
+
+    double boxHeight = circleSize * widget.leftCirclesCount +
+        paddingSize * (widget.leftCirclesCount - 1) +
+        10;
+
+    return Container(
+      padding: EdgeInsets.all(paddingSize),
+      width: boxWidth,
+      height: boxHeight,
+      decoration: BoxDecoration(
+        color: Colors.teal[400],
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Column(
+            children: [
+              for (int i = 0; i < widget.leftCirclesCount; i++)
+                GestureDetector(
+                  onTap: () => _toggleLeftCircleColor(i),
+                  child: CircleAvatar(
+                    backgroundColor:
+                        _isLeftCircleRedList[i] ? Colors.orange[800] : Colors.deepPurple[900],
+                    radius: circleSize / 2,
                   ),
                 ),
-              ],
-            ),
+            ],
           ),
+          SizedBox(width: paddingSize),
+          Column(
+            children: [
+              for (int i = 0; i < widget.rightCirclesCount; i++)
+                CircleAvatar(
+                  backgroundColor:
+                      _isRightCircleRedList[i] ? Colors.orange[800] : Colors.deepPurple[900],
+                  radius: circleSize / 2,
+                ),
+              SizedBox(height: paddingSize),
+            ],
+          ),
+        ],
+      ),
     );
   }
 }
