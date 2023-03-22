@@ -6,7 +6,7 @@ import 'package:rohd/rohd.dart' as rohd;
 var ins = [rohd.Logic(name: 'in0'), rohd.Logic(name: 'in1')];
 var xor = rohd.Xor2Gate(ins[0], ins[1]);
 
-void main() async {
+void main() {
   //var clk = rohd.SimpleClockGenerator(100).clk;
   //var not = rohd.NotGate(clk);
   xor.build();
@@ -16,8 +16,6 @@ void main() async {
   ins[1].changed.listen((event) {
     debugPrint("in1: $event");
   });
-  //await rohd.Simulator.run();
-  //xor.out.negedge.listen((event) {_toggleRightCircleColor(0);});
   runApp(const MyApp());
 }
 
@@ -29,25 +27,25 @@ class MyApp extends StatefulWidget {
 
 class MyAppState extends State<MyApp> {
   bool _isRunning = false;
-  late Timer _timer;
+  Timer? _simulationTickTimer;
 
-  void _startSimulation() async {
+  void _startSimulation() {
     setState(() {
       _isRunning = true;
     });
-    _timer = Timer.periodic(const Duration(milliseconds: 10), (timer) {
+    //Setup a timer to repeatibly call Simulator.tick();
+    // Simulator.run() would probably be better, but I cant't get to work without freezing flutter
+    _simulationTickTimer =
+        Timer.periodic(const Duration(milliseconds: 10), (timer) {
       setState(() {
         debugPrint("tick");
         rohd.Simulator.tick();
       });
     });
-    /*rohd.Simulator.setMaxSimTime(100);
-    await rohd.Simulator.run();
-    rohd.Simulator.simulationEnded.then((value) => debugPrint("sim ended"));*/
   }
 
   void _stopSimulation() {
-    _timer.cancel();
+    _simulationTickTimer?.cancel();
     setState(() {
       _isRunning = false;
     });
@@ -96,7 +94,8 @@ class ComponentBox extends StatefulWidget {
   final int leftCirclesCount;
   final int rightCirclesCount;
 
-  const ComponentBox({super.key, 
+  const ComponentBox({
+    super.key,
     this.leftCirclesCount = 1,
     this.rightCirclesCount = 1,
   });
@@ -106,35 +105,58 @@ class ComponentBox extends StatefulWidget {
 }
 
 class ComponentBoxState extends State<ComponentBox> {
-  late List<bool> _isLeftCircleRedList;
-  late List<bool> _isRightCircleRedList;
+  late List<rohd.LogicValue> _inputCircleValList;
+  late List<rohd.LogicValue> _outputCircleValList;
 
   @override
   void initState() {
     super.initState();
-    _isLeftCircleRedList = List.filled(widget.leftCirclesCount, false);
-    _isRightCircleRedList = List.filled(widget.rightCirclesCount, false);
-    xor.out.posedge.listen((event) {
-      _setRightCircleColor(0, true);
-    });
-    xor.out.negedge.listen((event) {
-      _setRightCircleColor(0, false);
+    _outputCircleValList =
+        List.filled(widget.rightCirclesCount, rohd.LogicValue.x);
+    _inputCircleValList =
+        List.filled(widget.leftCirclesCount, rohd.LogicValue.z);
+
+    //Create a callback whenever the component outputs change.
+    xor.out.changed.listen((event) {
+      _setRightCircleColor(0, event.newValue);
     });
   }
 
   void _toggleLeftCircleColor(int index) {
     setState(() {
-      _isLeftCircleRedList[index] = !_isLeftCircleRedList[index];
-      debugPrint("toggle element $index");
-      ins[index].inject(_isLeftCircleRedList[index]);
-      //rohd.Simulator.tick();
+      if (_inputCircleValList[index] == rohd.LogicValue.z) {
+        _inputCircleValList[index] = rohd.LogicValue.one;
+      } else if (_inputCircleValList[index] == rohd.LogicValue.x) {
+        _inputCircleValList[index] = rohd.LogicValue.one;
+      } else if (_inputCircleValList[index] == rohd.LogicValue.one) {
+        _inputCircleValList[index] = rohd.LogicValue.zero;
+      } else if (_inputCircleValList[index] == rohd.LogicValue.zero) {
+        _inputCircleValList[index] = rohd.LogicValue.one;
+      } else {
+        throw ("error");
+      }
+      ins[index].inject(_inputCircleValList[index]);
     });
   }
 
-  void _setRightCircleColor(int index, bool status) {
+  void _setRightCircleColor(int index, rohd.LogicValue status) {
     setState(() {
-      _isRightCircleRedList[index] = status;
+      _outputCircleValList[index] = status;
     });
+  }
+
+  Color? getColour(rohd.LogicValue val) {
+    if (val == rohd.LogicValue.one) {
+      return Colors.orange[800];
+    }
+    if (val == rohd.LogicValue.zero) {
+      return Colors.deepPurple[900];
+    }
+    if (val == rohd.LogicValue.z) {
+      return Colors.amber;
+    } else {
+      return Colors.grey;
+    }
   }
 
   @override
@@ -167,8 +189,7 @@ class ComponentBoxState extends State<ComponentBox> {
                 GestureDetector(
                   onTap: () => _toggleLeftCircleColor(i),
                   child: CircleAvatar(
-                    backgroundColor:
-                        _isLeftCircleRedList[i] ? Colors.orange[800] : Colors.deepPurple[900],
+                    backgroundColor: getColour(_inputCircleValList[i]),
                     radius: circleSize / 2,
                   ),
                 ),
@@ -179,8 +200,7 @@ class ComponentBoxState extends State<ComponentBox> {
             children: [
               for (int i = 0; i < widget.rightCirclesCount; i++)
                 CircleAvatar(
-                  backgroundColor:
-                      _isRightCircleRedList[i] ? Colors.orange[800] : Colors.deepPurple[900],
+                  backgroundColor: getColour(_outputCircleValList[i]),
                   radius: circleSize / 2,
                 ),
               SizedBox(height: paddingSize),
