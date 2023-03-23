@@ -1,21 +1,13 @@
 import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:rohd/rohd.dart' as rohd;
 
-var ins = [rohd.Logic(name: 'in0'), rohd.Logic(name: 'in1')];
-var xor = rohd.Xor2Gate(ins[0], ins[1]);
+const Duration tickRate = Duration(milliseconds: 250);
+
+//var ins = [rohd.Const(0), rohd.Const(1)];
+//var xor = rohd.Xor2Gate(ins[0], ins[1]);
 
 void main() {
-  //var clk = rohd.SimpleClockGenerator(100).clk;
-  //var not = rohd.NotGate(clk);
-  xor.build();
-  ins[0].changed.listen((event) {
-    debugPrint("in0: $event");
-  });
-  ins[1].changed.listen((event) {
-    debugPrint("in1: $event");
-  });
   runApp(const MyApp());
 }
 
@@ -28,6 +20,14 @@ class MyApp extends StatefulWidget {
 class MyAppState extends State<MyApp> {
   bool _isRunning = false;
   Timer? _simulationTickTimer;
+  var clk = rohd.SimpleClockGenerator(100).clk;
+  List<rohd.Module> mds = [
+    rohd.Xor2Gate(rohd.Const(rohd.LogicValue.z), rohd.Const(rohd.LogicValue.z)),
+    rohd.And2Gate(rohd.Const(rohd.LogicValue.z), rohd.Const(rohd.LogicValue.z)),
+    rohd.FlipFlop(rohd.Const(rohd.LogicValue.z), rohd.Const(rohd.LogicValue.z)),
+  ];
+  List<String> compNames = ["XOR","AND","FlipFlop"];
+  //var ins = [rohd.Const(0), rohd.Const(1)];
 
   void _startSimulation() {
     setState(() {
@@ -35,10 +35,9 @@ class MyAppState extends State<MyApp> {
     });
     //Setup a timer to repeatibly call Simulator.tick();
     // Simulator.run() would probably be better, but I cant't get to work without freezing flutter
-    _simulationTickTimer =
-        Timer.periodic(const Duration(milliseconds: 10), (timer) {
+    _simulationTickTimer = Timer.periodic(tickRate, (timer) {
       setState(() {
-        debugPrint("tick");
+        //debugPrint("tick");
         rohd.Simulator.tick();
       });
     });
@@ -67,10 +66,22 @@ class MyAppState extends State<MyApp> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const ComponentBox(
-                leftCirclesCount: 2,
-                rightCirclesCount: 1,
-              ),
+              for (int i = 0; i < mds.length; i++)
+                Column(
+                  children: [
+                    Text(
+                      compNames[i], // Add a label for each component
+                      style: const TextStyle(
+                          fontSize: 16.0, fontWeight: FontWeight.bold),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 10.0),
+                      child: ComponentBox(
+                        module: mds[i],
+                      ),
+                    ),
+                  ],
+                ),
               const SizedBox(height: 20),
               if (!_isRunning)
                 ElevatedButton(
@@ -91,14 +102,12 @@ class MyAppState extends State<MyApp> {
 }
 
 class ComponentBox extends StatefulWidget {
-  final int leftCirclesCount;
-  final int rightCirclesCount;
+  final rohd.Module module; // Add module field
 
   const ComponentBox({
-    super.key,
-    this.leftCirclesCount = 1,
-    this.rightCirclesCount = 1,
-  });
+    Key? key, // Make key nullable
+    required this.module, // Add module parameter
+  }) : super(key: key); // Call super with nullable key
 
   @override
   ComponentBoxState createState() => ComponentBoxState();
@@ -107,19 +116,36 @@ class ComponentBox extends StatefulWidget {
 class ComponentBoxState extends State<ComponentBox> {
   late List<rohd.LogicValue> _inputCircleValList;
   late List<rohd.LogicValue> _outputCircleValList;
+  late int leftCirclesCount;
+  late int rightCirclesCount;
 
   @override
   void initState() {
     super.initState();
-    _outputCircleValList =
-        List.filled(widget.rightCirclesCount, rohd.LogicValue.x);
-    _inputCircleValList =
-        List.filled(widget.leftCirclesCount, rohd.LogicValue.z);
 
-    //Create a callback whenever the component outputs change.
-    xor.out.changed.listen((event) {
-      _setRightCircleColor(0, event.newValue);
-    });
+    leftCirclesCount = widget.module.inputs.length;
+    rightCirclesCount = widget.module.outputs.length;
+
+    _outputCircleValList = List.filled(rightCirclesCount, rohd.LogicValue.x);
+    _inputCircleValList = List.filled(leftCirclesCount, rohd.LogicValue.z);
+    if (!widget.module.hasBuilt) {
+      widget.module.build();
+    }
+    //Create a callbacks whenever the component outputs change.
+    for (int i = 0; i < widget.module.outputs.length; i++) {
+      debugPrint("Registered Output $i");
+      widget.module.outputs.values.elementAt(i).changed.listen((event) {
+        _setRightCircleColor(i, event.newValue);
+      });
+    }
+
+    //Create a callbacks whenever the component outputs change.
+    for (int i = 0; i < widget.module.inputs.length; i++) {
+      debugPrint("Registered Input $i");
+      widget.module.inputs.values.elementAt(i).changed.listen((event) {
+        debugPrint("$event");
+      });
+    }
   }
 
   void _toggleLeftCircleColor(int index) {
@@ -135,7 +161,10 @@ class ComponentBoxState extends State<ComponentBox> {
       } else {
         throw ("error");
       }
-      ins[index].inject(_inputCircleValList[index]);
+      widget.module.inputs.values
+          .elementAt(index)
+          .inject(_inputCircleValList[index]);
+      //ins[index].inject(_inputCircleValList[index]);
     });
   }
 
@@ -166,10 +195,10 @@ class ComponentBoxState extends State<ComponentBox> {
 
     double boxWidth = (circleSize * 2) +
         (paddingSize * 3) +
-        (widget.leftCirclesCount + widget.rightCirclesCount - 2) * paddingSize;
+        (leftCirclesCount + rightCirclesCount - 2) * paddingSize;
 
-    double boxHeight = circleSize * widget.leftCirclesCount +
-        paddingSize * (widget.leftCirclesCount - 1) +
+    double boxHeight = circleSize * leftCirclesCount +
+        paddingSize * (leftCirclesCount - 1) +
         10;
 
     return Container(
@@ -185,7 +214,7 @@ class ComponentBoxState extends State<ComponentBox> {
         children: [
           Column(
             children: [
-              for (int i = 0; i < widget.leftCirclesCount; i++)
+              for (int i = 0; i < leftCirclesCount; i++)
                 GestureDetector(
                   onTap: () => _toggleLeftCircleColor(i),
                   child: CircleAvatar(
@@ -198,7 +227,7 @@ class ComponentBoxState extends State<ComponentBox> {
           SizedBox(width: paddingSize),
           Column(
             children: [
-              for (int i = 0; i < widget.rightCirclesCount; i++)
+              for (int i = 0; i < rightCirclesCount; i++)
                 CircleAvatar(
                   backgroundColor: getColour(_outputCircleValList[i]),
                   radius: circleSize / 2,
