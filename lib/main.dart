@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:rohd/rohd.dart' as rohd;
 
@@ -20,13 +21,23 @@ class MyApp extends StatefulWidget {
 class MyAppState extends State<MyApp> {
   bool _isRunning = false;
   Timer? _simulationTickTimer;
-  var clk = rohd.SimpleClockGenerator(100).clk;
-  List<rohd.Module> mds = [
-    rohd.Xor2Gate(rohd.Const(rohd.LogicValue.z), rohd.Const(rohd.LogicValue.z)),
-    rohd.And2Gate(rohd.Const(rohd.LogicValue.z), rohd.Const(rohd.LogicValue.z)),
-    rohd.FlipFlop(rohd.Const(rohd.LogicValue.z), rohd.Const(rohd.LogicValue.z)),
-  ];
-  List<String> compNames = ["XOR","AND","FlipFlop"];
+  var masterClk = rohd.SimpleClockGenerator(2).clk;
+
+  var clk = rohd.SimpleClockGenerator(10).clk;
+
+  List<rohd.Module> mds = [];
+  MyAppState() {
+    mds.add(rohd.Xor2Gate(
+        rohd.Const(rohd.LogicValue.z), rohd.Const(rohd.LogicValue.z)));
+
+    mds.add(rohd.NotGate(mds[0].outputs.values.elementAt(0)));
+    mds.add(rohd.FlipFlop(clk, mds[1].outputs.values.elementAt(0)));
+  }
+
+  //  rohd.FlipFlop(rohd.Const(rohd.LogicValue.z), rohd.Const(rohd.LogicValue.z)),
+  //  rohd.NotGate(rohd.Const(rohd.LogicValue.z)),
+
+  List<String> compNames = ["XOR", "Not", "FlipFlop"];
   //var ins = [rohd.Const(0), rohd.Const(1)];
 
   void _startSimulation() {
@@ -139,16 +150,35 @@ class ComponentBoxState extends State<ComponentBox> {
       });
     }
 
-    //Create a callbacks whenever the component outputs change.
+    //Create a callbacks whenever the component input change.
     for (int i = 0; i < widget.module.inputs.length; i++) {
       debugPrint("Registered Input $i");
       widget.module.inputs.values.elementAt(i).changed.listen((event) {
+        _setLeftCircleColor(i, event.newValue);
+        //_toggleLeftCircleColor(i);
         debugPrint("$event");
       });
     }
   }
 
-  void _toggleLeftCircleColor(int index) {
+  _toggleInputCircleValue(int index) {
+    if (_inputCircleValList[index] == rohd.LogicValue.z) {
+      _inputCircleValList[index] = rohd.LogicValue.one;
+    } else if (_inputCircleValList[index] == rohd.LogicValue.x) {
+      _inputCircleValList[index] = rohd.LogicValue.one;
+    } else if (_inputCircleValList[index] == rohd.LogicValue.one) {
+      _inputCircleValList[index] = rohd.LogicValue.zero;
+    } else if (_inputCircleValList[index] == rohd.LogicValue.zero) {
+      _inputCircleValList[index] = rohd.LogicValue.one;
+    } else {
+      throw ("error");
+    }
+    widget.module.inputs.values
+        .elementAt(index)
+        .inject(_inputCircleValList[index]);
+  }
+
+  /*void _toggleLeftCircleColor(int index) {
     setState(() {
       if (_inputCircleValList[index] == rohd.LogicValue.z) {
         _inputCircleValList[index] = rohd.LogicValue.one;
@@ -166,11 +196,17 @@ class ComponentBoxState extends State<ComponentBox> {
           .inject(_inputCircleValList[index]);
       //ins[index].inject(_inputCircleValList[index]);
     });
-  }
+  }*/
 
   void _setRightCircleColor(int index, rohd.LogicValue status) {
     setState(() {
       _outputCircleValList[index] = status;
+    });
+  }
+
+  void _setLeftCircleColor(int index, rohd.LogicValue status) {
+    setState(() {
+      _inputCircleValList[index] = status;
     });
   }
 
@@ -192,14 +228,12 @@ class ComponentBoxState extends State<ComponentBox> {
   Widget build(BuildContext context) {
     double circleSize = 40.0;
     double paddingSize = 10.0;
+    double circleSpacing = 5;
 
-    double boxWidth = (circleSize * 2) +
-        (paddingSize * 3) +
-        (leftCirclesCount + rightCirclesCount - 2) * paddingSize;
+    double boxWidth = (circleSize * 2) + (paddingSize * 2) + circleSpacing;
 
-    double boxHeight = circleSize * leftCirclesCount +
-        paddingSize * (leftCirclesCount - 1) +
-        10;
+    double boxHeight = (max(leftCirclesCount, rightCirclesCount) * circleSize) +
+        (paddingSize * 2);
 
     return Container(
       padding: EdgeInsets.all(paddingSize),
@@ -216,7 +250,7 @@ class ComponentBoxState extends State<ComponentBox> {
             children: [
               for (int i = 0; i < leftCirclesCount; i++)
                 GestureDetector(
-                  onTap: () => _toggleLeftCircleColor(i),
+                  onTap: () => _toggleInputCircleValue(i),
                   child: CircleAvatar(
                     backgroundColor: getColour(_inputCircleValList[i]),
                     radius: circleSize / 2,
@@ -224,7 +258,7 @@ class ComponentBoxState extends State<ComponentBox> {
                 ),
             ],
           ),
-          SizedBox(width: paddingSize),
+          SizedBox(width: circleSpacing),
           Column(
             children: [
               for (int i = 0; i < rightCirclesCount; i++)
@@ -232,7 +266,6 @@ class ComponentBoxState extends State<ComponentBox> {
                   backgroundColor: getColour(_outputCircleValList[i]),
                   radius: circleSize / 2,
                 ),
-              SizedBox(height: paddingSize),
             ],
           ),
         ],
