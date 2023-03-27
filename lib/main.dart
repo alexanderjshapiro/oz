@@ -201,11 +201,11 @@ ValueNotifier<Offset> dropPosition = ValueNotifier(Offset.zero);
 List<Draggable> sidebarWidgets = [
   // XOR
   Draggable(
-    data: ComponentBox(
-      module: rohd.Xor2Gate(rohd.Logic(), rohd.Logic()),
+    data: const ComponentBox(
+      moduleType: rohd.Xor2Gate,
     ),
-    feedback: ComponentBox(
-      module: rohd.Xor2Gate(rohd.Logic(), rohd.Logic()),
+    feedback: const ComponentBox(
+      moduleType: rohd.Xor2Gate,
     ),
     childWhenDragging: Container(
       width: 100,
@@ -244,11 +244,11 @@ List<Draggable> sidebarWidgets = [
 
   // And
   Draggable(
-    data: ComponentBox(
-      module: rohd.And2Gate(rohd.Logic(), rohd.Logic()),
+    data: const ComponentBox(
+      moduleType: rohd.And2Gate,
     ),
-    feedback: ComponentBox(
-      module: rohd.And2Gate(rohd.Logic(), rohd.Logic()),
+    feedback: const ComponentBox(
+      moduleType: rohd.And2Gate,
     ),
     childWhenDragging: Container(
       width: 100,
@@ -285,13 +285,67 @@ List<Draggable> sidebarWidgets = [
     },
   ),
 
+  // NOT
+  Draggable(
+    data: const ComponentBox(
+      moduleType: rohd.NotGate,
+    ),
+    feedback: const ComponentBox(
+      moduleType: rohd.NotGate,
+    ),
+    childWhenDragging: Container(
+      width: 100,
+      height: 50,
+      color: Colors.redAccent,
+      child: const Center(
+        child: Text(
+          'NOT',
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ),
+    ),
+    child: Container(
+      width: 100,
+      height: 50,
+      color: Colors.red,
+      child: const Center(
+        child: Text(
+          'NOT',
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ),
+    ),
+    onDragEnd: (DraggableDetails details) {
+      dropPosition.value = details.offset;
+    },
+  ),
+
   //Flip Flop
   Draggable(
-    data: ComponentBox(
-      module: rohd.FlipFlop(rohd.SimpleClockGenerator(60).clk, rohd.Logic()),
-    ),
-    feedback: ComponentBox(
-      module: rohd.FlipFlop(rohd.Logic(), rohd.Logic()),
+    data: const ComponentBox(
+      moduleType: rohd.FlipFlop),
+    feedback: Container(
+      width: 100,
+      height: 50,
+      color: Colors.red,
+      child: const Center(
+        child: Text(
+          'FlipFlop',
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ),
     ),
     childWhenDragging: Container(
       width: 100,

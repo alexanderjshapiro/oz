@@ -3,12 +3,16 @@ import 'main.dart';
 import 'dart:math';
 import 'package:rohd/rohd.dart' as rohd;
 
+dynamic wiringPortSelected;
+
 class ComponentBox extends StatefulWidget {
-  final rohd.Module module; // Add module field
+  final Type moduleType; // Add module field
+  final List? inputs;
 
   const ComponentBox({
     Key? key, // Make key nullable
-    required this.module, // Add module parameter
+    required this.moduleType, // Add module parameter
+    this.inputs,
   }) : super(key: key); // Call super with nullable key
 
   @override
@@ -16,30 +20,40 @@ class ComponentBox extends StatefulWidget {
 }
 
 class ComponentBoxState extends State<ComponentBox> {
+  late rohd.Module module; // Add module field
   bool selected = false;
-  Offset offset = dropPosition.value;//Offset.zero;
+  Offset offset = dropPosition.value; //Offset.zero;
 
   @override
   void initState() {
     super.initState();
-
-    if (!widget.module.hasBuilt) {
-      widget.module.build();
+    if (widget.moduleType == rohd.Xor2Gate) {
+      module = rohd.Xor2Gate(rohd.Logic(), rohd.Logic());
+    } else if (widget.moduleType == rohd.And2Gate) {
+      module = rohd.And2Gate(rohd.Logic(), rohd.Logic());
+    } else if (widget.moduleType == rohd.FlipFlop) {
+      module = rohd.FlipFlop(rohd.SimpleClockGenerator(60).clk, rohd.Logic());
+    } else if (widget.moduleType == rohd.NotGate) {
+      module = rohd.NotGate(rohd.Logic());
+    } else {
+      throw ("Not yet implemented");
+    }
+    if (!module.hasBuilt) {
+      module.build();
     }
 
-    for (int i = 0; i < widget.module.inputs.length; i++) {
-      widget.module.inputs.values.elementAt(i).changed.listen((event) {
+    for (int i = 0; i < module.inputs.length; i++) {
+      module.inputs.values.elementAt(i).changed.listen((event) {
         setState(() {});
       });
     }
   }
 
   _toggleInputCircleValue(int index) {
-    if (widget.module.inputs.values.elementAt(index).value ==
-        rohd.LogicValue.one) {
-      widget.module.inputs.values.elementAt(index).inject(rohd.LogicValue.zero);
+    if (module.inputs.values.elementAt(index).value == rohd.LogicValue.one) {
+      module.inputs.values.elementAt(index).inject(rohd.LogicValue.zero);
     } else {
-      widget.module.inputs.values.elementAt(index).inject(rohd.LogicValue.one);
+      module.inputs.values.elementAt(index).inject(rohd.LogicValue.one);
     }
   }
 
@@ -66,10 +80,9 @@ class ComponentBoxState extends State<ComponentBox> {
     double boxWidth = (circleSize * 2) + (paddingSize * 2) + circleSpacing;
 
     double boxHeight =
-        (max(widget.module.inputs.length, widget.module.outputs.length) *
-                circleSize) +
+        (max(module.inputs.length, module.outputs.length) * circleSize) +
             (paddingSize * 2) +
-            ((max(widget.module.inputs.length, widget.module.outputs.length)-1) *
+            ((max(module.inputs.length, module.outputs.length) - 1) *
                 circleSpacing);
     return Positioned(
       left: (offset.dx / gridSize).roundToDouble() * gridSize,
@@ -99,18 +112,38 @@ class ComponentBoxState extends State<ComponentBox> {
             children: [
               Column(
                 children: [
-                  for (int i = 0; i < widget.module.inputs.length; i++)
+                  for (int i = 0; i < module.inputs.length; i++)
                     Column(
                       children: [
                         GestureDetector(
                           onTap: () => _toggleInputCircleValue(i),
+                          onDoubleTap: () {
+                            if (wiringPortSelected != null) {
+                              var inputs = module.inputs.values.toList();
+                              inputs[i] = wiringPortSelected;
+                              module = rohd.And2Gate(inputs[0], inputs[1]);
+                              module.build();
+                              //module.inputs[module.inputs.keys.elementAt(i)] = wiringPortSelected;
+                              for (int i = 0; i < module.inputs.length; i++) {
+                                module.inputs.values
+                                    .elementAt(i)
+                                    .changed
+                                    .listen((event) {
+                                  setState(() {});
+                                });
+                              }
+                              wiringPortSelected = null;
+                              debugPrint("Connected Ports together");
+                            }
+                          },
                           child: CircleAvatar(
                             backgroundColor: getColour(
-                                widget.module.inputs.values.elementAt(i).value),
+                                module.inputs.values.elementAt(i).value),
                             radius: circleSize / 2,
                           ),
                         ),
-                        if (i != widget.module.inputs.length-1) SizedBox(height: circleSpacing),
+                        if (i != module.inputs.length - 1)
+                          SizedBox(height: circleSpacing),
                       ],
                     )
                 ],
@@ -118,12 +151,30 @@ class ComponentBoxState extends State<ComponentBox> {
               SizedBox(width: circleSpacing),
               Column(
                 children: [
-                  for (int i = 0; i < widget.module.outputs.length; i++)
-                    CircleAvatar(
-                      backgroundColor: getColour(
-                          widget.module.outputs.values.elementAt(i).value),
-                      radius: circleSize / 2,
-                    ),
+                  for (int i = 0; i < module.outputs.length; i++)
+                    Column(
+                      children: [
+                        GestureDetector(
+                          onDoubleTap: () {
+                            if (wiringPortSelected == null) {
+                              debugPrint("Selected Output for wiring");
+                              wiringPortSelected =
+                                  module.outputs.values.elementAt(i);
+                            } else {
+                              wiringPortSelected = null;
+                              debugPrint("Deselected Output for wiring");
+                            }
+                          },
+                          child: CircleAvatar(
+                            backgroundColor: getColour(
+                                module.outputs.values.elementAt(i).value),
+                            radius: circleSize / 2,
+                          ),
+                        ),
+                        if (i != module.outputs.length - 1)
+                          SizedBox(height: circleSpacing),
+                      ],
+                    )
                 ],
               ),
             ],
