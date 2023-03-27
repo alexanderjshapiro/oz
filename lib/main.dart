@@ -1,40 +1,181 @@
-import 'dart:async';
-import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:rohd/rohd.dart' as rohd;
+import 'component.dart';
+import 'dart:async';
+import 'package:pdf/pdf.dart';
+import 'package:pdf/widgets.dart' as pw;
+import 'package:printing/printing.dart';
+
+
+const double toolbarIconSize = 48;
+const double gridSize = 20;
+
+const bool showToolBar = true;
+const bool showDebugBar = false;
 
 const Duration tickRate = Duration(milliseconds: 50);
 
-//var ins = [rohd.Const(0), rohd.Const(1)];
-//var xor = rohd.Xor2Gate(ins[0], ins[1]);
-
 void main() {
-  /// This clock ensures that there is always one event every time step
-  /// Otherwise calling Simulation.tick would advance the simulation till something changed
-  /// Which is not good for a 'realtime' simulation.
   rohd.SimpleClockGenerator(2);
-  runApp(const MyApp());
+  runApp(const Oz());
 }
 
-class MyApp extends StatefulWidget {
-  const MyApp({super.key});
+class Oz extends StatelessWidget {
+  const Oz({super.key});
+
+  // This widget is the root of your application.
   @override
-  MyAppState createState() => MyAppState();
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Oz',
+      theme: ThemeData(
+        primarySwatch: Colors.blue,
+      ),
+      home: const MyHomePage(),
+    );
+  }
 }
 
-class MyAppState extends State<MyApp> {
+class MyHomePage extends StatefulWidget {
+  const MyHomePage({super.key});
+  @override
+  State<MyHomePage> createState() => _MyHomePageState();
+}
+
+class _MyHomePageState extends State<MyHomePage> {
   bool _isRunning = false;
   Timer? _simulationTickTimer;
 
-  var clk = rohd.SimpleClockGenerator(60).clk;
-  List<rohd.Module> mds = [];
-  MyAppState() {
-    mds.add(rohd.Xor2Gate(
-        rohd.Const(rohd.LogicValue.z), rohd.Const(rohd.LogicValue.z)));
-    mds.add(rohd.NotGate(mds[0].outputs.values.elementAt(0)));
-    mds.add(rohd.FlipFlop(clk, mds[1].outputs.values.elementAt(0)));
+  List<ComponentBox> components = [];
+  @override
+  void initState() {
+    super.initState();
+    _startSimulation();
   }
-  List<String> compNames = ["XOR", "Not", "FlipFlop"];
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Container(
+        color: Colors.white,
+        child: Column(
+          children: [
+            if (showToolBar) toolBar(),
+            Expanded(
+              child: Row(
+                children: [
+                  workSpace(),
+                  sidebar(),
+                ],
+              ),
+            ),
+            if (showDebugBar) debugBar(),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget workSpace() {
+    return Expanded(
+        child: Stack(children: <Widget>[
+      GridPaper(
+        divisions: 1,
+        subdivisions: 1,
+        interval: gridSize,
+        color: Colors.black12,
+        child: Container(),
+      ),
+      DragTarget<ComponentBox>(
+        builder: (BuildContext context, List candidate, List rejected) {
+          return Stack(children: components);
+        },
+        onWillAccept: (data) {
+          return true;
+        },
+        onAccept: (data) {
+          setState(() {
+            components.add(data);
+          });
+        },
+      )
+    ]));
+  }
+
+  Widget toolBar() {
+    return Container(
+      decoration: const BoxDecoration(
+          border: Border(bottom: BorderSide(color: Colors.black))),
+      child: Row(
+        children: [
+          const Icon(Icons.save, size: toolbarIconSize),
+          GestureDetector(
+            onTap: () {
+              printScreen();
+            },
+            child: const Icon(Icons.print, size: toolbarIconSize),
+          ),
+          GestureDetector(
+            onTap: () {
+              _isRunning ? _stopSimulation() : _startSimulation();
+            },
+            child: _isRunning
+                ? const Icon(Icons.stop_circle_outlined, size: toolbarIconSize)
+                : const Icon(Icons.play_circle_outline, size: toolbarIconSize),
+          )
+        ],
+      ),
+    );
+  }
+
+void printScreen() {
+    Printing.layoutPdf(onLayout: (PdfPageFormat format) async {
+      final doc = pw.Document();
+
+      final image = await WidgetWrapper.fromKey(key: GlobalKey()); 
+
+      doc.addPage(pw.Page(
+          pageFormat: format,
+          build: (pw.Context context) {
+            return pw.Center(
+              child: pw.Expanded(
+                child: pw.Image(image),
+              ),
+            );
+          }));
+
+      return doc.save();
+    });
+  }
+
+
+  Widget sidebar() {
+    return Container(
+      width: 100,
+      color: Colors.brown[100],
+      child: ListView.builder(
+        itemCount: sidebarWidgets.length,
+        itemBuilder: (BuildContext context, int index) {
+          return sidebarWidgets[index];
+        },
+
+      ),
+    );
+  }
+
+  Widget debugBar() {
+    return Container(
+      decoration: const BoxDecoration(
+          border: Border(top: BorderSide(color: Colors.black))),
+      child: Row(
+        children: [
+          const Text('Status:'),
+          const Spacer(),
+          Text('Last State Update: ${DateTime.now()}')
+        ],
+      ),
+    );
+  }
 
   void _startSimulation() {
     setState(() {
@@ -43,9 +184,7 @@ class MyAppState extends State<MyApp> {
     //Setup a timer to repeatibly call Simulator.tick();
     // Simulator.run() would probably be better, but I cant't get to work without freezing flutter
     _simulationTickTimer = Timer.periodic(tickRate, (timer) {
-      setState(() {
-        rohd.Simulator.tick();
-      });
+      rohd.Simulator.tick();
     });
   }
 
@@ -55,153 +194,137 @@ class MyAppState extends State<MyApp> {
       _isRunning = false;
     });
   }
+}
 
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'ROHD Demo',
-      theme: ThemeData(
-        primarySwatch: Colors.indigo,
-        canvasColor: Colors.blueGrey[200],
-      ),
-      home: Scaffold(
-        appBar: AppBar(
-          title: const Text('ROHD Simulation'),
-        ),
-        body: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              for (int i = 0; i < mds.length; i++)
-                Column(
-                  children: [
-                    Text(
-                      compNames[i], // Add a label for each component
-                      style: const TextStyle(
-                          fontSize: 16.0, fontWeight: FontWeight.bold),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 10.0),
-                      child: ComponentBox(
-                        module: mds[i],
-                      ),
-                    ),
-                  ],
-                ),
-              const SizedBox(height: 20),
-              if (!_isRunning)
-                ElevatedButton(
-                  onPressed: _startSimulation,
-                  child: const Text('Start Simulation'),
-                )
-              else
-                ElevatedButton(
-                  onPressed: _stopSimulation,
-                  child: const Text('Stop Simulation'),
-                ),
-            ],
+ValueNotifier<Offset> dropPosition = ValueNotifier(Offset.zero);
+
+List<Draggable> sidebarWidgets = [
+  // XOR
+  Draggable(
+    data: ComponentBox(
+      module: rohd.Xor2Gate(rohd.Logic(), rohd.Logic()),
+    ),
+    feedback: ComponentBox(
+      module: rohd.Xor2Gate(rohd.Logic(), rohd.Logic()),
+    ),
+    childWhenDragging: Container(
+      width: 100,
+      height: 50,
+      color: Colors.redAccent,
+      child: const Center(
+        child: Text(
+          'XOR',
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
           ),
         ),
       ),
-    );
-  }
-}
-
-class ComponentBox extends StatefulWidget {
-  final rohd.Module module; // Add module field
-
-  const ComponentBox({
-    Key? key, // Make key nullable
-    required this.module, // Add module parameter
-  }) : super(key: key); // Call super with nullable key
-
-  @override
-  ComponentBoxState createState() => ComponentBoxState();
-}
-
-class ComponentBoxState extends State<ComponentBox> {
-  @override
-  void initState() {
-    super.initState();
-
-    if (!widget.module.hasBuilt) {
-      widget.module.build();
-    }
-  }
-
-  _toggleInputCircleValue(int index) {
-    if (widget.module.inputs.values.elementAt(index).value ==
-        rohd.LogicValue.one) {
-      widget.module.inputs.values.elementAt(index).inject(rohd.LogicValue.zero);
-    } else {
-      widget.module.inputs.values.elementAt(index).inject(rohd.LogicValue.one);
-    }
-  }
-
-  Color? getColour(rohd.LogicValue val) {
-    if (val == rohd.LogicValue.one) {
-      return Colors.orange[800];
-    }
-    if (val == rohd.LogicValue.zero) {
-      return Colors.deepPurple[900];
-    }
-    if (val == rohd.LogicValue.z) {
-      return Colors.amber;
-    } else {
-      return Colors.grey;
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    double circleSize = 40.0;
-    double paddingSize = 10.0;
-    double circleSpacing = 5;
-
-    double boxWidth = (circleSize * 2) + (paddingSize * 2) + circleSpacing;
-
-    double boxHeight =
-        (max(widget.module.inputs.length, widget.module.outputs.length) *
-                circleSize) +
-            (paddingSize * 2);
-
-    return Container(
-      padding: EdgeInsets.all(paddingSize),
-      width: boxWidth,
-      height: boxHeight,
-      decoration: BoxDecoration(
-        color: Colors.teal[400],
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Column(
-            children: [
-              for (int i = 0; i < widget.module.inputs.length; i++)
-                GestureDetector(
-                  onTap: () => _toggleInputCircleValue(i),
-                  child: CircleAvatar(
-                    backgroundColor: getColour(
-                        widget.module.inputs.values.elementAt(i).value),
-                    radius: circleSize / 2,
-                  ),
-                ),
-            ],
+    ),
+    child: Container(
+      width: 100,
+      height: 50,
+      color: Colors.red,
+      child: const Center(
+        child: Text(
+          'XOR',
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
           ),
-          SizedBox(width: circleSpacing),
-          Column(
-            children: [
-              for (int i = 0; i < widget.module.outputs.length; i++)
-                CircleAvatar(
-                  backgroundColor: getColour(
-                      widget.module.outputs.values.elementAt(i).value),
-                  radius: circleSize / 2,
-                ),
-            ],
-          ),
-        ],
+        ),
       ),
-    );
-  }
-}
+    ),
+    onDragEnd: (DraggableDetails details) {
+      dropPosition.value = details.offset;
+    },
+  ),
+
+  // And
+  Draggable(
+    data: ComponentBox(
+      module: rohd.And2Gate(rohd.Logic(), rohd.Logic()),
+    ),
+    feedback: ComponentBox(
+      module: rohd.And2Gate(rohd.Logic(), rohd.Logic()),
+    ),
+    childWhenDragging: Container(
+      width: 100,
+      height: 50,
+      color: Colors.redAccent,
+      child: const Center(
+        child: Text(
+          'AND',
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ),
+    ),
+    child: Container(
+      width: 100,
+      height: 50,
+      color: Colors.red,
+      child: const Center(
+        child: Text(
+          'AND',
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ),
+    ),
+    onDragEnd: (DraggableDetails details) {
+      dropPosition.value = details.offset;
+    },
+  ),
+
+  //Flip Flop
+  Draggable(
+    data: ComponentBox(
+      module: rohd.FlipFlop(rohd.SimpleClockGenerator(60).clk, rohd.Logic()),
+    ),
+    feedback: ComponentBox(
+      module: rohd.FlipFlop(rohd.Logic(), rohd.Logic()),
+    ),
+    childWhenDragging: Container(
+      width: 100,
+      height: 50,
+      color: Colors.redAccent,
+      child: const Center(
+        child: Text(
+          'FlipFlop',
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ),
+    ),
+    child: Container(
+      width: 100,
+      height: 50,
+      color: Colors.red,
+      child: const Center(
+        child: Text(
+          'FlipFlop',
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ),
+    ),
+    onDragEnd: (DraggableDetails details) {
+      dropPosition.value = details.offset;
+    },
+  ),
+];
