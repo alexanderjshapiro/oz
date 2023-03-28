@@ -35,6 +35,8 @@ class ComponentBoxState extends State<ComponentBox> {
       module = rohd.FlipFlop(rohd.SimpleClockGenerator(60).clk, rohd.Logic());
     } else if (widget.moduleType == rohd.NotGate) {
       module = rohd.NotGate(rohd.Logic());
+    } else if (widget.moduleType == rohd.Or2Gate) {
+      module = rohd.Or2Gate(rohd.Logic(),rohd.Logic());
     } else {
       throw ("Not yet implemented");
     }
@@ -87,99 +89,109 @@ class ComponentBoxState extends State<ComponentBox> {
     return Positioned(
       left: (offset.dx / gridSize).roundToDouble() * gridSize,
       top: (offset.dy / gridSize).roundToDouble() * gridSize,
-      child: GestureDetector(
-        onTap: () {
-          setState(() {
-            selected = true;
-          });
-        },
-        onPanUpdate: (details) {
-          setState(() {
-            offset = Offset(
-                offset.dx + details.delta.dx, offset.dy + details.delta.dy);
-          });
-        },
-        child: Container(
-          padding: EdgeInsets.all(paddingSize),
-          width: boxWidth,
-          height: boxHeight,
-          decoration: BoxDecoration(
-            color: Colors.teal[400],
-            borderRadius: BorderRadius.circular(10),
+      child: Column(
+        children: [
+          Text(
+            "${widget.moduleType}",
+            style: const TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              fontFamily: 'Roboto',
+              color: Colors.indigo,
+            ),
           ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Column(
+          GestureDetector(
+            onTap: () {
+              setState(() {
+                selected = true;
+              });
+            },
+            onPanUpdate: (details) {
+              setState(() {
+                offset = Offset(
+                    offset.dx + details.delta.dx, offset.dy + details.delta.dy);
+              });
+            },
+            child: Container(
+              padding: EdgeInsets.all(paddingSize),
+              width: boxWidth,
+              height: boxHeight,
+              decoration: BoxDecoration(
+                color: Colors.teal[400],
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  for (int i = 0; i < module.inputs.length; i++)
-                    Column(
-                      children: [
-                        GestureDetector(
-                          onTap: () => _toggleInputCircleValue(i),
-                          onDoubleTap: () {
-                            if (wiringPortSelected != null) {
-                              var inputs = module.inputs.values.toList();
-                              inputs[i] = wiringPortSelected;
-                              module = rohd.And2Gate(inputs[0], inputs[1]);
-                              module.build();
-                              //module.inputs[module.inputs.keys.elementAt(i)] = wiringPortSelected;
-                              for (int i = 0; i < module.inputs.length; i++) {
-                                module.inputs.values
-                                    .elementAt(i)
-                                    .changed
-                                    .listen((event) {
-                                  setState(() {});
-                                });
-                              }
-                              wiringPortSelected = null;
-                              debugPrint("Connected Ports together");
-                            }
-                          },
-                          child: CircleAvatar(
-                            backgroundColor: getColour(
-                                module.inputs.values.elementAt(i).value),
-                            radius: circleSize / 2,
-                          ),
-                        ),
-                        if (i != module.inputs.length - 1)
-                          SizedBox(height: circleSpacing),
-                      ],
-                    )
+                  Column(
+                    children: [
+                      for (int i = 0; i < module.inputs.length; i++)
+                        Column(
+                          children: [
+                            GestureDetector(
+                              onTap: () => _toggleInputCircleValue(i),
+                              onDoubleTap: () {
+                                if (wiringPortSelected != null) {
+                                  debugPrint(
+                                      "${wiringPortSelected.dstConnections}");
+                                  try {
+                                    wiringPortSelected.gets(module.inputs[module
+                                        .inputs.values
+                                        .elementAt(i)
+                                        .name]);
+                                    debugPrint("Connected Ports together");
+                                  } catch (A) {
+                                    debugPrint("Could not connect Inputs: $A");
+                                  }
+                                }
+                                wiringPortSelected = null;
+                              },
+                              child: CircleAvatar(
+                                backgroundColor: getColour(
+                                    module.inputs.values.elementAt(i).value),
+                                radius: circleSize / 2,
+                              ),
+                            ),
+                            if (i != module.inputs.length - 1)
+                              SizedBox(height: circleSpacing),
+                          ],
+                        )
+                    ],
+                  ),
+                  SizedBox(width: circleSpacing),
+                  Column(
+                    children: [
+                      for (int i = 0; i < module.outputs.length; i++)
+                        Column(
+                          children: [
+                            GestureDetector(
+                              onDoubleTap: () {
+                                if (wiringPortSelected == null) {
+                                  debugPrint("Selected Output for wiring");
+                                  wiringPortSelected =
+                                      module.outputs.values.elementAt(i);
+                                } else {
+                                  wiringPortSelected = null;
+                                  debugPrint("Deselected Output for wiring");
+                                }
+                              },
+                              child: CircleAvatar(
+                                backgroundColor: getColour(
+                                    module.outputs.values.elementAt(i).value),
+                                radius: circleSize / 2,
+                              ),
+                            ),
+                            if (i != module.outputs.length - 1)
+                              SizedBox(height: circleSpacing),
+                          ],
+                        )
+                    ],
+                  ),
                 ],
               ),
-              SizedBox(width: circleSpacing),
-              Column(
-                children: [
-                  for (int i = 0; i < module.outputs.length; i++)
-                    Column(
-                      children: [
-                        GestureDetector(
-                          onDoubleTap: () {
-                            if (wiringPortSelected == null) {
-                              debugPrint("Selected Output for wiring");
-                              wiringPortSelected =
-                                  module.outputs.values.elementAt(i);
-                            } else {
-                              wiringPortSelected = null;
-                              debugPrint("Deselected Output for wiring");
-                            }
-                          },
-                          child: CircleAvatar(
-                            backgroundColor: getColour(
-                                module.outputs.values.elementAt(i).value),
-                            radius: circleSize / 2,
-                          ),
-                        ),
-                        if (i != module.outputs.length - 1)
-                          SizedBox(height: circleSpacing),
-                      ],
-                    )
-                ],
-              ),
-            ],
+            ),
           ),
-        ),
+        ],
       ),
     );
   }
