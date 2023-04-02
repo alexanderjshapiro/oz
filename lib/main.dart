@@ -68,6 +68,15 @@ class _MainPageState extends State<MainPage> {
                   projectExplorer(),
                   EditorCanvas(key: _editorCanvasKey),
                   componentList(),
+                  Expanded(
+                    child: Column(
+                      children: [
+                        workSpace(),
+                        waveformAnalyzer()
+                      ]
+                    ),
+                  ),
+                  sidebar(),
                 ],
               ),
             ),
