@@ -7,7 +7,7 @@ import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 
 const double toolbarIconSize = 48;
-const double gridSize = 20;
+const double gridSize = 40;
 
 const bool showToolBar = true;
 const bool debug = false;
@@ -48,7 +48,7 @@ class _MainPageState extends State<MainPage> {
   bool _isRunning = false;
   Timer? _simulationTickTimer;
 
-  List<ComponentBox> components = [];
+  List<Component> components = [];
 
   @override
   void initState() {
@@ -172,7 +172,7 @@ class _MainPageState extends State<MainPage> {
         color: Colors.black12,
         child: Container(),
       ),
-      DragTarget<ComponentBox>(
+      DragTarget<Component>(
         builder: (BuildContext context, List candidate, List rejected) {
           return Stack(children: components);
         },
@@ -259,7 +259,7 @@ ValueNotifier<Offset> dropPosition = ValueNotifier(Offset.zero);
 List<Draggable> sidebarWidgets = [
   // XOR
   Draggable(
-    data: const ComponentBox(
+    data: const Component(
       moduleType: rohd.Xor2Gate,
     ),
     feedback: Container(
@@ -320,7 +320,7 @@ List<Draggable> sidebarWidgets = [
 
   // OR
   Draggable(
-    data: const ComponentBox(
+    data: const Component(
       moduleType: rohd.Or2Gate,
     ),
     feedback: Container(
@@ -381,7 +381,7 @@ List<Draggable> sidebarWidgets = [
 
   // And
   Draggable(
-    data: const ComponentBox(
+    data: Component(
       moduleType: rohd.And2Gate,
     ),
     feedback: Container(
@@ -442,7 +442,7 @@ List<Draggable> sidebarWidgets = [
 
   // NOT
   Draggable(
-    data: const ComponentBox(
+    data: const Component(
       moduleType: rohd.NotGate,
     ),
     feedback: Container(
