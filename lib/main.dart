@@ -10,7 +10,7 @@ const double toolbarIconSize = 48;
 const double gridSize = 20;
 
 const bool showToolBar = true;
-const bool showDebugBar = false;
+const bool debug = false;
 
 const Duration tickRate = Duration(milliseconds: 50);
 
@@ -26,26 +26,30 @@ class Oz extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      debugShowCheckedModeBanner: debug,
       title: 'Oz',
       theme: ThemeData(
         primarySwatch: Colors.blue,
       ),
-      home: const MyHomePage(),
+      home: const MainPage(),
     );
   }
 }
 
-class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key});
+class MainPage extends StatefulWidget {
+  const MainPage({super.key});
+
   @override
-  State<MyHomePage> createState() => _MyHomePageState();
+  State<MainPage> createState() => _MainPageState();
 }
 
-class _MyHomePageState extends State<MyHomePage> {
+class _MainPageState extends State<MainPage> {
+  bool _showProjectExplorer = false;
   bool _isRunning = false;
   Timer? _simulationTickTimer;
 
   List<ComponentBox> components = [];
+
   @override
   void initState() {
     super.initState();
@@ -59,49 +63,24 @@ class _MyHomePageState extends State<MyHomePage> {
         color: Colors.white,
         child: Column(
           children: [
-            if (showToolBar) toolBar(),
+            if (showToolBar) toolbar(),
             Expanded(
               child: Row(
                 children: [
-                  workSpace(),
+                  projectExplorer(),
+                  canvas(),
                   sidebar(),
                 ],
               ),
             ),
-            if (showDebugBar) debugBar(),
+            if (debug) debugBar(),
           ],
         ),
       ),
     );
   }
 
-  Widget workSpace() {
-    return Expanded(
-        child: Stack(children: <Widget>[
-      GridPaper(
-        divisions: 1,
-        subdivisions: 1,
-        interval: gridSize,
-        color: Colors.black12,
-        child: Container(),
-      ),
-      DragTarget<ComponentBox>(
-        builder: (BuildContext context, List candidate, List rejected) {
-          return Stack(children: components);
-        },
-        onWillAccept: (data) {
-          return true;
-        },
-        onAccept: (data) {
-          setState(() {
-            components.add(data);
-          });
-        },
-      )
-    ]));
-  }
-
-  Widget toolBar() {
+  Widget toolbar() {
     return Container(
       decoration: const BoxDecoration(
           border: Border(bottom: BorderSide(color: Colors.black))),
@@ -141,6 +120,72 @@ class _MyHomePageState extends State<MyHomePage> {
         ],
       ),
     );
+  }
+
+  Widget projectExplorer() {
+    const double iconSize = 50;
+    const double padding = 16;
+    const double shownWidth = 400;
+    const double hiddenWidth = iconSize + padding;
+
+    return SizedBox(
+      width: _showProjectExplorer ? hiddenWidth : shownWidth,
+      child: Container(
+          decoration: const BoxDecoration(
+              border: Border(right: BorderSide(color: Colors.black))),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              IconButton(
+                icon: const Icon(Icons.folder),
+                iconSize: iconSize,
+                onPressed: () {
+                  setState(() {
+                    _showProjectExplorer = !_showProjectExplorer;
+                  });
+                },
+              ),
+              if (!_showProjectExplorer)
+                const Padding(
+                  padding: EdgeInsets.all(padding),
+                  child: Text(
+                    'Project Explorer',
+                    style: TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                )
+            ],
+          )),
+    );
+  }
+
+  Widget canvas() {
+    return Expanded(
+        child: Stack(children: <Widget>[
+      GridPaper(
+        divisions: 1,
+        subdivisions: 1,
+        interval: gridSize,
+        color: Colors.black12,
+        child: Container(),
+      ),
+      DragTarget<ComponentBox>(
+        builder: (BuildContext context, List candidate, List rejected) {
+          return Stack(children: components);
+        },
+        onWillAccept: (data) {
+          return true;
+        },
+        onAccept: (data) {
+          setState(() {
+            components.add(data);
+          });
+        },
+      )
+    ]));
   }
 
   void printScreen() {
