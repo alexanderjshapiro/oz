@@ -209,16 +209,52 @@ class _MainPageState extends State<MainPage> {
   }
 
   Widget sidebar() {
+    const double padding = 16;
+
     return Container(
-      width: 100,
-      color: Colors.brown[100],
-      child: ListView.builder(
-        itemCount: sidebarWidgets.length,
-        itemBuilder: (BuildContext context, int index) {
-          return sidebarWidgets[index];
-        },
-      ),
-    );
+        width: 200,
+        decoration: const BoxDecoration(
+            border: Border(left: BorderSide(color: Colors.black))),
+        child: Padding(
+            padding: const EdgeInsets.all(padding),
+            child: ListView(
+              children: [
+                for (var moduleType in [
+                  rohd.Xor2Gate,
+                  rohd.Or2Gate,
+                  rohd.And2Gate,
+                  rohd.NotGate
+                ])
+                  Draggable(
+                    data: Component(
+                      moduleType: moduleType,
+                    ),
+                    feedback: DefaultTextStyle(
+                        style: const TextStyle(
+                            color: Colors.black,
+                            fontWeight: FontWeight.normal,
+                            decoration: TextDecoration.none),
+                        child: ComponentPreview(
+                          component: Component(
+                            moduleType: moduleType,
+                          ),
+                        )),
+                    childWhenDragging: Text(
+                      moduleType.toString(),
+                      style: const TextStyle(fontSize: 24, color: Colors.grey),
+                    ),
+                    child: Text(
+                      moduleType.toString(),
+                      style: const TextStyle(
+                        fontSize: 24,
+                      ),
+                    ),
+                    onDragEnd: (DraggableDetails details) {
+                      dropPosition.value = details.offset;
+                    },
+                  ),
+              ],
+            )));
   }
 
   Widget debugBar() {
@@ -255,302 +291,3 @@ class _MainPageState extends State<MainPage> {
 }
 
 ValueNotifier<Offset> dropPosition = ValueNotifier(Offset.zero);
-
-List<Draggable> sidebarWidgets = [
-  // XOR
-  Draggable(
-    data: const Component(
-      moduleType: rohd.Xor2Gate,
-    ),
-    feedback: Container(
-      width: 100,
-      height: 50,
-      color: Colors.red,
-      child: const Center(
-        child: Text(
-          'XOR',
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-      ),
-    ),
-    childWhenDragging: Container(
-      width: 100,
-      height: 50,
-      color: Colors.redAccent,
-      child: const Center(
-        child: Text(
-          'XOR',
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-      ),
-    ),
-    child: Container(
-      width: 100,
-      height: 50,
-      decoration: BoxDecoration(
-        border: Border.all(
-          color: Colors.black,
-          width: 2,
-        ),
-        color: Colors.deepPurple,
-      ),
-      child: const Center(
-        child: Text(
-          'XOR',
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-      ),
-    ),
-    onDragEnd: (DraggableDetails details) {
-      dropPosition.value = details.offset;
-    },
-  ),
-
-  // OR
-  Draggable(
-    data: const Component(
-      moduleType: rohd.Or2Gate,
-    ),
-    feedback: Container(
-      width: 100,
-      height: 50,
-      color: Colors.red,
-      child: const Center(
-        child: Text(
-          'OR',
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-      ),
-    ),
-    childWhenDragging: Container(
-      width: 100,
-      height: 50,
-      color: Colors.redAccent,
-      child: const Center(
-        child: Text(
-          'OR',
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-      ),
-    ),
-    child: Container(
-      width: 100,
-      height: 50,
-      decoration: BoxDecoration(
-        border: Border.all(
-          color: Colors.black,
-          width: 2,
-        ),
-        color: Colors.deepPurple,
-      ),
-      child: const Center(
-        child: Text(
-          'OR',
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-      ),
-    ),
-    onDragEnd: (DraggableDetails details) {
-      dropPosition.value = details.offset;
-    },
-  ),
-
-  // And
-  Draggable(
-    data: Component(
-      moduleType: rohd.And2Gate,
-    ),
-    feedback: Container(
-      width: 100,
-      height: 50,
-      color: Colors.red,
-      child: const Center(
-        child: Text(
-          'AND',
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-      ),
-    ),
-    childWhenDragging: Container(
-      width: 100,
-      height: 50,
-      color: Colors.redAccent,
-      child: const Center(
-        child: Text(
-          'AND',
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-      ),
-    ),
-    child: Container(
-      width: 100,
-      height: 50,
-      decoration: BoxDecoration(
-        border: Border.all(
-          color: Colors.black,
-          width: 2,
-        ),
-        color: Colors.deepPurple,
-      ),
-      child: const Center(
-        child: Text(
-          'AND',
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-      ),
-    ),
-    onDragEnd: (DraggableDetails details) {
-      dropPosition.value = details.offset;
-    },
-  ),
-
-  // NOT
-  Draggable(
-    data: const Component(
-      moduleType: rohd.NotGate,
-    ),
-    feedback: Container(
-      width: 100,
-      height: 50,
-      color: Colors.red,
-      child: const Center(
-        child: Text(
-          'NOT',
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-      ),
-    ),
-    childWhenDragging: Container(
-      width: 100,
-      height: 50,
-      color: Colors.redAccent,
-      child: const Center(
-        child: Text(
-          'NOT',
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-      ),
-    ),
-    child: Container(
-      width: 100,
-      height: 50,
-      decoration: BoxDecoration(
-        border: Border.all(
-          color: Colors.black,
-          width: 2,
-        ),
-        color: Colors.deepPurple,
-      ),
-      child: const Center(
-        child: Text(
-          'NOT',
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-      ),
-    ),
-    onDragEnd: (DraggableDetails details) {
-      dropPosition.value = details.offset;
-    },
-  ),
-
-  //Flip Flop - Broken right now
-  // Draggable(
-  //   data: const ComponentBox(moduleType: rohd.FlipFlop),
-  //   feedback: Container(
-  //     width: 100,
-  //     height: 50,
-  //     color: Colors.red,
-  //     child: const Center(
-  //       child: Text(
-  //         'FlipFlop',
-  //         style: TextStyle(
-  //           color: Colors.white,
-  //           fontSize: 20,
-  //           fontWeight: FontWeight.bold,
-  //         ),
-  //       ),
-  //     ),
-  //   ),
-  //   childWhenDragging: Container(
-  //     width: 100,
-  //     height: 50,
-  //     color: Colors.redAccent,
-  //     child: const Center(
-  //       child: Text(
-  //         'FlipFlop',
-  //         style: TextStyle(
-  //           color: Colors.white,
-  //           fontSize: 20,
-  //           fontWeight: FontWeight.bold,
-  //         ),
-  //       ),
-  //     ),
-  //   ),
-  //   child: Container(
-  //     width: 100,
-  //     height: 50,
-  //     color: Colors.red,
-  //     child: const Center(
-  //       child: Text(
-  //         'FlipFlop',
-  //         style: TextStyle(
-  //           color: Colors.white,
-  //           fontSize: 20,
-  //           fontWeight: FontWeight.bold,
-  //         ),
-  //       ),
-  //     ),
-  //   ),
-  //   onDragEnd: (DraggableDetails details) {
-  //     dropPosition.value = details.offset;
-  //   },
-  // ),
-];
