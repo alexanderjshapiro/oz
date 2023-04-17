@@ -1,11 +1,21 @@
 import 'package:flutter/material.dart';
-
+import 'package:rohd/rohd.dart' as rohd;
 import 'component.dart';
+import 'dart:async';
+import 'package:pdf/pdf.dart';
+import 'package:pdf/widgets.dart' as pw;
+import 'package:printing/printing.dart';
 
 const double toolbarIconSize = 48;
 const double gridSize = 20;
 
+const bool showToolBar = true;
+const bool showDebugBar = false;
+
+const Duration tickRate = Duration(milliseconds: 50);
+
 void main() {
+  rohd.SimpleClockGenerator(2);
   runApp(const Oz());
 }
 
@@ -20,137 +30,482 @@ class Oz extends StatelessWidget {
       theme: ThemeData(
         primarySwatch: Colors.blue,
       ),
-      home: const MyHomePage(title: 'Oz'),
+      home: const MyHomePage(),
     );
   }
 }
 
 class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key, required this.title});
-
-  // This widget is the home page of your application. It is stateful, meaning
-  // that it has a State object (defined below) that contains fields that affect
-  // how it looks.
-
-  // This class is the configuration for the state. It holds the values (in this
-  // case the title) provided by the parent (in this case the App widget) and
-  // used by the build method of the State. Fields in a Widget subclass are
-  // always marked "final".
-
-  final String title;
-
+  const MyHomePage({super.key});
   @override
   State<MyHomePage> createState() => _MyHomePageState();
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  List<Component> components = [];
+  bool _isRunning = false;
+  Timer? _simulationTickTimer;
+
+  List<ComponentBox> components = [];
+  @override
+  void initState() {
+    super.initState();
+    _startSimulation();
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body:
-        Container(
-          color: Colors.white,
-          child:
-            Column(
-              children: [
-                Container(
-                  decoration: const BoxDecoration(
-                    border: Border(bottom: BorderSide(color: Colors.black))
-                  ),
-                  child:
-                  Row(
-                    children: const [
-                      Icon(Icons.add, size: toolbarIconSize),
-                      Icon(Icons.save, size: toolbarIconSize),
-                      Icon(Icons.print, size: toolbarIconSize),
-                      Icon(Icons.add_card, size: toolbarIconSize),
-                      Icon(Icons.close, size: toolbarIconSize),
-                    ],
-                  ),
-                ),
-                Expanded(child:
-                Row(
-                  children: [
-                    Expanded(child:
-                      Stack(children: <Widget>[
-                        GridPaper(
-                          divisions: 1,
-                          subdivisions: 1,
-                          interval: gridSize,
-                          color: Colors.black12,
-                          child: Container(),
-                        ),
-                        DragTarget<Component>(
-                          builder: (BuildContext context, List candidate, List rejected) {
-                            return Stack(children: components.isNotEmpty ? components : [Container()]);
-                          },
-                          onWillAccept: (data) {
-                            return true;
-                          },
-                          onAccept: (data) {
-                            setState(() {
-                              components.add(data);
-                            });
-                          },
-                        )
-                      ])
-                    ),
-                    Container(
-                      decoration: const BoxDecoration(
-                          border: Border(left: BorderSide(color: Colors.black))
-                      ),
-                      child:
-                      Column(
-                        children: [
-                          Text('Library'),
-                          Draggable(
-                            data: Component(name: 'circle', color: Colors.red),
-                            feedback: Container(height: 100, width: 100, color: Colors.red),
-                            childWhenDragging: Container(height: 100, width: 100, color: Colors.redAccent),
-                            child: Container(height: 100, width: 100, color: Colors.red),
-                          ),
-                          Draggable(
-                            data: Component(name: 'circle', color: Colors.green),
-                            feedback: Container(height: 100, width: 100, color: Colors.green),
-                            childWhenDragging: Container(height: 100, width: 100, color: Colors.greenAccent),
-                            child: Container(height: 100, width: 100, color: Colors.green),
-                          ),
-                          Draggable(
-                            data: Component(name: 'circle', color: Colors.blue),
-                            feedback: Container(height: 100, width: 100, color: Colors.blue),
-                            childWhenDragging: Container(height: 100, width: 100, color: Colors.blueAccent),
-                            child: Container(height: 100, width: 100, color: Colors.blue),
-                          ),
-                          Draggable(
-                            data: Component(name: 'circle', color: Colors.yellow),
-                            feedback: Container(height: 100, width: 100, color: Colors.yellow),
-                            childWhenDragging: Container(height: 100, width: 100, color: Colors.yellowAccent),
-                            child: Container(height: 100, width: 100, color: Colors.yellow),
-                          )
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-                ),
-                Container(
-                  decoration: const BoxDecoration(
-                    border: Border(top: BorderSide(color: Colors.black))
-                  ),
-                  child:
-                  Row(
-                    children: [
-                      const Text('Status:'),
-                      const Spacer(),
-                      Text('Last State Update: ${DateTime.now()}')
-                    ],
-                  ),
-                ),
-              ],
+      body: Container(
+        color: Colors.white,
+        child: Column(
+          children: [
+            if (showToolBar) toolBar(),
+            Expanded(
+              child: Row(
+                children: [
+                  workSpace(),
+                  sidebar(),
+                ],
+              ),
             ),
-          ),
+            if (showDebugBar) debugBar(),
+          ],
+        ),
+      ),
     );
   }
+
+  Widget workSpace() {
+    return Expanded(
+        child: Stack(children: <Widget>[
+      GridPaper(
+        divisions: 1,
+        subdivisions: 1,
+        interval: gridSize,
+        color: Colors.black12,
+        child: Container(),
+      ),
+      DragTarget<ComponentBox>(
+        builder: (BuildContext context, List candidate, List rejected) {
+          return Stack(children: components);
+        },
+        onWillAccept: (data) {
+          return true;
+        },
+        onAccept: (data) {
+          setState(() {
+            components.add(data);
+          });
+        },
+      )
+    ]));
+  }
+
+  Widget toolBar() {
+    return Container(
+      decoration: const BoxDecoration(
+          border: Border(bottom: BorderSide(color: Colors.black))),
+      child: Row(
+        children: [
+          const Icon(Icons.save, size: toolbarIconSize),
+          GestureDetector(
+            onTap: () {
+              printScreen();
+            },
+            child: const Icon(Icons.print, size: toolbarIconSize),
+          ),
+          GestureDetector(
+            onTap: () {
+              setState(() {
+                components = [];
+              });
+            },
+            child: const Tooltip(
+              message: "Reset Canvas",
+              child: Icon(Icons.restart_alt_rounded, size: toolbarIconSize),
+            ),
+          ),
+          GestureDetector(
+            onTap: () {
+              _isRunning ? _stopSimulation() : _startSimulation();
+            },
+            child: Tooltip(
+              message: _isRunning ? "Stop Simulation" : "Run Simultation",
+              child: _isRunning
+                  ? const Icon(Icons.stop_circle_outlined,
+                      size: toolbarIconSize)
+                  : const Icon(Icons.play_circle_outline,
+                      size: toolbarIconSize),
+            ),
+          )
+        ],
+      ),
+    );
+  }
+
+  void printScreen() {
+    Printing.layoutPdf(onLayout: (PdfPageFormat format) async {
+      final doc = pw.Document();
+
+      final image = await WidgetWrapper.fromKey(key: GlobalKey());
+
+      doc.addPage(pw.Page(
+          pageFormat: format,
+          build: (pw.Context context) {
+            return pw.Center(
+              child: pw.Expanded(
+                child: pw.Image(image),
+              ),
+            );
+          }));
+
+      return doc.save();
+    });
+  }
+
+  Widget sidebar() {
+    return Container(
+      width: 100,
+      color: Colors.brown[100],
+      child: ListView.builder(
+        itemCount: sidebarWidgets.length,
+        itemBuilder: (BuildContext context, int index) {
+          return sidebarWidgets[index];
+        },
+      ),
+    );
+  }
+
+  Widget debugBar() {
+    return Container(
+      decoration: const BoxDecoration(
+          border: Border(top: BorderSide(color: Colors.black))),
+      child: Row(
+        children: [
+          const Text('Status:'),
+          const Spacer(),
+          Text('Last State Update: ${DateTime.now()}')
+        ],
+      ),
+    );
+  }
+
+  void _startSimulation() {
+    setState(() {
+      _isRunning = true;
+    });
+    //Setup a timer to repeatibly call Simulator.tick();
+    // Simulator.run() would probably be better, but I cant't get to work without freezing flutter
+    _simulationTickTimer = Timer.periodic(tickRate, (timer) {
+      rohd.Simulator.tick();
+    });
+  }
+
+  void _stopSimulation() {
+    _simulationTickTimer?.cancel();
+    setState(() {
+      _isRunning = false;
+    });
+  }
 }
+
+ValueNotifier<Offset> dropPosition = ValueNotifier(Offset.zero);
+
+List<Draggable> sidebarWidgets = [
+  // XOR
+  Draggable(
+    data: const ComponentBox(
+      moduleType: rohd.Xor2Gate,
+    ),
+    feedback: Container(
+      width: 100,
+      height: 50,
+      color: Colors.red,
+      child: const Center(
+        child: Text(
+          'XOR',
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ),
+    ),
+    childWhenDragging: Container(
+      width: 100,
+      height: 50,
+      color: Colors.redAccent,
+      child: const Center(
+        child: Text(
+          'XOR',
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ),
+    ),
+    child: Container(
+      width: 100,
+      height: 50,
+      decoration: BoxDecoration(
+        border: Border.all(
+          color: Colors.black,
+          width: 2,
+        ),
+        color: Colors.deepPurple,
+      ),
+      child: const Center(
+        child: Text(
+          'XOR',
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ),
+    ),
+    onDragEnd: (DraggableDetails details) {
+      dropPosition.value = details.offset;
+    },
+  ),
+
+  // OR
+  Draggable(
+    data: const ComponentBox(
+      moduleType: rohd.Or2Gate,
+    ),
+    feedback: Container(
+      width: 100,
+      height: 50,
+      color: Colors.red,
+      child: const Center(
+        child: Text(
+          'OR',
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ),
+    ),
+    childWhenDragging: Container(
+      width: 100,
+      height: 50,
+      color: Colors.redAccent,
+      child: const Center(
+        child: Text(
+          'OR',
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ),
+    ),
+    child: Container(
+      width: 100,
+      height: 50,
+      decoration: BoxDecoration(
+        border: Border.all(
+          color: Colors.black,
+          width: 2,
+        ),
+        color: Colors.deepPurple,
+      ),
+      child: const Center(
+        child: Text(
+          'OR',
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ),
+    ),
+    onDragEnd: (DraggableDetails details) {
+      dropPosition.value = details.offset;
+    },
+  ),
+
+  // And
+  Draggable(
+    data: const ComponentBox(
+      moduleType: rohd.And2Gate,
+    ),
+    feedback: Container(
+      width: 100,
+      height: 50,
+      color: Colors.red,
+      child: const Center(
+        child: Text(
+          'AND',
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ),
+    ),
+    childWhenDragging: Container(
+      width: 100,
+      height: 50,
+      color: Colors.redAccent,
+      child: const Center(
+        child: Text(
+          'AND',
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ),
+    ),
+    child: Container(
+      width: 100,
+      height: 50,
+      decoration: BoxDecoration(
+        border: Border.all(
+          color: Colors.black,
+          width: 2,
+        ),
+        color: Colors.deepPurple,
+      ),
+      child: const Center(
+        child: Text(
+          'AND',
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ),
+    ),
+    onDragEnd: (DraggableDetails details) {
+      dropPosition.value = details.offset;
+    },
+  ),
+
+  // NOT
+  Draggable(
+    data: const ComponentBox(
+      moduleType: rohd.NotGate,
+    ),
+    feedback: Container(
+      width: 100,
+      height: 50,
+      color: Colors.red,
+      child: const Center(
+        child: Text(
+          'NOT',
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ),
+    ),
+    childWhenDragging: Container(
+      width: 100,
+      height: 50,
+      color: Colors.redAccent,
+      child: const Center(
+        child: Text(
+          'NOT',
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ),
+    ),
+    child: Container(
+      width: 100,
+      height: 50,
+      decoration: BoxDecoration(
+        border: Border.all(
+          color: Colors.black,
+          width: 2,
+        ),
+        color: Colors.deepPurple,
+      ),
+      child: const Center(
+        child: Text(
+          'NOT',
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ),
+    ),
+    onDragEnd: (DraggableDetails details) {
+      dropPosition.value = details.offset;
+    },
+  ),
+
+  //Flip Flop - Broken right now
+  // Draggable(
+  //   data: const ComponentBox(moduleType: rohd.FlipFlop),
+  //   feedback: Container(
+  //     width: 100,
+  //     height: 50,
+  //     color: Colors.red,
+  //     child: const Center(
+  //       child: Text(
+  //         'FlipFlop',
+  //         style: TextStyle(
+  //           color: Colors.white,
+  //           fontSize: 20,
+  //           fontWeight: FontWeight.bold,
+  //         ),
+  //       ),
+  //     ),
+  //   ),
+  //   childWhenDragging: Container(
+  //     width: 100,
+  //     height: 50,
+  //     color: Colors.redAccent,
+  //     child: const Center(
+  //       child: Text(
+  //         'FlipFlop',
+  //         style: TextStyle(
+  //           color: Colors.white,
+  //           fontSize: 20,
+  //           fontWeight: FontWeight.bold,
+  //         ),
+  //       ),
+  //     ),
+  //   ),
+  //   child: Container(
+  //     width: 100,
+  //     height: 50,
+  //     color: Colors.red,
+  //     child: const Center(
+  //       child: Text(
+  //         'FlipFlop',
+  //         style: TextStyle(
+  //           color: Colors.white,
+  //           fontSize: 20,
+  //           fontWeight: FontWeight.bold,
+  //         ),
+  //       ),
+  //     ),
+  //   ),
+  //   onDragEnd: (DraggableDetails details) {
+  //     dropPosition.value = details.offset;
+  //   },
+  // ),
+];
