@@ -129,7 +129,7 @@ class _MainPageState extends State<MainPage> {
     const double hiddenWidth = iconSize + padding;
 
     return SizedBox(
-      width: _showProjectExplorer ? hiddenWidth : shownWidth,
+      width: _showProjectExplorer ? shownWidth : hiddenWidth,
       child: Container(
           decoration: const BoxDecoration(
               border: Border(right: BorderSide(color: Colors.black))),
@@ -146,7 +146,7 @@ class _MainPageState extends State<MainPage> {
                   });
                 },
               ),
-              if (!_showProjectExplorer)
+              if (_showProjectExplorer)
                 const Padding(
                   padding: EdgeInsets.all(padding),
                   child: Text(
