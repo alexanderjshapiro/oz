@@ -5,6 +5,7 @@ import 'dart:async';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
+import 'canvas.dart';
 
 const double toolbarIconSize = 48;
 const double gridSize = 40;
@@ -22,33 +23,28 @@ void main() {
 class Oz extends StatelessWidget {
   const Oz({super.key});
 
-  // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: debug,
+    return const MaterialApp(
       title: 'Oz',
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
-      ),
-      home: const MainPage(),
+      home: MainPage(),
     );
   }
 }
 
 class MainPage extends StatefulWidget {
-  const MainPage({super.key});
+  const MainPage({Key? key}) : super(key: key);
 
   @override
   State<MainPage> createState() => _MainPageState();
 }
 
 class _MainPageState extends State<MainPage> {
+  final GlobalKey<CanvasState> _canvasKey = GlobalKey<CanvasState>();
+
   bool _showProjectExplorer = false;
   bool _isRunning = false;
   Timer? _simulationTickTimer;
-
-  List<Component> components = [];
 
   @override
   void initState() {
@@ -68,8 +64,8 @@ class _MainPageState extends State<MainPage> {
               child: Row(
                 children: [
                   projectExplorer(),
-                  canvas(),
-                  sidebar(),
+                  Canvas(key: _canvasKey),
+                  componentList(),
                 ],
               ),
             ),
@@ -96,7 +92,7 @@ class _MainPageState extends State<MainPage> {
           GestureDetector(
             onTap: () {
               setState(() {
-                components = [];
+                _canvasKey.currentState!.clearComponents();
               });
             },
             child: const Tooltip(
@@ -162,32 +158,6 @@ class _MainPageState extends State<MainPage> {
     );
   }
 
-  Widget canvas() {
-    return Expanded(
-        child: Stack(children: <Widget>[
-      GridPaper(
-        divisions: 1,
-        subdivisions: 1,
-        interval: gridSize,
-        color: Colors.black12,
-        child: Container(),
-      ),
-      DragTarget<Component>(
-        builder: (BuildContext context, List candidate, List rejected) {
-          return Stack(children: components);
-        },
-        onWillAccept: (data) {
-          return true;
-        },
-        onAccept: (data) {
-          setState(() {
-            components.add(data);
-          });
-        },
-      )
-    ]));
-  }
-
   void printScreen() {
     Printing.layoutPdf(onLayout: (PdfPageFormat format) async {
       final doc = pw.Document();
@@ -208,7 +178,7 @@ class _MainPageState extends State<MainPage> {
     });
   }
 
-  Widget sidebar() {
+  Widget componentList() {
     const double padding = 16;
 
     return Container(
@@ -226,9 +196,11 @@ class _MainPageState extends State<MainPage> {
                   rohd.NotGate
                 ])
                   Draggable(
-                    data: Component(
-                      moduleType: moduleType,
-                    ),
+                    data: {
+                      'component': Component(
+                        moduleType: moduleType,
+                      ),
+                    },
                     feedback: DefaultTextStyle(
                         style: const TextStyle(
                             color: Colors.black,
