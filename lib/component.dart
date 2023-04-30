@@ -104,10 +104,6 @@ class ComponentState extends State<Component> {
 
   @override
   Widget build(BuildContext context) {
-    return component();
-  }
-
-  Widget component() {
     const double componentNameSize = 28;
     const double portNameSize = 24;
     const double paddingSize = 8; // around edge of component

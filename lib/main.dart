@@ -40,7 +40,8 @@ class MainPage extends StatefulWidget {
 }
 
 class _MainPageState extends State<MainPage> {
-  final GlobalKey<CanvasState> _canvasKey = GlobalKey<CanvasState>();
+  final GlobalKey<CanvasState> _canvasKey = GlobalKey<
+      CanvasState>(); // TODO: consider using callback functions instead of GlobalKey
 
   bool _showProjectExplorer = false;
   bool _isRunning = false;
@@ -196,11 +197,9 @@ class _MainPageState extends State<MainPage> {
                   rohd.NotGate
                 ])
                   Draggable(
-                    data: {
-                      'component': Component(
-                        moduleType: moduleType,
-                      ),
-                    },
+                    data: Component(
+                      moduleType: moduleType,
+                    ),
                     feedback: DefaultTextStyle(
                         style: const TextStyle(
                             color: Colors.black,
@@ -221,8 +220,18 @@ class _MainPageState extends State<MainPage> {
                         fontSize: 24,
                       ),
                     ),
+                    onDragUpdate: (details) {
+                      setState(() {
+
+                      });
+                    },
                     onDragEnd: (DraggableDetails details) {
-                      dropPosition.value = details.offset;
+                      setState(() {
+                        _canvasKey.currentState!.addComponent(
+                            Component(moduleType: moduleType),
+                            offset: Offset(details.offset.dx - 56,
+                                details.offset.dy - 48)); // TODO: don't manually define offset's offset
+                      });
                     },
                   ),
               ],
@@ -261,5 +270,3 @@ class _MainPageState extends State<MainPage> {
     });
   }
 }
-
-ValueNotifier<Offset> dropPosition = ValueNotifier(Offset.zero);

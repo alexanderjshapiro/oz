@@ -14,7 +14,7 @@ class CanvasState extends State<Canvas> {
   final Map<Component, Offset> _componentPositions = {};
   final List<Component> _selectedComponents = [];
 
-  void _addComponent(Component component, Offset offset) {
+  void addComponent(Component component, {Offset offset = Offset.zero}) {
     setState(() {
       _components.add(component);
       _componentPositions[component] = offset;
@@ -37,14 +37,19 @@ class CanvasState extends State<Canvas> {
     });
   }
 
-  void _snapToGrid(Component component) {
-    final x =
-        (_componentPositions[component]!.dx / gridSize).round() * gridSize;
-    final y =
-        (_componentPositions[component]!.dy / gridSize).round() * gridSize;
-
+  void updateComponentPosition(Component component, Offset offset) {
     setState(() {
-      _componentPositions[component] = Offset(x, y);
+      _componentPositions[component] = Offset(
+          _componentPositions[component]!.dx + offset.dx,
+          _componentPositions[component]!.dy + offset.dy);
+    });
+  }
+
+  void _snapToGrid(Component component) {
+    setState(() {
+      _componentPositions[component] = Offset(
+          (_componentPositions[component]!.dx / gridSize).round() * gridSize,
+          (_componentPositions[component]!.dy / gridSize).round() * gridSize);
     });
   }
 
@@ -59,46 +64,30 @@ class CanvasState extends State<Canvas> {
         color: Colors.black12,
         child: Container(),
       ),
-      DragTarget<Map<String, dynamic>>(
-        builder: (BuildContext context,
-            List<Map<String, dynamic>?> candidateData,
-            List<dynamic> rejectedData) {
-          return Stack(
-            children: _components.map((component) {
-              return Positioned(
-                left: (_componentPositions[component]!.dx / gridSize).roundToDouble() * gridSize,
-                top: (_componentPositions[component]!.dy / gridSize).roundToDouble() * gridSize,
-                child: GestureDetector(
-                    onTap: () {
-                      setState(() {
-                        // _selectedComponents.add(component); TODO
-                      });
-                    },
-                    onPanUpdate: (details) {
-                      setState(() {
-                        _componentPositions[component] = Offset(
-                            _componentPositions[component]!.dx +
-                                details.delta.dx,
-                            _componentPositions[component]!.dy +
-                                details.delta.dy);
-                      });
-                    },
-                    onPanEnd: (details) {
-                      _snapToGrid(component);
-                    },
-                    child: component),
-              );
-            }).toList(),
+      Stack(
+        children: _components.map((component) {
+          return Positioned(
+            left: (_componentPositions[component]!.dx / gridSize)
+                    .roundToDouble() *
+                gridSize,
+            top: (_componentPositions[component]!.dy / gridSize)
+                    .roundToDouble() *
+                gridSize,
+            child: GestureDetector(
+                onTap: () {
+                  setState(() {
+                    // _selectedComponents.add(component); TODO
+                  });
+                },
+                onPanUpdate: (details) {
+                  updateComponentPosition(component, details.delta);
+                },
+                onPanEnd: (details) {
+                  _snapToGrid(component);
+                },
+                child: component),
           );
-        },
-        onWillAccept: (Map<String, dynamic>? data) {
-          return true;
-        },
-        onAccept: (Map<String, dynamic> data) {
-          setState(() {
-            _addComponent(data['component'], dropPosition.value);
-          });
-        },
+        }).toList(),
       )
     ]));
   }
