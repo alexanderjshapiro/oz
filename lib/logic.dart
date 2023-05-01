@@ -61,10 +61,6 @@ class Logic {
 
   Logic({required this.name, this.value = LogicValue.x});
 
-  void update() {
-    logicStreamController.add(LogicValueChanged(value, LogicValue.x));
-  }
-
   void inject(LogicValue newValue) =>
       SimulationUpdater.queue.addFirst(Tuple2(this, newValue));
 
@@ -104,16 +100,16 @@ class Module {
       isPreview = false}) {
     if (isPreview) {
       for (int i = 0; i < numInputs; i++) {
-        inputs["Input $i"] = Logic(name: "Input $i");
+        inputs["Input $i"] = Logic(name: "Input $i", value: LogicValue.z);
       }
       for (int i = 0; i < numOutputs; i++) {
-        outputs["Output $i"] = Logic(name: "Output $i");
+        outputs["Output $i"] = Logic(name: "Output $i", value: LogicValue.x);
       }
       return;
     }
     for (int i = 0; i < numInputs; i++) {
       String portName = NameGenerator.generateName();
-      inputs.putIfAbsent(portName, () => Logic(name: portName));
+      inputs.putIfAbsent(portName, () => Logic(name: portName, value: LogicValue.z));
       subscriptions.putIfAbsent(
         portName,
         () => inputs[portName]!.changed.listen(
@@ -127,7 +123,7 @@ class Module {
     }
     for (int i = 0; i < numOutputs; i++) {
       String portName = NameGenerator.generateName();
-      outputs.putIfAbsent(portName, () => Logic(name: portName));
+      outputs.putIfAbsent(portName, () => Logic(name: portName, value: LogicValue.x));
       subscriptions.putIfAbsent(
         portName,
         () => outputs[portName]!.changed.listen(
