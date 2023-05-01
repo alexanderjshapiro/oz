@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'main.dart';
 import 'dart:math';
-import 'package:rohd/rohd.dart' as rohd;
+import 'package:Oz/logic.dart' as rohd;
 
 dynamic wiringPortSelected;
 
@@ -51,36 +51,29 @@ class ComponentPreview extends StatelessWidget {
 }
 
 class ComponentState extends State<Component> {
-  late bool isPreview;
   late rohd.Module module; // Add module field
 
   @override
   void initState() {
     super.initState();
-    isPreview = widget.isPreview;
     if (widget.moduleType == rohd.Xor2Gate) {
-      module = rohd.Xor2Gate(rohd.Logic(), rohd.Logic());
-    } else if (widget.moduleType == rohd.And2Gate) {
-      module = rohd.And2Gate(rohd.Logic(), rohd.Logic());
+    module = rohd.Xor2Gate(isPreview: widget.isPreview);
+    }else if (widget.moduleType == rohd.And2Gate) {
+      module = rohd.And2Gate(isPreview: widget.isPreview);
     } else if (widget.moduleType == rohd.FlipFlop) {
-      module = rohd.FlipFlop(rohd.SimpleClockGenerator(60).clk, rohd.Logic());
+      module = rohd.FlipFlop(isPreview: widget.isPreview);
     } else if (widget.moduleType == rohd.NotGate) {
-      module = rohd.NotGate(rohd.Logic());
+      module = rohd.NotGate(isPreview: widget.isPreview);
     } else if (widget.moduleType == rohd.Or2Gate) {
-      module = rohd.Or2Gate(rohd.Logic(), rohd.Logic());
-    } else {
+      module = rohd.Or2Gate(isPreview: widget.isPreview);
+    }else {
+      debugPrint("${widget.moduleType}");
       throw ("Not yet implemented");
     }
 
-    if (!module.hasBuilt) {
-      module.build();
-    }
-
-    for (var input in module.inputs.values) {
-      input.changed.listen((event) {
-        setState(() {});
-      });
-    }
+    module.callback = () {
+      setState(() {});
+    };
   }
 
   _toggleInputValue(rohd.Logic input) {
@@ -176,7 +169,9 @@ class ComponentState extends State<Component> {
 
     return GestureDetector(
       onSecondaryTap: () {
+        // TODO fix delete to work right
         debugPrint("deleting Gate");
+        module.release();
         canvasKey.currentState!.removeComponent(widget);
       },
       child: Container(
@@ -218,14 +213,10 @@ class ComponentState extends State<Component> {
                               onDoubleTap: () {
                                 if (wiringPortSelected != null) {
                                   debugPrint(
-                                      "${wiringPortSelected.dstConnections}");
-                                  try {
-                                    wiringPortSelected
-                                        .gets(module.inputs[input.name]);
-                                    debugPrint("Connected Ports together");
-                                  } catch (A) {
-                                    debugPrint("Could not connect Inputs: $A");
-                                  }
+                                      "Connected $wiringPortSelected to ${input.name}");
+                                  module.swapInputs(wiringPortSelected,
+                                      module.inputs[input.name]!);
+                                  module.callback?.call();
                                 }
                                 wiringPortSelected = null;
                               },

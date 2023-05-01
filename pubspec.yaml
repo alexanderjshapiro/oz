@@ -39,6 +39,7 @@ dependencies:
   rohd: ^0.4.2
   printing: ^5.10.2
   pdf: ^3.10.0
+  tuple: ^2.0.1
 
 dev_dependencies:
   flutter_test:
