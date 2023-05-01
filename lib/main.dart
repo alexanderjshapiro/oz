@@ -39,10 +39,10 @@ class MainPage extends StatefulWidget {
   State<MainPage> createState() => _MainPageState();
 }
 
-class _MainPageState extends State<MainPage> {
-  final GlobalKey<CanvasState> _canvasKey = GlobalKey<
-      CanvasState>(); // TODO: consider using callback functions instead of GlobalKey
+late GlobalKey<CanvasState>
+    canvasKey; // TODO: consider using callback functions instead of GlobalKey
 
+class _MainPageState extends State<MainPage> {
   bool _showProjectExplorer = false;
   bool _isRunning = false;
   Timer? _simulationTickTimer;
@@ -51,6 +51,7 @@ class _MainPageState extends State<MainPage> {
   void initState() {
     super.initState();
     _startSimulation();
+    canvasKey = GlobalKey<CanvasState>();
   }
 
   @override
@@ -65,7 +66,7 @@ class _MainPageState extends State<MainPage> {
               child: Row(
                 children: [
                   projectExplorer(),
-                  Canvas(key: _canvasKey),
+                  Canvas(key: canvasKey),
                   componentList(),
                 ],
               ),
@@ -93,7 +94,7 @@ class _MainPageState extends State<MainPage> {
           GestureDetector(
             onTap: () {
               setState(() {
-                _canvasKey.currentState!.clearComponents();
+                canvasKey.currentState!.clearComponents();
               });
             },
             child: const Tooltip(
@@ -128,55 +129,61 @@ class _MainPageState extends State<MainPage> {
     return SizedBox(
       width: _showProjectExplorer ? shownWidth : hiddenWidth,
       child: Container(
-          decoration: const BoxDecoration(
-              border: Border(right: BorderSide(color: Colors.black))),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.start,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              IconButton(
-                icon: const Icon(Icons.folder),
-                iconSize: iconSize,
-                onPressed: () {
-                  setState(() {
-                    _showProjectExplorer = !_showProjectExplorer;
-                  });
-                },
-              ),
-              if (_showProjectExplorer)
-                const Padding(
-                  padding: EdgeInsets.all(padding),
-                  child: Text(
-                    'Project Explorer',
-                    style: TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                    ),
+        decoration: const BoxDecoration(
+            border: Border(right: BorderSide(color: Colors.black))),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            IconButton(
+              icon: const Icon(Icons.folder),
+              iconSize: iconSize,
+              onPressed: () {
+                setState(() {
+                  _showProjectExplorer = !_showProjectExplorer;
+                });
+              },
+            ),
+            if (_showProjectExplorer)
+              const Padding(
+                padding: EdgeInsets.all(padding),
+                child: Text(
+                  'Project Explorer',
+                  style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
                   ),
-                )
-            ],
-          )),
+                ),
+              )
+          ],
+        ),
+      ),
     );
   }
 
   void printScreen() {
-    Printing.layoutPdf(onLayout: (PdfPageFormat format) async {
-      final doc = pw.Document();
+    Printing.layoutPdf(
+      onLayout: (PdfPageFormat format) async {
+        final doc = pw.Document();
 
-      final image = await WidgetWrapper.fromKey(key: GlobalKey());
+        final image = await WidgetWrapper.fromKey(key: GlobalKey());
 
-      doc.addPage(pw.Page(
-          pageFormat: format,
-          build: (pw.Context context) {
-            return pw.Center(
-              child: pw.Expanded(
-                child: pw.Image(image),
-              ),
-            );
-          }));
+        doc.addPage(
+          pw.Page(
+            pageFormat: format,
+            build: (pw.Context context) {
+              return pw.Center(
+                child: pw.Expanded(
+                  child: pw.Image(image),
+                ),
+              );
+            },
+          ),
+        );
 
-      return doc.save();
-    });
+        return doc.save();
+      },
+    );
   }
 
   Widget componentList() {
@@ -221,16 +228,16 @@ class _MainPageState extends State<MainPage> {
                       ),
                     ),
                     onDragUpdate: (details) {
-                      setState(() {
-
-                      });
+                      setState(() {});
                     },
                     onDragEnd: (DraggableDetails details) {
                       setState(() {
-                        _canvasKey.currentState!.addComponent(
+                        canvasKey.currentState!.addComponent(
                             Component(moduleType: moduleType),
-                            offset: Offset(details.offset.dx - 56,
-                                details.offset.dy - 48)); // TODO: don't manually define offset's offset
+                            offset: Offset(
+                                details.offset.dx - 56,
+                                details.offset.dy -
+                                    48)); // TODO: don't manually define offset's offset
                       });
                     },
                   ),

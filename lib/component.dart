@@ -174,108 +174,107 @@ class ComponentState extends State<Component> {
 
     double componentHeight = nameAreaHeight + portAreaHeight;
 
-    return Stack(
-      children: [
-        Container(
-            padding: const EdgeInsets.all(paddingSize),
-            width: componentWidth,
-            height: componentHeight,
-            decoration: BoxDecoration(
-                color: Colors.white,
-                border: Border.all(width: borderSize)
-            ),
-            child: Column(
-              children: [
-                // Component Name
-                SizedBox(
-                  height: nameAreaHeight - (borderSize + paddingSize),
-                  child: Text(
-                    module.name,
-                    style: const TextStyle(
-                      fontSize: componentNameSize,
-                    ),
-                  ),
+    return GestureDetector(
+      onSecondaryTap: () {
+        debugPrint("deleting Gate");
+        canvasKey.currentState!.removeComponent(widget);
+      },
+      child: Container(
+        padding: const EdgeInsets.all(paddingSize),
+        width: componentWidth,
+        height: componentHeight,
+        decoration: BoxDecoration(
+            color: Colors.white, border: Border.all(width: borderSize)),
+        child: Column(
+          children: [
+            // Component Name
+            SizedBox(
+              height: nameAreaHeight - (borderSize + paddingSize),
+              child: Text(
+                module.name,
+                style: const TextStyle(
+                  fontSize: componentNameSize,
                 ),
-                // Inputs and Outputs
-                SizedBox(
-                  height: portAreaHeight - (borderSize + paddingSize),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              ),
+            ),
+            // Inputs and Outputs
+            SizedBox(
+              height: portAreaHeight - (borderSize + paddingSize),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Input column
+                  Column(
+                    mainAxisAlignment: MainAxisAlignment.start,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Input column
-                      Column(
-                        mainAxisAlignment: MainAxisAlignment.start,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          for (var input in module.inputs.values)
-                            SizedBox(
-                                height: portHeight,
-                                child: Center(
-                                  child: GestureDetector(
-                                    onTap: () => _toggleInputValue(input),
-                                    onDoubleTap: () {
-                                      if (wiringPortSelected != null) {
-                                        debugPrint(
-                                            "${wiringPortSelected.dstConnections}");
-                                        try {
-                                          wiringPortSelected
-                                              .gets(module.inputs[input.name]);
-                                          debugPrint(
-                                              "Connected Ports together");
-                                        } catch (A) {
-                                          debugPrint(
-                                              "Could not connect Inputs: $A");
-                                        }
-                                      }
-                                      wiringPortSelected = null;
-                                    },
-                                    child: Text(input.name,
-                                        style: TextStyle(
-                                            fontSize: portNameSize,
-                                            fontFamily: 'Courier New',
-                                            color: getColor(input.value))),
-                                  ),
-                                ))
-                        ],
-                      ),
-                      // Output column
-                      Column(
-                        mainAxisAlignment: MainAxisAlignment.start,
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: [
-                          for (var output in module.outputs.values)
-                            SizedBox(
-                                height: portHeight,
-                                child: Center(
-                                  child: GestureDetector(
-                                    onDoubleTap: () {
-                                      if (wiringPortSelected == null) {
-                                        debugPrint(
-                                            "Selected Output for wiring");
-                                        wiringPortSelected = output;
-                                      } else {
-                                        wiringPortSelected = null;
-                                        debugPrint(
-                                            "Deselected Output for wiring");
-                                      }
-                                    },
-                                    child: Text(output.name,
-                                        textAlign: TextAlign.right,
-                                        style: TextStyle(
-                                            fontSize: portNameSize,
-                                            fontFamily: 'Courier New',
-                                            color: getColor(output.value))),
-                                  ),
-                                ))
-                        ],
-                      ),
+                      for (var input in module.inputs.values)
+                        SizedBox(
+                          height: portHeight,
+                          child: Center(
+                            child: GestureDetector(
+                              onTap: () => _toggleInputValue(input),
+                              onDoubleTap: () {
+                                if (wiringPortSelected != null) {
+                                  debugPrint(
+                                      "${wiringPortSelected.dstConnections}");
+                                  try {
+                                    wiringPortSelected
+                                        .gets(module.inputs[input.name]);
+                                    debugPrint("Connected Ports together");
+                                  } catch (A) {
+                                    debugPrint("Could not connect Inputs: $A");
+                                  }
+                                }
+                                wiringPortSelected = null;
+                              },
+                              child: Text(input.name,
+                                  style: TextStyle(
+                                      fontSize: portNameSize,
+                                      fontFamily: 'Courier New',
+                                      color: getColor(input.value))),
+                            ),
+                          ),
+                        )
                     ],
                   ),
-                )
-              ],
-            )),
-      ],
+                  // Output column
+                  Column(
+                    mainAxisAlignment: MainAxisAlignment.start,
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      for (var output in module.outputs.values)
+                        SizedBox(
+                          height: portHeight,
+                          child: Center(
+                            child: GestureDetector(
+                              onDoubleTap: () {
+                                if (wiringPortSelected == null) {
+                                  debugPrint("Selected Output for wiring");
+                                  wiringPortSelected = output;
+                                } else {
+                                  wiringPortSelected = null;
+                                  debugPrint("Deselected Output for wiring");
+                                }
+                              },
+                              child: Text(output.name,
+                                  textAlign: TextAlign.right,
+                                  style: TextStyle(
+                                      fontSize: portNameSize,
+                                      fontFamily: 'Courier New',
+                                      color: getColor(output.value))),
+                            ),
+                          ),
+                        )
+                    ],
+                  ),
+                ],
+              ),
+            )
+          ],
+        ),
+      ),
     );
   }
 }

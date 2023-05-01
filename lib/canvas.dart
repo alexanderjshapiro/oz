@@ -21,7 +21,7 @@ class CanvasState extends State<Canvas> {
     });
   }
 
-  void _removeComponent(Component component) {
+  void removeComponent(Component component) {
     setState(() {
       _components.remove(component);
       _componentPositions.remove(component);
