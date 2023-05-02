@@ -5,14 +5,23 @@ import 'package:Oz/logic.dart' as rohd;
 
 rohd.Logic? wiringPortSelected;
 
+// This should allow us to import in new modules during runtime
+Map<String, Function> gateTypes = {
+  'Xor2Gate': () => rohd.Xor2Gate(),
+  'And2Gate': () => rohd.And2Gate(),
+  'FlipFlop': () => rohd.FlipFlop(),
+  'NotGate': () => rohd.NotGate(),
+  'Or2Gate': () => rohd.Or2Gate(),
+  'SN74LS373': () => rohd.SN74LS373(),
+  'BinarySwitch': () => rohd.BinarySwitch(),
+};
+
 class Component extends StatefulWidget {
   final Type moduleType; // Add module field
-  final List? inputs;
 
   const Component({
     Key? key, // Make key nullable
     required this.moduleType, // Add module parameter
-    this.inputs,
   }) : super(key: key); // Call super with nullable key
 
   @override
@@ -46,23 +55,7 @@ class ComponentState extends State<Component> {
   @override
   void initState() {
     super.initState();
-    if (widget.moduleType == rohd.Xor2Gate) {
-    module = rohd.Xor2Gate();
-    }else if (widget.moduleType == rohd.And2Gate) {
-      module = rohd.And2Gate();
-    } else if (widget.moduleType == rohd.FlipFlop) {
-      module = rohd.FlipFlop();
-    } else if (widget.moduleType == rohd.NotGate) {
-      module = rohd.NotGate();
-    } else if (widget.moduleType == rohd.Or2Gate) {
-      module = rohd.Or2Gate();
-    }else if (widget.moduleType == rohd.SN74LS373) {
-      module = rohd.SN74LS373();
-    }else {
-      debugPrint("${widget.moduleType}");
-      throw ("Not yet implemented");
-    }
-
+    module = gateTypes[widget.moduleType.toString()]!.call();
     module.callback = () {
       setState(() {});
     };
@@ -89,6 +82,9 @@ class ComponentState extends State<Component> {
 
   @override
   Widget build(BuildContext context) {
+    if (widget.moduleType == rohd.BinarySwitch) {
+      return buttonBuildOverride();
+    }
     const double componentNameSize = 28;
     const double portNameSize = 24;
     const double paddingSize = 8; // around edge of component
@@ -201,12 +197,13 @@ class ComponentState extends State<Component> {
                           height: portHeight,
                           child: Center(
                             child: GestureDetector(
-                              onTap: () => _toggleInputValue(input.item2),
+                              //onTap: () => _toggleInputValue(input.item2),
                               onDoubleTap: () {
                                 if (wiringPortSelected != null) {
                                   debugPrint(
                                       "Connected $wiringPortSelected to ${input.item1}");
-                                  module.swapInputs(wiringPortSelected!,input.item2);
+                                  module.swapInputs(
+                                      wiringPortSelected!, input.item2);
                                   module.callback?.call();
                                 }
                                 wiringPortSelected = null;
@@ -257,6 +254,45 @@ class ComponentState extends State<Component> {
           ],
         ),
       ),
+    );
+  }
+
+  Widget buttonBuildOverride() {
+    //TODO Figure out a better way render Button component
+    return Stack(
+      children: [
+        Container(
+          width: alignSizeToGrid(50),
+          height: alignSizeToGrid(50),
+          color: Colors.blueGrey,
+        ),
+        Positioned.fill(
+          top: 5,
+          bottom: 5,
+          left: 5,
+          right: 5,
+          child: GestureDetector(
+            onTap: () {
+              _toggleInputValue(module.inputs[0].item2);
+            },
+            onDoubleTap: () {
+              if (wiringPortSelected == null) {
+                debugPrint("Selected Output for wiring");
+                wiringPortSelected = module.outputs[0].item2;
+              } else {
+                wiringPortSelected = null;
+                debugPrint("Deselected Output for wiring");
+              }
+            },
+            child: Container(
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: getColor(module.outputs[0].item2.value),
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

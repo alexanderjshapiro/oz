@@ -263,6 +263,15 @@ class SN74LS373 extends Module {
   }
 }
 
+class BinarySwitch extends Module {
+  BinarySwitch({bool isPreview = false})
+      : super(name: "BinarySwitch", numInputs: 1, numOutputs: 1);
+
+  @override
+  solveLogic(LogicValueChanged change, [Logic? caller]) =>
+      outputs[0].item2.put(inputs[0].item2.value);
+}
+
 class PortKeyGen {
   static int _portCounter = 0;
   static String generateKey() {

@@ -237,6 +237,7 @@ class _MainPageState extends State<MainPage> {
               rohd.NotGate,
               rohd.FlipFlop,
               rohd.SN74LS373,
+              rohd.BinarySwitch,
             ])
               Draggable(
                 data: Component(
