@@ -97,10 +97,11 @@ class Module {
     required this.name,
     required int numInputs,
     required int numOutputs,
+    List<String>? inputNames,
+    List<String>? outputNames,
   }) {
     inputs = List.generate(numInputs, (index) {
-      Logic logic =
-          Logic(name: PortKeyGen.generateKey(), value: LogicValue.z);
+      Logic logic = Logic(name: PortKeyGen.generateKey(), value: LogicValue.z);
       StreamSubscription<LogicValueChanged> sub = logic.changed.listen(
         (event) {
           //debugPrint("${logic.name} has been changed");
@@ -108,19 +109,18 @@ class Module {
           callback?.call();
         },
       );
-      return Tuple3("In $index", logic, sub);
+      return Tuple3(inputNames?[index] ?? "In ${index + 1}", logic, sub);
     });
 
     outputs = List.generate(numOutputs, (index) {
-      Logic logic =
-          Logic(name: PortKeyGen.generateKey(), value: LogicValue.x);
+      Logic logic = Logic(name: PortKeyGen.generateKey(), value: LogicValue.x);
       StreamSubscription<LogicValueChanged> sub = logic.changed.listen(
         (event) {
           //debugPrint("${logic.name} has been changed");
           callback?.call();
         },
       );
-      return Tuple3("Out $index", logic, sub);
+      return Tuple3(outputNames?[index] ?? "Out ${index + 1}", logic, sub);
     });
   }
 
@@ -199,6 +199,8 @@ class FlipFlop extends Module {
           name: "FlipFlop",
           numInputs: 2,
           numOutputs: 1,
+          inputNames: ["Q", "Data"],
+          outputNames: ["Out"],
         );
 
   @override
@@ -207,6 +209,56 @@ class FlipFlop extends Module {
         change.newValue == LogicValue.one &&
         change.previousValue == LogicValue.zero) {
       outputs[0].item2.put(inputs[1].item2.value);
+    }
+  }
+}
+
+class SN74LS373 extends Module {
+  SN74LS373({bool isPreview = false})
+      : super(
+          name: "SN74LS373",
+          numInputs: 10,
+          numOutputs: 8,
+          inputNames: [
+            "D7",
+            "D6",
+            "D5",
+            "D4",
+            "D3",
+            "D2",
+            "D1",
+            "D0",
+            "Clk",
+            "OE"
+          ],
+          outputNames: ["Q7", "Q6", "Q5", "Q4", "Q3", "Q2", "Q1", "Q0"],
+        );
+  List<LogicValue> latch = List.generate(8, (index) => LogicValue.x);
+
+  @override
+  solveLogic(LogicValueChanged change, [Logic? caller]) {
+    //update latch
+    if (caller == inputs[8].item2 &&
+        change.newValue == LogicValue.one &&
+        change.previousValue == LogicValue.zero) {
+      for (int i = 0; i < 8; i++) {
+        latch[i] = inputs[0].item2.value;
+      }
+    }
+
+    // check if enabled
+    if (inputs[9].item2.value == LogicValue.one) {
+      for (int i = 0; i < 8; i++) {
+        if (latch[i] != outputs[i].item2.value) {
+          outputs[0].item2.put(latch[i]);
+        }
+      }
+    } else {
+      for (int i = 0; i < 8; i++) {
+        if (LogicValue.z != outputs[i].item2.value) {
+          outputs[0].item2.put(LogicValue.z);
+        }
+      }
     }
   }
 }

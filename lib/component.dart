@@ -56,6 +56,8 @@ class ComponentState extends State<Component> {
       module = rohd.NotGate();
     } else if (widget.moduleType == rohd.Or2Gate) {
       module = rohd.Or2Gate();
+    }else if (widget.moduleType == rohd.SN74LS373) {
+      module = rohd.SN74LS373();
     }else {
       debugPrint("${widget.moduleType}");
       throw ("Not yet implemented");
