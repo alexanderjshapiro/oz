@@ -185,7 +185,7 @@ class And2Gate extends Module {
 }
 
 class NotGate extends Module {
-  NotGate({bool isPreview = false})
+  NotGate()
       : super(name: "NotGate", numInputs: 1, numOutputs: 1);
 
   @override
@@ -194,7 +194,7 @@ class NotGate extends Module {
 }
 
 class FlipFlop extends Module {
-  FlipFlop({bool isPreview = false})
+  FlipFlop()
       : super(
           name: "FlipFlop",
           numInputs: 2,
@@ -214,7 +214,7 @@ class FlipFlop extends Module {
 }
 
 class SN74LS373 extends Module {
-  SN74LS373({bool isPreview = false})
+  SN74LS373()
       : super(
           name: "SN74LS373",
           numInputs: 10,
@@ -242,7 +242,7 @@ class SN74LS373 extends Module {
         change.newValue == LogicValue.one &&
         change.previousValue == LogicValue.zero) {
       for (int i = 0; i < 8; i++) {
-        latch[i] = inputs[0].item2.value;
+        latch[i] = inputs[i].item2.value;
       }
     }
 
@@ -250,26 +250,37 @@ class SN74LS373 extends Module {
     if (inputs[9].item2.value == LogicValue.one) {
       for (int i = 0; i < 8; i++) {
         if (latch[i] != outputs[i].item2.value) {
-          outputs[0].item2.put(latch[i]);
+          outputs[i].item2.put(latch[i]);
         }
       }
     } else {
       for (int i = 0; i < 8; i++) {
         if (LogicValue.z != outputs[i].item2.value) {
-          outputs[0].item2.put(LogicValue.z);
+          outputs[i].item2.put(LogicValue.z);
         }
       }
     }
+    callback?.call();
   }
 }
 
 class BinarySwitch extends Module {
-  BinarySwitch({bool isPreview = false})
+  BinarySwitch()
       : super(name: "BinarySwitch", numInputs: 1, numOutputs: 1);
 
   @override
   solveLogic(LogicValueChanged change, [Logic? caller]) =>
       outputs[0].item2.put(inputs[0].item2.value);
+}
+
+class HexDisplay extends Module {
+  HexDisplay()
+      : super(name: "HexDisplay", numInputs: 4, numOutputs: 0, inputNames: ["B 8","B 4","B 2","B 1"]);
+
+  @override
+  solveLogic(LogicValueChanged change, [Logic? caller]){
+    return;
+  }
 }
 
 class PortKeyGen {

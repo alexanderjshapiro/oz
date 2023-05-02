@@ -238,6 +238,7 @@ class _MainPageState extends State<MainPage> {
               rohd.FlipFlop,
               rohd.SN74LS373,
               rohd.BinarySwitch,
+              rohd.HexDisplay
             ])
               Draggable(
                 data: Component(

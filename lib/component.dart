@@ -14,6 +14,7 @@ Map<String, Function> gateTypes = {
   'Or2Gate': () => rohd.Or2Gate(),
   'SN74LS373': () => rohd.SN74LS373(),
   'BinarySwitch': () => rohd.BinarySwitch(),
+  'HexDisplay': () => rohd.HexDisplay(),
 };
 
 class Component extends StatefulWidget {
@@ -85,6 +86,7 @@ class ComponentState extends State<Component> {
     if (widget.moduleType == rohd.BinarySwitch) {
       return buttonBuildOverride();
     }
+
     const double componentNameSize = 28;
     const double portNameSize = 24;
     const double paddingSize = 8; // around edge of component
@@ -154,6 +156,137 @@ class ComponentState extends State<Component> {
     double portAreaHeight = alignSizeToGrid(minPortAreaHeight, div: 2);
 
     double componentHeight = nameAreaHeight + portAreaHeight;
+
+    if (widget.moduleType == rohd.HexDisplay) {
+      // TODO: clean up code
+      return GestureDetector(
+        onSecondaryTap: () {
+          // TODO fix delete to work right
+          debugPrint("deleting Gate");
+          module.release();
+          canvasKey.currentState!.removeComponent(widget);
+        },
+        child: Container(
+          padding: const EdgeInsets.all(paddingSize),
+          width: alignSizeToGrid(minComponentWidth =
+              ((borderSize + paddingSize) * 2) +
+                  max((inputNameWidth + minCenterPadding + 150), nameWidth)),
+          height: componentHeight,
+          decoration: BoxDecoration(
+              color: Colors.white, border: Border.all(width: borderSize)),
+          child: Column(
+            children: [
+              // Component Name
+              SizedBox(
+                height: nameAreaHeight - (borderSize + paddingSize),
+                child: Text(
+                  module.name,
+                  style: const TextStyle(
+                    fontSize: componentNameSize,
+                  ),
+                ),
+              ),
+              // Inputs and Outputs
+              SizedBox(
+                height: portAreaHeight - (borderSize + paddingSize),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Input column
+                    Column(
+                      mainAxisAlignment: MainAxisAlignment.start,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        for (var input in module.inputs)
+                          SizedBox(
+                            height: portHeight,
+                            child: Center(
+                              child: GestureDetector(
+                                //onTap: () => _toggleInputValue(input.item2),
+                                onDoubleTap: () {
+                                  if (wiringPortSelected != null) {
+                                    debugPrint(
+                                        "Connected $wiringPortSelected to ${input.item1}");
+                                    module.swapInputs(
+                                        wiringPortSelected!, input.item2);
+                                    module.callback?.call();
+                                  }
+                                  wiringPortSelected = null;
+                                },
+                                child: Text(input.item1,
+                                    style: TextStyle(
+                                        fontSize: portNameSize,
+                                        fontFamily: 'Courier New',
+                                        color: getColor(input.item2.value))),
+                              ),
+                            ),
+                          )
+                      ],
+                    ),
+                    // Output column
+                    Container(
+                      width: 150,
+                      height: portAreaHeight,
+                      color: Colors.black,
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Stack(
+                          children: [
+                            //Creates a hex display/ nixie tube type effect
+                            for (var char in "1234567890ABCDEF".characters)
+                              Opacity(
+                                opacity: 0.05,
+                                child: Text(
+                                  char,
+                                  style: const TextStyle(
+                                    fontSize: 1000,
+                                    fontFamily: 'Consolas',
+                                    color: Colors.grey,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
+                              ),
+                            Text(
+                              ((module.inputs[0].item2.value ==
+                                              rohd.LogicValue.one
+                                          ? 8
+                                          : 0) +
+                                      (module.inputs[1].item2.value ==
+                                              rohd.LogicValue.one
+                                          ? 4
+                                          : 0) +
+                                      (module.inputs[2].item2.value ==
+                                              rohd.LogicValue.one
+                                          ? 2
+                                          : 0) +
+                                      (module.inputs[3].item2.value ==
+                                              rohd.LogicValue.one
+                                          ? 1
+                                          : 0))
+                                  .toRadixString(16)
+                                  .toUpperCase(),
+                              style: const TextStyle(
+                                  fontSize: 1000,
+                                  fontFamily: 'Consolas',
+                                  color: Colors.amber,
+                                  shadows: [
+                                    Shadow(blurRadius: 12, color: Colors.red)
+                                  ]),
+                              textAlign: TextAlign.center,
+                            ),
+                          ],
+                        ),
+                      ),
+                    )
+                  ],
+                ),
+              )
+            ],
+          ),
+        ),
+      );
+    }
 
     return GestureDetector(
       onSecondaryTap: () {
@@ -259,40 +392,48 @@ class ComponentState extends State<Component> {
 
   Widget buttonBuildOverride() {
     //TODO Figure out a better way render Button component
-    return Stack(
-      children: [
-        Container(
-          width: alignSizeToGrid(50),
-          height: alignSizeToGrid(50),
-          color: Colors.blueGrey,
-        ),
-        Positioned.fill(
-          top: 5,
-          bottom: 5,
-          left: 5,
-          right: 5,
-          child: GestureDetector(
-            onTap: () {
-              _toggleInputValue(module.inputs[0].item2);
-            },
-            onDoubleTap: () {
-              if (wiringPortSelected == null) {
-                debugPrint("Selected Output for wiring");
-                wiringPortSelected = module.outputs[0].item2;
-              } else {
-                wiringPortSelected = null;
-                debugPrint("Deselected Output for wiring");
-              }
-            },
-            child: Container(
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: getColor(module.outputs[0].item2.value),
+    return GestureDetector(
+      onSecondaryTap: () {
+        // TODO fix delete to work right
+        debugPrint("deleting Gate");
+        module.release();
+        canvasKey.currentState!.removeComponent(widget);
+      },
+      child: Stack(
+        children: [
+          Container(
+            width: alignSizeToGrid(50),
+            height: alignSizeToGrid(50),
+            color: Colors.blueGrey,
+          ),
+          Positioned.fill(
+            top: 5,
+            bottom: 5,
+            left: 5,
+            right: 5,
+            child: GestureDetector(
+              onTap: () {
+                _toggleInputValue(module.inputs[0].item2);
+              },
+              onDoubleTap: () {
+                if (wiringPortSelected == null) {
+                  debugPrint("Selected Output for wiring");
+                  wiringPortSelected = module.outputs[0].item2;
+                } else {
+                  wiringPortSelected = null;
+                  debugPrint("Deselected Output for wiring");
+                }
+              },
+              child: Container(
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: getColor(module.outputs[0].item2.value),
+                ),
               ),
             ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }
