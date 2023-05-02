@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'dart:async';
 import 'dart:collection';
 import 'package:tuple/tuple.dart';
@@ -88,73 +87,63 @@ class LogicValueChanged {
 /// created with the number of input ports and output ports
 class Module {
   Function? callback;
-  Map<String, Logic> inputs = {};
-  Map<String, Logic> outputs = {};
-  Map<String, StreamSubscription<LogicValueChanged>> subscriptions = {};
+  late List<Tuple3<String, Logic, StreamSubscription<LogicValueChanged>>>
+      inputs;
+  late List<Tuple3<String, Logic, StreamSubscription<LogicValueChanged>>>
+      outputs;
   String name;
 
-  Module(
-      {required this.name,
-      required int numInputs,
-      required int numOutputs,
-      isPreview = false}) {
-    if (isPreview) {
-      for (int i = 0; i < numInputs; i++) {
-        inputs["Input $i"] = Logic(name: "Input $i", value: LogicValue.z);
-      }
-      for (int i = 0; i < numOutputs; i++) {
-        outputs["Output $i"] = Logic(name: "Output $i", value: LogicValue.x);
-      }
-      return;
-    }
-    for (int i = 0; i < numInputs; i++) {
-      String portName = NameGenerator.generateName();
-      inputs.putIfAbsent(portName, () => Logic(name: portName, value: LogicValue.z));
-      subscriptions.putIfAbsent(
-        portName,
-        () => inputs[portName]!.changed.listen(
-          (event) {
-            debugPrint("$portName has been changed");
-            solveLogic(event, inputs[portName]);
-            callback?.call();
-          },
-        ),
+  Module({
+    required this.name,
+    required int numInputs,
+    required int numOutputs,
+  }) {
+    inputs = List.generate(numInputs, (index) {
+      Logic logic =
+          Logic(name: PortKeyGen.generateKey(), value: LogicValue.z);
+      StreamSubscription<LogicValueChanged> sub = logic.changed.listen(
+        (event) {
+          //debugPrint("${logic.name} has been changed");
+          solveLogic(event, logic);
+          callback?.call();
+        },
       );
-    }
-    for (int i = 0; i < numOutputs; i++) {
-      String portName = NameGenerator.generateName();
-      outputs.putIfAbsent(portName, () => Logic(name: portName, value: LogicValue.x));
-      subscriptions.putIfAbsent(
-        portName,
-        () => outputs[portName]!.changed.listen(
-          (event) {
-            debugPrint("${outputs.values.first.name} has been changed");
-            callback?.call();
-          },
-        ),
+      return Tuple3("In $index", logic, sub);
+    });
+
+    outputs = List.generate(numOutputs, (index) {
+      Logic logic =
+          Logic(name: PortKeyGen.generateKey(), value: LogicValue.x);
+      StreamSubscription<LogicValueChanged> sub = logic.changed.listen(
+        (event) {
+          //debugPrint("${logic.name} has been changed");
+          callback?.call();
+        },
       );
-    }
+      return Tuple3("Out $index", logic, sub);
+    });
   }
 
   void swapInputs(Logic newLogic, Logic oldLogic) {
-    // TODO Stop pin connections from being shuffled around when making connection
-    subscriptions[oldLogic.name]?.cancel();
-    inputs.remove(oldLogic.name);
-    inputs.putIfAbsent(newLogic.name, () => newLogic);
-    subscriptions.putIfAbsent(
-        newLogic.name,
-        () => newLogic.changed.listen((event) {
-              debugPrint("${newLogic.name} has been changed");
-              solveLogic(event, newLogic);
-              callback?.call();
-            }));
+    var matchingTuple = inputs.indexWhere((tuple) => tuple.item2 == oldLogic);
+    inputs[matchingTuple].item3.cancel();
+    StreamSubscription<LogicValueChanged> sub = newLogic.changed.listen(
+      (event) {
+        //debugPrint("${newLogic.name} has been changed");
+        solveLogic(event, newLogic);
+        callback?.call();
+      },
+    );
+    inputs[matchingTuple] = Tuple3(inputs[matchingTuple].item1, newLogic, sub);
   }
 
   void release() {
-    subscriptions.forEach((key, value) {
-      value.cancel();
-    });
-    subscriptions.clear();
+    for (var element in inputs) {
+      element.item3.cancel();
+    }
+    for (var element in outputs) {
+      element.item3.cancel();
+    }
   }
 
   solveLogic(LogicValueChanged change, [Logic? caller]) =>
@@ -162,81 +151,71 @@ class Module {
 }
 
 class Xor2Gate extends Module {
-  Xor2Gate({bool isPreview = false})
+  Xor2Gate()
       : super(
-            name: "Xor2Gate",
-            numInputs: 2,
-            numOutputs: 1,
-            isPreview: isPreview);
+          name: "Xor2Gate",
+          numInputs: 2,
+          numOutputs: 1,
+        );
 
   @override
-  solveLogic(LogicValueChanged change, [Logic? caller]) {
-    outputs.values.first.put(
-        inputs.values.elementAt(0).value ^ inputs.values.elementAt(1).value);
-  }
+  solveLogic(LogicValueChanged change, [Logic? caller]) =>
+      outputs[0].item2.put(inputs[0].item2.value ^ inputs[1].item2.value);
 }
 
 class Or2Gate extends Module {
-  Or2Gate({bool isPreview = false})
-      : super(
-            name: "Or2Gate", numInputs: 2, numOutputs: 1, isPreview: isPreview);
+  Or2Gate() : super(name: "Or2Gate", numInputs: 2, numOutputs: 1);
 
   @override
-  solveLogic(LogicValueChanged change, [Logic? caller]) {
-    outputs.values.first.put(
-        inputs.values.elementAt(0).value | inputs.values.elementAt(1).value);
-  }
+  solveLogic(LogicValueChanged change, [Logic? caller]) =>
+      outputs[0].item2.put(inputs[0].item2.value | inputs[1].item2.value);
 }
 
 class And2Gate extends Module {
-  And2Gate({bool isPreview = false})
+  And2Gate()
       : super(
-            name: "And2Gate",
-            numInputs: 2,
-            numOutputs: 1,
-            isPreview: isPreview);
+          name: "And2Gate",
+          numInputs: 2,
+          numOutputs: 1,
+        );
 
   @override
-  solveLogic(LogicValueChanged change, [Logic? caller]) {
-    outputs.values.first.put(
-        inputs.values.elementAt(0).value & inputs.values.elementAt(1).value);
-  }
+  solveLogic(LogicValueChanged change, [Logic? caller]) =>
+      outputs[0].item2.put(inputs[0].item2.value & inputs[1].item2.value);
 }
 
 class NotGate extends Module {
   NotGate({bool isPreview = false})
-      : super(
-            name: "NotGate", numInputs: 1, numOutputs: 1, isPreview: isPreview);
+      : super(name: "NotGate", numInputs: 1, numOutputs: 1);
 
   @override
-  solveLogic(LogicValueChanged change, [Logic? caller]) {
-    outputs.values.first.put(~inputs.values.elementAt(0).value);
-  }
+  solveLogic(LogicValueChanged change, [Logic? caller]) =>
+      outputs[0].item2.put(~inputs[0].item2.value);
 }
 
 class FlipFlop extends Module {
   FlipFlop({bool isPreview = false})
       : super(
-            name: "FlipFlop",
-            numInputs: 2,
-            numOutputs: 1,
-            isPreview: isPreview);
+          name: "FlipFlop",
+          numInputs: 2,
+          numOutputs: 1,
+        );
 
   @override
   solveLogic(LogicValueChanged change, [Logic? caller]) {
-    if (caller == inputs.values.first &&
+    if (caller == inputs[0].item2 &&
         change.newValue == LogicValue.one &&
         change.previousValue == LogicValue.zero) {
-      outputs.values.first.put(inputs.values.elementAt(1).value);
+      outputs[0].item2.put(inputs[1].item2.value);
     }
   }
 }
 
-class NameGenerator {
-  static int _portNameCounter = 0;
-  static String generateName() {
-    _portNameCounter++;
-    return "PORT ${_portNameCounter - 1}";
+class PortKeyGen {
+  static int _portCounter = 0;
+  static String generateKey() {
+    _portCounter++;
+    return "${_portCounter - 1}";
   }
 }
 

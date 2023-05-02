@@ -3,25 +3,16 @@ import 'main.dart';
 import 'dart:math';
 import 'package:Oz/logic.dart' as rohd;
 
-dynamic wiringPortSelected;
+rohd.Logic? wiringPortSelected;
 
 class Component extends StatefulWidget {
   final Type moduleType; // Add module field
   final List? inputs;
-  final bool isPreview;
 
   const Component({
     Key? key, // Make key nullable
     required this.moduleType, // Add module parameter
     this.inputs,
-    this.isPreview = false,
-  }) : super(key: key); // Call super with nullable key
-
-  const Component.isPreview({
-    Key? key, // Make key nullable
-    required this.moduleType, // Add module parameter
-    this.inputs,
-    required this.isPreview,
   }) : super(key: key); // Call super with nullable key
 
   @override
@@ -42,7 +33,6 @@ class ComponentPreview extends StatelessWidget {
         child: RepaintBoundary(
           child: Component(
             moduleType: component.moduleType,
-            isPreview: true,
           ),
         ),
       ),
@@ -57,15 +47,15 @@ class ComponentState extends State<Component> {
   void initState() {
     super.initState();
     if (widget.moduleType == rohd.Xor2Gate) {
-    module = rohd.Xor2Gate(isPreview: widget.isPreview);
+    module = rohd.Xor2Gate();
     }else if (widget.moduleType == rohd.And2Gate) {
-      module = rohd.And2Gate(isPreview: widget.isPreview);
+      module = rohd.And2Gate();
     } else if (widget.moduleType == rohd.FlipFlop) {
-      module = rohd.FlipFlop(isPreview: widget.isPreview);
+      module = rohd.FlipFlop();
     } else if (widget.moduleType == rohd.NotGate) {
-      module = rohd.NotGate(isPreview: widget.isPreview);
+      module = rohd.NotGate();
     } else if (widget.moduleType == rohd.Or2Gate) {
-      module = rohd.Or2Gate(isPreview: widget.isPreview);
+      module = rohd.Or2Gate();
     }else {
       debugPrint("${widget.moduleType}");
       throw ("Not yet implemented");
@@ -117,13 +107,13 @@ class ComponentState extends State<Component> {
     double portNameHeight = 0; // Height of longest input or output name
 
     double inputNameWidth = 0; // Width of longest input name
-    for (var input in module.inputs.values) {
+    for (var input in module.inputs) {
       TextSpan span = TextSpan(
           style: const TextStyle(
             fontSize: portNameSize,
             fontFamily: 'Courier New',
           ),
-          text: input.name);
+          text: input.item1);
       TextPainter tp = TextPainter(
           text: span,
           textAlign: TextAlign.left,
@@ -134,13 +124,13 @@ class ComponentState extends State<Component> {
     }
 
     double outputNameWidth = 0; // Width of longest output name
-    for (var output in module.outputs.values) {
+    for (var output in module.outputs) {
       TextSpan span = TextSpan(
           style: const TextStyle(
             fontSize: portNameSize,
             fontFamily: 'Courier New',
           ),
-          text: output.name);
+          text: output.item1);
       TextPainter tp = TextPainter(
           text: span,
           textAlign: TextAlign.right,
@@ -204,27 +194,26 @@ class ComponentState extends State<Component> {
                     mainAxisAlignment: MainAxisAlignment.start,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      for (var input in module.inputs.values)
+                      for (var input in module.inputs)
                         SizedBox(
                           height: portHeight,
                           child: Center(
                             child: GestureDetector(
-                              onTap: () => _toggleInputValue(input),
+                              onTap: () => _toggleInputValue(input.item2),
                               onDoubleTap: () {
                                 if (wiringPortSelected != null) {
                                   debugPrint(
-                                      "Connected $wiringPortSelected to ${input.name}");
-                                  module.swapInputs(wiringPortSelected,
-                                      module.inputs[input.name]!);
+                                      "Connected $wiringPortSelected to ${input.item1}");
+                                  module.swapInputs(wiringPortSelected!,input.item2);
                                   module.callback?.call();
                                 }
                                 wiringPortSelected = null;
                               },
-                              child: Text(input.name,
+                              child: Text(input.item1,
                                   style: TextStyle(
                                       fontSize: portNameSize,
                                       fontFamily: 'Courier New',
-                                      color: getColor(input.value))),
+                                      color: getColor(input.item2.value))),
                             ),
                           ),
                         )
@@ -235,7 +224,7 @@ class ComponentState extends State<Component> {
                     mainAxisAlignment: MainAxisAlignment.start,
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
-                      for (var output in module.outputs.values)
+                      for (var output in module.outputs)
                         SizedBox(
                           height: portHeight,
                           child: Center(
@@ -243,18 +232,18 @@ class ComponentState extends State<Component> {
                               onDoubleTap: () {
                                 if (wiringPortSelected == null) {
                                   debugPrint("Selected Output for wiring");
-                                  wiringPortSelected = output;
+                                  wiringPortSelected = output.item2;
                                 } else {
                                   wiringPortSelected = null;
                                   debugPrint("Deselected Output for wiring");
                                 }
                               },
-                              child: Text(output.name,
+                              child: Text(output.item1,
                                   textAlign: TextAlign.right,
                                   style: TextStyle(
                                       fontSize: portNameSize,
                                       fontFamily: 'Courier New',
-                                      color: getColor(output.value))),
+                                      color: getColor(output.item2.value))),
                             ),
                           ),
                         )

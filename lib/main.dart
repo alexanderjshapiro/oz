@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:Oz/logic.dart' as rohd;
+import 'package:flutter/services.dart';
 import 'component.dart';
 import 'dart:async';
 import 'package:pdf/pdf.dart';
@@ -13,7 +14,7 @@ const double gridSize = 40;
 const bool showToolBar = true;
 const bool debug = false;
 
-const Duration tickRate = Duration(milliseconds: 250);
+Duration tickRate = const Duration(milliseconds: 20);
 
 void main() {
   runApp(const Oz());
@@ -114,8 +115,31 @@ class _MainPageState extends State<MainPage> {
                       size: toolbarIconSize),
             ),
           ),
+          SizedBox(
+            height: toolbarIconSize,
+            width: 1.5*toolbarIconSize,
+            child: Tooltip(
+              message: "Simulation Speed (ms)",
+              child: TextFormField(
+                keyboardType: TextInputType.number,
+                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                initialValue: "${tickRate.inMilliseconds}",
+                textAlign: TextAlign.center,
+                decoration: const InputDecoration(
+                  suffixText: "ms",
+                  border: OutlineInputBorder(),
+                ),
+                onChanged: (String value) {
+                  _stopSimulation();
+                  int newtick = int.tryParse(value) ?? tickRate.inMilliseconds;
+                  tickRate = Duration(milliseconds: newtick);
+                },
+              ),
+            ),
+          ),
           GestureDetector(
             onTap: () {
+              _stopSimulation();
               rohd.SimulationUpdater.tick();
             },
             child: const Tooltip(
@@ -123,7 +147,8 @@ class _MainPageState extends State<MainPage> {
               child:
                   Icon(Icons.slow_motion_video_rounded, size: toolbarIconSize),
             ),
-          )
+          ),
+          
         ],
       ),
     );
