@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:Oz/logic.dart' as rohd;
+import 'package:Oz/logic.dart';
 import 'package:flutter/services.dart';
 import 'component.dart';
 import 'dart:async';
@@ -14,7 +14,7 @@ const double gridSize = 40;
 const bool showToolBar = true;
 const bool debug = false;
 
-Duration tickRate = const Duration(milliseconds: 20);
+Duration tickRate = const Duration(milliseconds: 1);
 
 void main() {
   runApp(const Oz());
@@ -117,7 +117,7 @@ class _MainPageState extends State<MainPage> {
           ),
           SizedBox(
             height: toolbarIconSize,
-            width: 1.5*toolbarIconSize,
+            width: 1.5 * toolbarIconSize,
             child: Tooltip(
               message: "Simulation Speed (ms)",
               child: TextFormField(
@@ -140,7 +140,7 @@ class _MainPageState extends State<MainPage> {
           GestureDetector(
             onTap: () {
               _stopSimulation();
-              rohd.SimulationUpdater.tick();
+              SimulationUpdater.tick();
             },
             child: const Tooltip(
               message: "Step Simulation",
@@ -148,7 +148,6 @@ class _MainPageState extends State<MainPage> {
                   Icon(Icons.slow_motion_video_rounded, size: toolbarIconSize),
             ),
           ),
-          
         ],
       ),
     );
@@ -231,14 +230,18 @@ class _MainPageState extends State<MainPage> {
         child: ListView(
           children: [
             for (var moduleType in [
-              rohd.Xor2Gate,
-              rohd.Or2Gate,
-              rohd.And2Gate,
-              rohd.NotGate,
-              rohd.FlipFlop,
-              rohd.SN74LS373,
-              rohd.BinarySwitch,
-              rohd.HexDisplay
+              BinarySwitch,
+              HexDisplay,
+              Xor2Gate,
+              //Xor2GateRev,
+              // Or2Gate,
+              // And2Gate,
+              Nor2Gate,
+              NotGate,
+              // FlipFlop,
+              SN74LS373,
+              SN74LS245,
+              SRAM6116,
             ])
               Draggable(
                 data: Component(
@@ -306,7 +309,7 @@ class _MainPageState extends State<MainPage> {
     _simulationTickTimer = Timer.periodic(
       tickRate,
       (timer) {
-        rohd.SimulationUpdater.tick();
+        SimulationUpdater.tick();
       },
     );
   }

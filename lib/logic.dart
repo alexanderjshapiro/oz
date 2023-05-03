@@ -1,12 +1,394 @@
-import 'dart:async';
+import 'package:flutter/material.dart';
 import 'dart:collection';
-import 'package:tuple/tuple.dart';
+
+class Xor2Gate extends Module {
+  Xor2Gate() : super(name: "Xor2Gate") {
+    ports = [
+      for (int i = 0; i < 2; i++)
+        PhysicalPort(
+            portName: "In $i", module: this, portLocation: PortLocation.left),
+      for (int i = 0; i < 1; i++)
+        PhysicalPort(
+            portName: "Out $i", module: this, portLocation: PortLocation.right)
+    ];
+  }
+  @override
+  update() {
+    ports[2].drivePort(ports[0].value ^ ports[1].value);
+  }
+}
+
+class NotGate extends Module {
+  NotGate() : super(name: "NotGate") {
+    ports = [
+      for (int i = 0; i < 1; i++)
+        PhysicalPort(
+            portName: "In $i", module: this, portLocation: PortLocation.left),
+      for (int i = 0; i < 1; i++)
+        PhysicalPort(
+            portName: "Out $i", module: this, portLocation: PortLocation.right)
+    ];
+  }
+  @override
+  update() {
+    ports[1].drivePort(~ports[0].value);
+  }
+}
+
+//OCTAL BUS TRANSCEIVERS
+//TODO Need to add enable pin for 3 state output
+class SN74LS245 extends Module {
+  SN74LS245() : super(name: "SN74LS245") {
+    ports = [
+      for (int i = 0; i < 8; i++)
+        PhysicalPort(
+            portName: "A$i", module: this, portLocation: PortLocation.left),
+      for (int i = 0; i < 8; i++)
+        PhysicalPort(
+            portName: "B$i", module: this, portLocation: PortLocation.right),
+      PhysicalPort(
+          portName: "DIR", module: this, portLocation: PortLocation.left),
+    ];
+  }
+  @override
+  update() {
+    if (ports.firstWhere((element) => element.portName == "DIR").value ==
+        LogicValue.one) {
+      // transfer left side values to right side
+      for (int i = 0; i < 8; i++) {
+        ports[i].connectedNode?.impede(portKey: ports[i].key);
+      }
+      for (int i = 0; i < 8; i++) {
+        ports[i + 8].drivePort(ports[i].value);
+      }
+    } else {
+      // transfer right side values to left side
+      for (int i = 8; i < 16; i++) {
+        ports[i].connectedNode?.impede(portKey: ports[i].key);
+      }
+      for (int i = 0; i < 8; i++) {
+        ports[i].drivePort(ports[i + 8].value);
+      }
+    }
+  }
+}
+
+//D-Type latch
+class SN74LS373 extends Module {
+  SN74LS373() : super(name: "SN74LS373") {
+    ports = [
+      for (int i = 0; i < 8; i++)
+        PhysicalPort(
+            portName: "D$i", module: this, portLocation: PortLocation.left),
+      for (int i = 0; i < 8; i++)
+        PhysicalPort(
+            portName: "Q$i", module: this, portLocation: PortLocation.right),
+      PhysicalPort(
+          portName: "EN", module: this, portLocation: PortLocation.left),
+    ];
+  }
+
+  @override
+  update() {
+    if (ports.firstWhere((element) => element.portName == "EN").value ==
+        LogicValue.one) {
+      for (int i = 0; i < 8; i++) {
+        if (ports[i].value != ports[i + 8].value) {
+          ports[i + 8].drivePort(ports[i].value);
+        }
+      }
+    }
+  }
+}
+
+//Static ram memory device
+class SRAM6116 extends Module {
+  SRAM6116() : super(name: "SRAM6116") {
+    ports = [
+      for (int i = 0; i < 11; i++)
+        PhysicalPort(
+            portName: "A$i", module: this, portLocation: PortLocation.left),
+      for (int i = 0; i < 8; i++)
+        PhysicalPort(
+            portName: "DIO$i", module: this, portLocation: PortLocation.right),
+      PhysicalPort(
+          portName: "WE'", module: this, portLocation: PortLocation.left),
+      PhysicalPort(
+          portName: "OE'", module: this, portLocation: PortLocation.left),
+      PhysicalPort(
+          portName: "CS'", module: this, portLocation: PortLocation.left),
+    ];
+  }
+
+//Preset the memory for testing purposes
+  Map<int, List<LogicValue>> memory = {
+    1: [
+      LogicValue.one,
+      LogicValue.zero,
+      LogicValue.one,
+      LogicValue.zero,
+      LogicValue.one,
+      LogicValue.zero,
+      LogicValue.one,
+      LogicValue.zero,
+    ],
+  };
+
+  @override
+  update() {
+    if (ports.firstWhere((element) => element.portName == "CS'").value ==
+        LogicValue.one) {
+      for (int i = 0; i < 8; i++) {
+        ports[i + 11].connectedNode?.impede(portKey: ports[i + 11].key);
+      }
+      return;
+    }
+    //chip must be enabled at this point
+    if (ports.firstWhere((element) => element.portName == "OE'").value ==
+        LogicValue.zero) {
+      //Read mode, must put data on bus
+      int address = 0;
+      for (int i = 0; i < 11; i++) {
+        if (ports[i].value == LogicValue.one) {
+          address |= (1 << i);
+        }
+      }
+      for (int i = 0; i < 8; i++) {
+        ports[i + 11].drivePort(memory[address]?[i] ?? LogicValue.zero);
+      }
+      debugPrint("value = $address");
+    } else {
+      for (int i = 0; i < 8; i++) {
+        ports[i + 11].connectedNode?.impede(portKey: ports[i + 11].key);
+      }
+      if (ports.firstWhere((element) => element.portName == "WE'").value ==
+          LogicValue.zero) {
+        //Write to memory
+        int address = 0;
+        for (int i = 0; i < 11; i++) {
+          if (ports[i].value == LogicValue.one) {
+            address |= (1 << i);
+          }
+        }
+        memory[address] = List.generate(8, (index) => ports[index + 11].value);
+      }
+    }
+  }
+}
+
+class Nor2Gate extends Module {
+  Nor2Gate() : super(name: "Nor2Gate") {
+    ports = [
+      for (int i = 0; i < 2; i++)
+        PhysicalPort(
+            portName: "In $i",
+            module: this,
+            portLocation: PortLocation.left,
+            initalState: LogicValue.z),
+      for (int i = 0; i < 1; i++)
+        PhysicalPort(
+            portName: "Out $i",
+            module: this,
+            portLocation: PortLocation.right,
+            initalState: LogicValue.x)
+    ];
+  }
+  @override
+  update() {
+    ports[2].drivePort(~(ports[0].value | ports[1].value));
+  }
+}
+
+class Xor2GateRev extends Module {
+  Xor2GateRev() : super(name: "Xor2GateRev") {
+    ports = [
+      for (int i = 0; i < 1; i++)
+        PhysicalPort(
+            portName: "Out $i", module: this, portLocation: PortLocation.left),
+      for (int i = 0; i < 2; i++)
+        PhysicalPort(
+            portName: "In $i", module: this, portLocation: PortLocation.right)
+    ];
+  }
+  @override
+  update() {
+    ports[0].drivePort(ports[1].value ^ ports[2].value);
+  }
+}
+
+class BinarySwitch extends Module {
+  BinarySwitch() : super(name: "BinarySwitch") {
+    ports = [
+      PhysicalPort(
+          portName: "Button", module: this, initalState: LogicValue.zero),
+    ];
+  }
+
+  @override
+  update() {}
+}
+
+class HexDisplay extends Module {
+  HexDisplay() : super(name: "HexDisplay") {
+    ports = [
+      PhysicalPort(
+          portName: "B8", module: this, portLocation: PortLocation.left),
+      PhysicalPort(
+          portName: "B4", module: this, portLocation: PortLocation.left),
+      PhysicalPort(
+          portName: "B2", module: this, portLocation: PortLocation.left),
+      PhysicalPort(
+          portName: "B1", module: this, portLocation: PortLocation.left),
+    ];
+  }
+
+  @override
+  update() {}
+}
+
+class SimulationUpdater {
+  static final Queue<Function> queue = Queue();
+  SimulationUpdater();
+
+  static void tick() {
+    if (queue.isEmpty) return;
+    queue.first.call();
+    queue.removeFirst();
+  }
+}
+
+class Module {
+  Function? guiUpdateCallback;
+  String name;
+  late List<PhysicalPort> ports;
+
+  Module({
+    required this.name,
+    //required this.ports,
+    this.guiUpdateCallback,
+  });
+
+  update() {
+    throw UnimplementedError("Function must be implemented by child class");
+  }
+
+  Iterable get leftSide =>
+      ports.where((element) => element.portLocation == PortLocation.left);
+
+  Iterable get rightSide =>
+      ports.where((element) => element.portLocation == PortLocation.right);
+}
+
+class PhysicalPort {
+  String portName;
+  PortLocation portLocation;
+  String key = KeyGen.key();
+  Node? connectedNode;
+  Module module;
+  PhysicalPort(
+      {required this.portName,
+      required this.module,
+      this.portLocation = PortLocation.left,
+      LogicValue? initalState})
+      : connectedNode = Node(module, initalState);
+
+  void connectNode(Node logic) {
+    //Copy existing node info to new one.
+    logic.connectedModules.addAll(connectedNode!.connectedModules
+        .where((element) => logic.connectedModules.contains(element)));
+    logic.drivers.addAll(connectedNode!.drivers);
+
+    logic.connectedModules.add(module);
+    connectedNode = logic;
+    for (var module in logic.connectedModules.toSet()) {
+      module.update();
+      module.guiUpdateCallback?.call();
+    }
+  }
+
+  void drivePort(LogicValue value, {Module? callingModule}) {
+    if (connectedNode != null) {
+      SimulationUpdater.queue.addLast(() => connectedNode!.drive(
+          portKey: key, driveValue: value, callingModule: callingModule));
+    }
+  }
+
+  /// Return the current logic value
+  LogicValue get value => connectedNode!.value;
+}
+
+enum PortLocation { left, right }
+
+class Node {
+  //final String _key = KeyGen.key();
+  LogicValue _value;
+  Map<String, LogicValue> drivers = {};
+
+  List<Module> connectedModules;
+  Node([Module? module, LogicValue? initVal])
+      : connectedModules = [if (module != null) module],
+        _value = initVal ?? LogicValue.x;
+
+  impede({required String portKey}) {
+    drivers.remove(portKey);
+    List<LogicValue> drivingValues = drivers.values.toList(growable: false);
+    LogicValue uniformityValue = drivingValues.firstWhere(
+        (element) => element != LogicValue.z,
+        orElse: () => LogicValue.z);
+    if (drivingValues.every(
+        (element) => element == uniformityValue || element == LogicValue.z)) {
+      _value = uniformityValue;
+    } else {
+      _value = LogicValue.x;
+    }
+  }
+
+  /// Sets the value of a logic to be the value given iff all other drivers are matching or z
+  drive(
+      {required String portKey,
+      required LogicValue driveValue,
+      Module? callingModule}) {
+    drivers[portKey] = driveValue;
+    List<LogicValue> drivingValues = drivers.values.toList(growable: false);
+    LogicValue uniformityValue = drivingValues.firstWhere(
+        (element) => element != LogicValue.z,
+        orElse: () => LogicValue.z);
+    if (drivingValues.every(
+        (element) => element == uniformityValue || element == LogicValue.z)) {
+      if (_value != uniformityValue) {
+        _value = uniformityValue;
+        for (var module in connectedModules.toSet()) {
+          if (callingModule == null || callingModule != module) {
+            module.update();
+            module.guiUpdateCallback?.call();
+          } else {
+            debugPrint("Lazy updating");
+          }
+        }
+      }
+      _value = uniformityValue;
+    } else {
+      _value = LogicValue.x;
+    }
+  }
+
+  /// Return the current logic value
+  LogicValue get value => _value;
+}
+
+class KeyGen {
+  static int _keyCounter = 0;
+  static String key([String prefix = ""]) {
+    _keyCounter++;
+    return "$prefix${_keyCounter - 1}";
+  }
+}
 
 /// Base logic type.
 enum LogicValue { zero, one, z, x }
 
-/// Operator Overloading for Logic Levels.
-extension LogicOperators on LogicValue {
+/// Operator Overloading for Node Levels.
+extension NodeOperators on LogicValue {
   LogicValue operator &(LogicValue other) {
     if (this == LogicValue.zero || other == LogicValue.zero) {
       return LogicValue.zero;
@@ -47,261 +429,5 @@ extension LogicOperators on LogicValue {
       return LogicValue.one;
     }
     return LogicValue.x;
-  }
-}
-
-/// Logic base class, Input and Ouput inherit from Logic class
-class Logic {
-  String name;
-  LogicValue value;
-  final StreamController<LogicValueChanged> logicStreamController =
-      StreamController<LogicValueChanged>.broadcast();
-  Stream<LogicValueChanged> get changed => logicStreamController.stream;
-
-  Logic({required this.name, this.value = LogicValue.x});
-
-  void inject(LogicValue newValue) =>
-      SimulationUpdater.queue.addFirst(Tuple2(this, newValue));
-
-  void put(LogicValue newValue) =>
-      SimulationUpdater.queue.addLast(Tuple2(this, newValue));
-}
-
-/// Represents the event of a [Logic] changing value.
-class LogicValueChanged {
-  /// The newly updated value of the [Logic].
-  final LogicValue newValue;
-
-  /// The previous value of the [Logic].
-  final LogicValue previousValue;
-
-  /// Represents the event of a [Logic] changing value from [previousValue]
-  /// to [newValue].
-  const LogicValueChanged(this.newValue, this.previousValue);
-
-  @override
-  String toString() => '$previousValue  -->  $newValue';
-}
-
-/// Module is the Uppermost class of a Logic Chip
-/// created with the number of input ports and output ports
-class Module {
-  Function? callback;
-  late List<Tuple3<String, Logic, StreamSubscription<LogicValueChanged>>>
-      inputs;
-  late List<Tuple3<String, Logic, StreamSubscription<LogicValueChanged>>>
-      outputs;
-  String name;
-
-  Module({
-    required this.name,
-    required int numInputs,
-    required int numOutputs,
-    List<String>? inputNames,
-    List<String>? outputNames,
-  }) {
-    inputs = List.generate(numInputs, (index) {
-      Logic logic = Logic(name: PortKeyGen.generateKey(), value: LogicValue.z);
-      StreamSubscription<LogicValueChanged> sub = logic.changed.listen(
-        (event) {
-          //debugPrint("${logic.name} has been changed");
-          solveLogic(event, logic);
-          callback?.call();
-        },
-      );
-      return Tuple3(inputNames?[index] ?? "In ${index + 1}", logic, sub);
-    });
-
-    outputs = List.generate(numOutputs, (index) {
-      Logic logic = Logic(name: PortKeyGen.generateKey(), value: LogicValue.x);
-      StreamSubscription<LogicValueChanged> sub = logic.changed.listen(
-        (event) {
-          //debugPrint("${logic.name} has been changed");
-          callback?.call();
-        },
-      );
-      return Tuple3(outputNames?[index] ?? "Out ${index + 1}", logic, sub);
-    });
-  }
-
-  void swapInputs(Logic newLogic, Logic oldLogic) {
-    var matchingTuple = inputs.indexWhere((tuple) => tuple.item2 == oldLogic);
-    inputs[matchingTuple].item3.cancel();
-    StreamSubscription<LogicValueChanged> sub = newLogic.changed.listen(
-      (event) {
-        //debugPrint("${newLogic.name} has been changed");
-        solveLogic(event, newLogic);
-        callback?.call();
-      },
-    );
-    inputs[matchingTuple] = Tuple3(inputs[matchingTuple].item1, newLogic, sub);
-  }
-
-  void release() {
-    for (var element in inputs) {
-      element.item3.cancel();
-    }
-    for (var element in outputs) {
-      element.item3.cancel();
-    }
-  }
-
-  solveLogic(LogicValueChanged change, [Logic? caller]) =>
-      throw UnimplementedError("Function must be implemented by child class");
-}
-
-class Xor2Gate extends Module {
-  Xor2Gate()
-      : super(
-          name: "Xor2Gate",
-          numInputs: 2,
-          numOutputs: 1,
-        );
-
-  @override
-  solveLogic(LogicValueChanged change, [Logic? caller]) =>
-      outputs[0].item2.put(inputs[0].item2.value ^ inputs[1].item2.value);
-}
-
-class Or2Gate extends Module {
-  Or2Gate() : super(name: "Or2Gate", numInputs: 2, numOutputs: 1);
-
-  @override
-  solveLogic(LogicValueChanged change, [Logic? caller]) =>
-      outputs[0].item2.put(inputs[0].item2.value | inputs[1].item2.value);
-}
-
-class And2Gate extends Module {
-  And2Gate()
-      : super(
-          name: "And2Gate",
-          numInputs: 2,
-          numOutputs: 1,
-        );
-
-  @override
-  solveLogic(LogicValueChanged change, [Logic? caller]) =>
-      outputs[0].item2.put(inputs[0].item2.value & inputs[1].item2.value);
-}
-
-class NotGate extends Module {
-  NotGate()
-      : super(name: "NotGate", numInputs: 1, numOutputs: 1);
-
-  @override
-  solveLogic(LogicValueChanged change, [Logic? caller]) =>
-      outputs[0].item2.put(~inputs[0].item2.value);
-}
-
-class FlipFlop extends Module {
-  FlipFlop()
-      : super(
-          name: "FlipFlop",
-          numInputs: 2,
-          numOutputs: 1,
-          inputNames: ["Q", "Data"],
-          outputNames: ["Out"],
-        );
-
-  @override
-  solveLogic(LogicValueChanged change, [Logic? caller]) {
-    if (caller == inputs[0].item2 &&
-        change.newValue == LogicValue.one &&
-        change.previousValue == LogicValue.zero) {
-      outputs[0].item2.put(inputs[1].item2.value);
-    }
-  }
-}
-
-class SN74LS373 extends Module {
-  SN74LS373()
-      : super(
-          name: "SN74LS373",
-          numInputs: 10,
-          numOutputs: 8,
-          inputNames: [
-            "D7",
-            "D6",
-            "D5",
-            "D4",
-            "D3",
-            "D2",
-            "D1",
-            "D0",
-            "Clk",
-            "OE"
-          ],
-          outputNames: ["Q7", "Q6", "Q5", "Q4", "Q3", "Q2", "Q1", "Q0"],
-        );
-  List<LogicValue> latch = List.generate(8, (index) => LogicValue.x);
-
-  @override
-  solveLogic(LogicValueChanged change, [Logic? caller]) {
-    //update latch
-    if (caller == inputs[8].item2 &&
-        change.newValue == LogicValue.one &&
-        change.previousValue == LogicValue.zero) {
-      for (int i = 0; i < 8; i++) {
-        latch[i] = inputs[i].item2.value;
-      }
-    }
-
-    // check if enabled
-    if (inputs[9].item2.value == LogicValue.one) {
-      for (int i = 0; i < 8; i++) {
-        if (latch[i] != outputs[i].item2.value) {
-          outputs[i].item2.put(latch[i]);
-        }
-      }
-    } else {
-      for (int i = 0; i < 8; i++) {
-        if (LogicValue.z != outputs[i].item2.value) {
-          outputs[i].item2.put(LogicValue.z);
-        }
-      }
-    }
-    callback?.call();
-  }
-}
-
-class BinarySwitch extends Module {
-  BinarySwitch()
-      : super(name: "BinarySwitch", numInputs: 1, numOutputs: 1);
-
-  @override
-  solveLogic(LogicValueChanged change, [Logic? caller]) =>
-      outputs[0].item2.put(inputs[0].item2.value);
-}
-
-class HexDisplay extends Module {
-  HexDisplay()
-      : super(name: "HexDisplay", numInputs: 4, numOutputs: 0, inputNames: ["B 8","B 4","B 2","B 1"]);
-
-  @override
-  solveLogic(LogicValueChanged change, [Logic? caller]){
-    return;
-  }
-}
-
-class PortKeyGen {
-  static int _portCounter = 0;
-  static String generateKey() {
-    _portCounter++;
-    return "${_portCounter - 1}";
-  }
-}
-
-class SimulationUpdater {
-  static final Queue<Tuple2<Logic, LogicValue>> queue = Queue();
-  SimulationUpdater();
-
-  static void tick() {
-    if (queue.isEmpty) return;
-
-    LogicValue old = queue.first.item1.value;
-    queue.first.item1.value = queue.first.item2;
-    queue.first.item1.logicStreamController
-        .add(LogicValueChanged(queue.first.item2, old));
-    queue.removeFirst();
   }
 }
