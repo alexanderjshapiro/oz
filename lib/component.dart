@@ -1,27 +1,28 @@
 import 'package:flutter/material.dart';
 import 'main.dart';
 import 'dart:math';
-import 'package:rohd/rohd.dart' as rohd;
+import 'package:Oz/logic.dart' as rohd;
 
-dynamic wiringPortSelected;
+rohd.Logic? wiringPortSelected;
+
+// This should allow us to import in new modules during runtime
+Map<String, Function> gateTypes = {
+  'Xor2Gate': () => rohd.Xor2Gate(),
+  'And2Gate': () => rohd.And2Gate(),
+  'FlipFlop': () => rohd.FlipFlop(),
+  'NotGate': () => rohd.NotGate(),
+  'Or2Gate': () => rohd.Or2Gate(),
+  'SN74LS373': () => rohd.SN74LS373(),
+  'BinarySwitch': () => rohd.BinarySwitch(),
+  'HexDisplay': () => rohd.HexDisplay(),
+};
 
 class Component extends StatefulWidget {
   final Type moduleType; // Add module field
-  final List? inputs;
-  final bool isPreview;
 
   const Component({
     Key? key, // Make key nullable
     required this.moduleType, // Add module parameter
-    this.inputs,
-    this.isPreview = false,
-  }) : super(key: key); // Call super with nullable key
-
-  const Component.isPreview({
-    Key? key, // Make key nullable
-    required this.moduleType, // Add module parameter
-    this.inputs,
-    required this.isPreview,
   }) : super(key: key); // Call super with nullable key
 
   @override
@@ -42,7 +43,6 @@ class ComponentPreview extends StatelessWidget {
         child: RepaintBoundary(
           child: Component(
             moduleType: component.moduleType,
-            isPreview: true,
           ),
         ),
       ),
@@ -51,36 +51,15 @@ class ComponentPreview extends StatelessWidget {
 }
 
 class ComponentState extends State<Component> {
-  late bool isPreview;
   late rohd.Module module; // Add module field
 
   @override
   void initState() {
     super.initState();
-    isPreview = widget.isPreview;
-    if (widget.moduleType == rohd.Xor2Gate) {
-      module = rohd.Xor2Gate(rohd.Logic(), rohd.Logic());
-    } else if (widget.moduleType == rohd.And2Gate) {
-      module = rohd.And2Gate(rohd.Logic(), rohd.Logic());
-    } else if (widget.moduleType == rohd.FlipFlop) {
-      module = rohd.FlipFlop(rohd.SimpleClockGenerator(60).clk, rohd.Logic());
-    } else if (widget.moduleType == rohd.NotGate) {
-      module = rohd.NotGate(rohd.Logic());
-    } else if (widget.moduleType == rohd.Or2Gate) {
-      module = rohd.Or2Gate(rohd.Logic(), rohd.Logic());
-    } else {
-      throw ("Not yet implemented");
-    }
-
-    if (!module.hasBuilt) {
-      module.build();
-    }
-
-    for (var input in module.inputs.values) {
-      input.changed.listen((event) {
-        setState(() {});
-      });
-    }
+    module = gateTypes[widget.moduleType.toString()]!.call();
+    module.callback = () {
+      setState(() {});
+    };
   }
 
   _toggleInputValue(rohd.Logic input) {
@@ -104,6 +83,10 @@ class ComponentState extends State<Component> {
 
   @override
   Widget build(BuildContext context) {
+    if (widget.moduleType == rohd.BinarySwitch) {
+      return buttonBuildOverride();
+    }
+
     const double componentNameSize = 28;
     const double portNameSize = 24;
     const double paddingSize = 8; // around edge of component
@@ -124,13 +107,13 @@ class ComponentState extends State<Component> {
     double portNameHeight = 0; // Height of longest input or output name
 
     double inputNameWidth = 0; // Width of longest input name
-    for (var input in module.inputs.values) {
+    for (var input in module.inputs) {
       TextSpan span = TextSpan(
           style: const TextStyle(
             fontSize: portNameSize,
             fontFamily: 'Courier New',
           ),
-          text: input.name);
+          text: input.item1);
       TextPainter tp = TextPainter(
           text: span,
           textAlign: TextAlign.left,
@@ -141,13 +124,13 @@ class ComponentState extends State<Component> {
     }
 
     double outputNameWidth = 0; // Width of longest output name
-    for (var output in module.outputs.values) {
+    for (var output in module.outputs) {
       TextSpan span = TextSpan(
           style: const TextStyle(
             fontSize: portNameSize,
             fontFamily: 'Courier New',
           ),
-          text: output.name);
+          text: output.item1);
       TextPainter tp = TextPainter(
           text: span,
           textAlign: TextAlign.right,
@@ -174,9 +157,142 @@ class ComponentState extends State<Component> {
 
     double componentHeight = nameAreaHeight + portAreaHeight;
 
+    if (widget.moduleType == rohd.HexDisplay) {
+      // TODO: clean up code
+      return GestureDetector(
+        onSecondaryTap: () {
+          // TODO fix delete to work right
+          debugPrint("deleting Gate");
+          module.release();
+          canvasKey.currentState!.removeComponent(widget);
+        },
+        child: Container(
+          padding: const EdgeInsets.all(paddingSize),
+          width: alignSizeToGrid(minComponentWidth =
+              ((borderSize + paddingSize) * 2) +
+                  max((inputNameWidth + minCenterPadding + 150), nameWidth)),
+          height: componentHeight,
+          decoration: BoxDecoration(
+              color: Colors.white, border: Border.all(width: borderSize)),
+          child: Column(
+            children: [
+              // Component Name
+              SizedBox(
+                height: nameAreaHeight - (borderSize + paddingSize),
+                child: Text(
+                  module.name,
+                  style: const TextStyle(
+                    fontSize: componentNameSize,
+                  ),
+                ),
+              ),
+              // Inputs and Outputs
+              SizedBox(
+                height: portAreaHeight - (borderSize + paddingSize),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Input column
+                    Column(
+                      mainAxisAlignment: MainAxisAlignment.start,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        for (var input in module.inputs)
+                          SizedBox(
+                            height: portHeight,
+                            child: Center(
+                              child: GestureDetector(
+                                //onTap: () => _toggleInputValue(input.item2),
+                                onDoubleTap: () {
+                                  if (wiringPortSelected != null) {
+                                    debugPrint(
+                                        "Connected $wiringPortSelected to ${input.item1}");
+                                    module.swapInputs(
+                                        wiringPortSelected!, input.item2);
+                                    module.callback?.call();
+                                  }
+                                  wiringPortSelected = null;
+                                },
+                                child: Text(input.item1,
+                                    style: TextStyle(
+                                        fontSize: portNameSize,
+                                        fontFamily: 'Courier New',
+                                        color: getColor(input.item2.value))),
+                              ),
+                            ),
+                          )
+                      ],
+                    ),
+                    // Output column
+                    Container(
+                      width: 150,
+                      height: portAreaHeight,
+                      color: Colors.black,
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Stack(
+                          children: [
+                            //Creates a hex display/ nixie tube type effect
+                            for (var char in "1234567890ABCDEF".characters)
+                              Opacity(
+                                opacity: 0.05,
+                                child: Text(
+                                  char,
+                                  style: const TextStyle(
+                                    fontSize: 1000,
+                                    fontFamily: 'Consolas',
+                                    color: Colors.grey,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
+                              ),
+                            Text(
+                              ((module.inputs[0].item2.value ==
+                                              rohd.LogicValue.one
+                                          ? 8
+                                          : 0) +
+                                      (module.inputs[1].item2.value ==
+                                              rohd.LogicValue.one
+                                          ? 4
+                                          : 0) +
+                                      (module.inputs[2].item2.value ==
+                                              rohd.LogicValue.one
+                                          ? 2
+                                          : 0) +
+                                      (module.inputs[3].item2.value ==
+                                              rohd.LogicValue.one
+                                          ? 1
+                                          : 0))
+                                  .toRadixString(16)
+                                  .toUpperCase(),
+                              style: const TextStyle(
+                                  fontSize: 1000,
+                                  fontFamily: 'Consolas',
+                                  color: Colors.amber,
+                                  shadows: [
+                                    Shadow(blurRadius: 12, color: Colors.red)
+                                  ]),
+                              textAlign: TextAlign.center,
+                            ),
+                          ],
+                        ),
+                      ),
+                    )
+                  ],
+                ),
+              )
+            ],
+          ),
+        ),
+      );
+    }
+
     return GestureDetector(
       onSecondaryTap: () {
+        // TODO fix delete to work right
         debugPrint("deleting Gate");
+        module.release();
         canvasKey.currentState!.removeComponent(widget);
       },
       child: Container(
@@ -209,31 +325,27 @@ class ComponentState extends State<Component> {
                     mainAxisAlignment: MainAxisAlignment.start,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      for (var input in module.inputs.values)
+                      for (var input in module.inputs)
                         SizedBox(
                           height: portHeight,
                           child: Center(
                             child: GestureDetector(
-                              onTap: () => _toggleInputValue(input),
+                              //onTap: () => _toggleInputValue(input.item2),
                               onDoubleTap: () {
                                 if (wiringPortSelected != null) {
                                   debugPrint(
-                                      "${wiringPortSelected.dstConnections}");
-                                  try {
-                                    wiringPortSelected
-                                        .gets(module.inputs[input.name]);
-                                    debugPrint("Connected Ports together");
-                                  } catch (A) {
-                                    debugPrint("Could not connect Inputs: $A");
-                                  }
+                                      "Connected $wiringPortSelected to ${input.item1}");
+                                  module.swapInputs(
+                                      wiringPortSelected!, input.item2);
+                                  module.callback?.call();
                                 }
                                 wiringPortSelected = null;
                               },
-                              child: Text(input.name,
+                              child: Text(input.item1,
                                   style: TextStyle(
                                       fontSize: portNameSize,
                                       fontFamily: 'Courier New',
-                                      color: getColor(input.value))),
+                                      color: getColor(input.item2.value))),
                             ),
                           ),
                         )
@@ -244,7 +356,7 @@ class ComponentState extends State<Component> {
                     mainAxisAlignment: MainAxisAlignment.start,
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
-                      for (var output in module.outputs.values)
+                      for (var output in module.outputs)
                         SizedBox(
                           height: portHeight,
                           child: Center(
@@ -252,18 +364,18 @@ class ComponentState extends State<Component> {
                               onDoubleTap: () {
                                 if (wiringPortSelected == null) {
                                   debugPrint("Selected Output for wiring");
-                                  wiringPortSelected = output;
+                                  wiringPortSelected = output.item2;
                                 } else {
                                   wiringPortSelected = null;
                                   debugPrint("Deselected Output for wiring");
                                 }
                               },
-                              child: Text(output.name,
+                              child: Text(output.item1,
                                   textAlign: TextAlign.right,
                                   style: TextStyle(
                                       fontSize: portNameSize,
                                       fontFamily: 'Courier New',
-                                      color: getColor(output.value))),
+                                      color: getColor(output.item2.value))),
                             ),
                           ),
                         )
@@ -274,6 +386,53 @@ class ComponentState extends State<Component> {
             )
           ],
         ),
+      ),
+    );
+  }
+
+  Widget buttonBuildOverride() {
+    //TODO Figure out a better way render Button component
+    return GestureDetector(
+      onSecondaryTap: () {
+        // TODO fix delete to work right
+        debugPrint("deleting Gate");
+        module.release();
+        canvasKey.currentState!.removeComponent(widget);
+      },
+      child: Stack(
+        children: [
+          Container(
+            width: alignSizeToGrid(50),
+            height: alignSizeToGrid(50),
+            color: Colors.blueGrey,
+          ),
+          Positioned.fill(
+            top: 5,
+            bottom: 5,
+            left: 5,
+            right: 5,
+            child: GestureDetector(
+              onTap: () {
+                _toggleInputValue(module.inputs[0].item2);
+              },
+              onDoubleTap: () {
+                if (wiringPortSelected == null) {
+                  debugPrint("Selected Output for wiring");
+                  wiringPortSelected = module.outputs[0].item2;
+                } else {
+                  wiringPortSelected = null;
+                  debugPrint("Deselected Output for wiring");
+                }
+              },
+              child: Container(
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: getColor(module.outputs[0].item2.value),
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

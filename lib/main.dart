@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:rohd/rohd.dart' as rohd;
+import 'package:Oz/logic.dart' as rohd;
+import 'package:flutter/services.dart';
 import 'component.dart';
 import 'dart:async';
 import 'package:pdf/pdf.dart';
@@ -13,10 +14,9 @@ const double gridSize = 40;
 const bool showToolBar = true;
 const bool debug = false;
 
-const Duration tickRate = Duration(milliseconds: 50);
+Duration tickRate = const Duration(milliseconds: 20);
 
 void main() {
-  rohd.SimpleClockGenerator(2);
   runApp(const Oz());
 }
 
@@ -114,7 +114,41 @@ class _MainPageState extends State<MainPage> {
                   : const Icon(Icons.play_circle_outline,
                       size: toolbarIconSize),
             ),
-          )
+          ),
+          SizedBox(
+            height: toolbarIconSize,
+            width: 1.5*toolbarIconSize,
+            child: Tooltip(
+              message: "Simulation Speed (ms)",
+              child: TextFormField(
+                keyboardType: TextInputType.number,
+                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                initialValue: "${tickRate.inMilliseconds}",
+                textAlign: TextAlign.center,
+                decoration: const InputDecoration(
+                  suffixText: "ms",
+                  border: OutlineInputBorder(),
+                ),
+                onChanged: (String value) {
+                  _stopSimulation();
+                  int newtick = int.tryParse(value) ?? tickRate.inMilliseconds;
+                  tickRate = Duration(milliseconds: newtick);
+                },
+              ),
+            ),
+          ),
+          GestureDetector(
+            onTap: () {
+              _stopSimulation();
+              rohd.SimulationUpdater.tick();
+            },
+            child: const Tooltip(
+              message: "Step Simulation",
+              child:
+                  Icon(Icons.slow_motion_video_rounded, size: toolbarIconSize),
+            ),
+          ),
+          
         ],
       ),
     );
@@ -180,7 +214,6 @@ class _MainPageState extends State<MainPage> {
             },
           ),
         );
-
         return doc.save();
       },
     );
@@ -190,59 +223,65 @@ class _MainPageState extends State<MainPage> {
     const double padding = 16;
 
     return Container(
-        width: 200,
-        decoration: const BoxDecoration(
-            border: Border(left: BorderSide(color: Colors.black))),
-        child: Padding(
-            padding: const EdgeInsets.all(padding),
-            child: ListView(
-              children: [
-                for (var moduleType in [
-                  rohd.Xor2Gate,
-                  rohd.Or2Gate,
-                  rohd.And2Gate,
-                  rohd.NotGate
-                ])
-                  Draggable(
-                    data: Component(
-                      moduleType: moduleType,
-                    ),
-                    feedback: DefaultTextStyle(
-                        style: const TextStyle(
-                            color: Colors.black,
-                            fontWeight: FontWeight.normal,
-                            decoration: TextDecoration.none),
-                        child: ComponentPreview(
-                          component: Component(
-                            moduleType: moduleType,
-                          ),
-                        )),
-                    childWhenDragging: Text(
-                      moduleType.toString(),
-                      style: const TextStyle(fontSize: 24, color: Colors.grey),
-                    ),
-                    child: Text(
-                      moduleType.toString(),
-                      style: const TextStyle(
-                        fontSize: 24,
+      width: 200,
+      decoration: const BoxDecoration(
+          border: Border(left: BorderSide(color: Colors.black))),
+      child: Padding(
+        padding: const EdgeInsets.all(padding),
+        child: ListView(
+          children: [
+            for (var moduleType in [
+              rohd.Xor2Gate,
+              rohd.Or2Gate,
+              rohd.And2Gate,
+              rohd.NotGate,
+              rohd.FlipFlop,
+              rohd.SN74LS373,
+              rohd.BinarySwitch,
+              rohd.HexDisplay
+            ])
+              Draggable(
+                data: Component(
+                  moduleType: moduleType,
+                ),
+                feedback: DefaultTextStyle(
+                    style: const TextStyle(
+                        color: Colors.black,
+                        fontWeight: FontWeight.normal,
+                        decoration: TextDecoration.none),
+                    child: ComponentPreview(
+                      component: Component(
+                        moduleType: moduleType,
                       ),
-                    ),
-                    onDragUpdate: (details) {
-                      setState(() {});
-                    },
-                    onDragEnd: (DraggableDetails details) {
-                      setState(() {
-                        canvasKey.currentState!.addComponent(
-                            Component(moduleType: moduleType),
-                            offset: Offset(
-                                details.offset.dx - 56,
-                                details.offset.dy -
-                                    48)); // TODO: don't manually define offset's offset
-                      });
-                    },
+                    )),
+                childWhenDragging: Text(
+                  moduleType.toString(),
+                  style: const TextStyle(fontSize: 24, color: Colors.grey),
+                ),
+                child: Text(
+                  moduleType.toString(),
+                  style: const TextStyle(
+                    fontSize: 24,
                   ),
-              ],
-            )));
+                ),
+                onDragUpdate: (details) {
+                  setState(() {});
+                },
+                onDragEnd: (DraggableDetails details) {
+                  setState(() {
+                    canvasKey.currentState!.addComponent(
+                        Component(moduleType: moduleType),
+                        offset: Offset(
+                            details.offset.dx - 56,
+                            details.offset.dy -
+                                48)); // TODO: don't manually define offset's offset
+                  });
+                },
+              ),
+          ],
+        ),
+      ),
+    );
   }
 
   Widget debugBar() {
@@ -264,16 +303,20 @@ class _MainPageState extends State<MainPage> {
       _isRunning = true;
     });
     //Setup a timer to repeatibly call Simulator.tick();
-    // Simulator.run() would probably be better, but I cant't get to work without freezing flutter
-    _simulationTickTimer = Timer.periodic(tickRate, (timer) {
-      rohd.Simulator.tick();
-    });
+    _simulationTickTimer = Timer.periodic(
+      tickRate,
+      (timer) {
+        rohd.SimulationUpdater.tick();
+      },
+    );
   }
 
   void _stopSimulation() {
     _simulationTickTimer?.cancel();
-    setState(() {
-      _isRunning = false;
-    });
+    setState(
+      () {
+        _isRunning = false;
+      },
+    );
   }
 }
