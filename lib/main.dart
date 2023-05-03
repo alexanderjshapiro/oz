@@ -235,6 +235,7 @@ class _MainPageState extends State<MainPage> {
               rohd.Or2Gate,
               rohd.And2Gate,
               rohd.NotGate,
+              rohd.Nor2Gate,
               rohd.FlipFlop,
               rohd.SN74LS373,
               rohd.BinarySwitch,

@@ -171,6 +171,14 @@ class Or2Gate extends Module {
       outputs[0].item2.put(inputs[0].item2.value | inputs[1].item2.value);
 }
 
+class Nor2Gate extends Module {
+  Nor2Gate() : super(name: "Nor2Gate", numInputs: 2, numOutputs: 1);
+
+  @override
+  solveLogic(LogicValueChanged change, [Logic? caller]) =>
+      outputs[0].item2.put(~(inputs[0].item2.value | inputs[1].item2.value));
+}
+
 class And2Gate extends Module {
   And2Gate()
       : super(

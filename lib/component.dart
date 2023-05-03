@@ -11,6 +11,7 @@ Map<String, Function> gateTypes = {
   'And2Gate': () => rohd.And2Gate(),
   'FlipFlop': () => rohd.FlipFlop(),
   'NotGate': () => rohd.NotGate(),
+  'Nor2Gate': () => rohd.Nor2Gate(),
   'Or2Gate': () => rohd.Or2Gate(),
   'SN74LS373': () => rohd.SN74LS373(),
   'BinarySwitch': () => rohd.BinarySwitch(),
