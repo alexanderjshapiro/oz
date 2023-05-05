@@ -76,7 +76,7 @@ class ComponentState extends State<Component> {
       module.build();
     }
 
-    for (var input in module.inputs.values) {
+    for (final rohd.Logic input in module.inputs.values) {
       input.changed.listen((event) {
         setState(() {});
       });
@@ -124,7 +124,7 @@ class ComponentState extends State<Component> {
     double portNameHeight = 0; // Height of longest input or output name
 
     double inputNameWidth = 0; // Width of longest input name
-    for (var input in module.inputs.values) {
+    for (final rohd.Logic input in module.inputs.values) {
       TextSpan span = TextSpan(
           style: const TextStyle(
             fontSize: portNameSize,
@@ -141,7 +141,7 @@ class ComponentState extends State<Component> {
     }
 
     double outputNameWidth = 0; // Width of longest output name
-    for (var output in module.outputs.values) {
+    for (final rohd.Logic output in module.outputs.values) {
       TextSpan span = TextSpan(
           style: const TextStyle(
             fontSize: portNameSize,
@@ -208,7 +208,7 @@ class ComponentState extends State<Component> {
                         mainAxisAlignment: MainAxisAlignment.start,
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          for (var input in module.inputs.values)
+                          for (final rohd.Logic input in module.inputs.values)
                             SizedBox(
                                 height: portHeight,
                                 child: Center(
@@ -244,7 +244,7 @@ class ComponentState extends State<Component> {
                         mainAxisAlignment: MainAxisAlignment.start,
                         crossAxisAlignment: CrossAxisAlignment.end,
                         children: [
-                          for (var output in module.outputs.values)
+                          for (final rohd.Logic output in module.outputs.values)
                             SizedBox(
                                 height: portHeight,
                                 child: Center(

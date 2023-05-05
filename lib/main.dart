@@ -5,7 +5,7 @@ import 'dart:async';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
-import 'canvas.dart';
+import 'editor_canvas.dart';
 
 const double toolbarIconSize = 48;
 const double gridSize = 40;
@@ -40,8 +40,8 @@ class MainPage extends StatefulWidget {
 }
 
 class _MainPageState extends State<MainPage> {
-  final GlobalKey<CanvasState> _canvasKey = GlobalKey<
-      CanvasState>(); // TODO: consider using callback functions instead of GlobalKey
+  final GlobalKey<EditorCanvasState> _editorCanvasKey = GlobalKey<
+      EditorCanvasState>(); // TODO: consider using callback functions instead of GlobalKey
 
   bool _showProjectExplorer = false;
   bool _isRunning = false;
@@ -65,7 +65,7 @@ class _MainPageState extends State<MainPage> {
               child: Row(
                 children: [
                   projectExplorer(),
-                  Canvas(key: _canvasKey),
+                  EditorCanvas(key: _editorCanvasKey),
                   componentList(),
                 ],
               ),
@@ -83,37 +83,68 @@ class _MainPageState extends State<MainPage> {
           border: Border(bottom: BorderSide(color: Colors.black))),
       child: Row(
         children: [
-          const Icon(Icons.save, size: toolbarIconSize),
-          GestureDetector(
-            onTap: () {
-              printScreen();
-            },
-            child: const Icon(Icons.print, size: toolbarIconSize),
-          ),
-          GestureDetector(
-            onTap: () {
+          IconButton(
+            onPressed: () {
               setState(() {
-                _canvasKey.currentState!.clearComponents();
+                _editorCanvasKey.currentState!.mode = 'select';
               });
             },
-            child: const Tooltip(
-              message: "Reset Canvas",
-              child: Icon(Icons.restart_alt_rounded, size: toolbarIconSize),
-            ),
+            icon: const Icon(Icons.highlight_alt),
+            iconSize: toolbarIconSize,
+            tooltip: 'Select Components',
           ),
-          GestureDetector(
-            onTap: () {
+          IconButton(
+            onPressed: () {
+              setState(() {
+                _editorCanvasKey.currentState!.mode = 'draw';
+              });
+            },
+            icon: const Icon(Icons.mode),
+            iconSize: toolbarIconSize,
+            tooltip: 'Draw Wires',
+          ),
+          IconButton(
+            onPressed: () {
+              setState(() {
+                _editorCanvasKey.currentState!.removeSelectedComponents();
+              });
+            },
+            icon: const Icon(Icons.delete),
+            iconSize: toolbarIconSize,
+            tooltip: 'Delete',
+          ),
+          IconButton(
+            onPressed: () {
+              setState(() {
+                _editorCanvasKey.currentState!.clear();
+              });
+            },
+            icon: const Icon(Icons.restart_alt),
+            iconSize: toolbarIconSize,
+            tooltip: 'Reset Canvas',
+          ),
+          IconButton(
+            onPressed: () {
               _isRunning ? _stopSimulation() : _startSimulation();
             },
-            child: Tooltip(
-              message: _isRunning ? "Stop Simulation" : "Run Simultation",
-              child: _isRunning
-                  ? const Icon(Icons.stop_circle_outlined,
-                      size: toolbarIconSize)
-                  : const Icon(Icons.play_circle_outline,
-                      size: toolbarIconSize),
-            ),
-          )
+            icon: _isRunning
+                ? const Icon(
+                    Icons.stop_circle_outlined,
+                  )
+                : const Icon(
+                    Icons.play_circle_outline,
+                  ),
+            iconSize: toolbarIconSize,
+            tooltip: _isRunning ? 'Stop Simulation' : 'Run Simulation',
+          ),
+          IconButton(
+            onPressed: () {
+              printScreen();
+            },
+            icon: const Icon(Icons.print),
+            iconSize: toolbarIconSize,
+            tooltip: 'Print Screen',
+          ),
         ],
       ),
     );
@@ -190,7 +221,7 @@ class _MainPageState extends State<MainPage> {
             padding: const EdgeInsets.all(padding),
             child: ListView(
               children: [
-                for (var moduleType in [
+                for (final Type moduleType in [
                   rohd.Xor2Gate,
                   rohd.Or2Gate,
                   rohd.And2Gate,
@@ -221,16 +252,16 @@ class _MainPageState extends State<MainPage> {
                       ),
                     ),
                     onDragUpdate: (details) {
-                      setState(() {
-
-                      });
+                      setState(() {});
                     },
                     onDragEnd: (DraggableDetails details) {
                       setState(() {
-                        _canvasKey.currentState!.addComponent(
+                        _editorCanvasKey.currentState!.addComponent(
                             Component(moduleType: moduleType),
-                            offset: Offset(details.offset.dx - 56,
-                                details.offset.dy - 48)); // TODO: don't manually define offset's offset
+                            offset: Offset(
+                                details.offset.dx - 56,
+                                details.offset.dy -
+                                    48)); // TODO: don't manually define offset's offset
                       });
                     },
                   ),
