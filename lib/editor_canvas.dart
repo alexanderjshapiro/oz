@@ -19,6 +19,7 @@ class EditorCanvasState extends State<EditorCanvas> {
   final List<Component> _selectedComponents = [];
 
   final List<List<Offset>> _wires = [];
+  int _wireIndex = -1;
 
   void addComponent(Component component, {Offset offset = Offset.zero}) {
     setState(() {
@@ -49,6 +50,7 @@ class EditorCanvasState extends State<EditorCanvas> {
       _componentPositions.clear();
       _selectedComponents.clear();
       _wires.clear();
+      _wireIndex = -1;
     });
   }
 
@@ -125,20 +127,41 @@ class EditorCanvasState extends State<EditorCanvas> {
       ]),
       CustomPaint(
         painter: MyPainter(
-          gridSpacing: gridSize,
           wires: _wires,
         ),
         child: mode == 'draw'
             ? GestureDetector(
                 onPanStart: (details) {
                   setState(() {
-                    _wires.add([details.localPosition]);
+                    Offset offset = MyPainter._snapToGrid(Offset(
+                        details.localPosition.dx, details.localPosition.dy));
+                    _wireIndex++;
+                    _wires.add([offset]);
                   });
                 },
                 onPanUpdate: (details) {
                   setState(() {
-                    _wires.last.add(details.localPosition);
+                    Offset offset = MyPainter._snapToGrid(Offset(
+                        details.localPosition.dx, details.localPosition.dy));
+                    if (offset != _wires[_wireIndex].last) {
+                      _wires[_wireIndex].add(offset);
+                    }
                   });
+                },
+                onPanEnd: (_) {
+                  for (int i = 0; i < _wires.length; i++) {
+                    if (_wires[i].last == _wires[_wireIndex].first) {
+                      _wires[i] = _wires[i] + _wires[_wireIndex].sublist(1);
+                      _wires.removeAt(_wireIndex);
+                      _wireIndex--;
+                    } else if (_wires[_wireIndex].last == _wires[i].first) {
+                      _wires[i] = _wires[_wireIndex] + _wires[i].sublist(1);
+                      _wires.removeAt(_wireIndex);
+                      _wireIndex--;
+                    }
+                  }
+
+                  debugPrint(_wires.length.toString());
                 },
               )
             : null,
@@ -148,11 +171,9 @@ class EditorCanvasState extends State<EditorCanvas> {
 }
 
 class MyPainter extends CustomPainter {
-  final double gridSpacing;
   final List<List<Offset>> wires;
 
   MyPainter({
-    required this.gridSpacing,
     required this.wires,
   });
 
@@ -164,16 +185,16 @@ class MyPainter extends CustomPainter {
 
     for (final wire in wires) {
       for (int i = 0; i < wire.length - 1; i++) {
-        final startPoint = _snapToGrid(wire[i]);
-        final endPoint = _snapToGrid(wire[i + 1]);
+        final startPoint = wire[i];
+        final endPoint = wire[i + 1];
         canvas.drawLine(startPoint, endPoint, paint);
       }
     }
   }
 
-  Offset _snapToGrid(Offset point) {
-    final dx = (point.dx / gridSpacing).round() * gridSpacing;
-    final dy = (point.dy / gridSpacing).round() * gridSpacing;
+  static Offset _snapToGrid(Offset point) {
+    final dx = (point.dx / gridSize).round() * gridSize;
+    final dy = (point.dy / gridSize).round() * gridSize;
     return Offset(dx, dy);
   }
 

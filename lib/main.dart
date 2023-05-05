@@ -124,6 +124,7 @@ class _MainPageState extends State<MainPage> {
             iconSize: toolbarIconSize,
             tooltip: 'Reset Canvas',
           ),
+          const SizedBox(width: 40),
           IconButton(
             onPressed: () {
               _isRunning ? _stopSimulation() : _startSimulation();
@@ -160,16 +161,14 @@ class _MainPageState extends State<MainPage> {
               ),
             ),
           ),
-          GestureDetector(
-            onTap: () {
+          IconButton(
+            onPressed: () {
               _stopSimulation();
               SimulationUpdater.tick();
             },
-            child: const Tooltip(
-              message: "Step Simulation",
-              child:
-                  Icon(Icons.slow_motion_video_rounded, size: toolbarIconSize),
-            ),
+            icon: const Icon(Icons.slow_motion_video_rounded),
+            iconSize: toolbarIconSize,
+            tooltip: 'Step Simulation',
           ),
         ],
       ),

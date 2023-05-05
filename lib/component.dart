@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'main.dart';
 import 'dart:math';
-//import 'package:Oz/logic.dart' as rohd;
 import 'logic.dart';
 
 //Logic? wiringPortSelected;
@@ -175,12 +174,7 @@ class ComponentState extends State<Component> {
 
     if (widget.moduleType == HexDisplay) {
       // TODO: clean up code
-      return GestureDetector(
-        onSecondaryTap: () {
-          // TODO fix delete to work right
-          debugPrint("deleting Gate");
-        },
-        child: Container(
+      return Container(
           padding: const EdgeInsets.all(paddingSize),
           width: alignSizeToGrid(minComponentWidth =
               ((borderSize + paddingSize) * 2) +
@@ -266,20 +260,16 @@ class ComponentState extends State<Component> {
                                 ),
                               ),
                             Text(
-                              ((module.ports[0].value ==
-                                              LogicValue.one
+                              ((module.ports[0].value == LogicValue.one
                                           ? 8
                                           : 0) +
-                                      (module.ports[1].value ==
-                                              LogicValue.one
+                                      (module.ports[1].value == LogicValue.one
                                           ? 4
                                           : 0) +
-                                      (module.ports[2].value ==
-                                              LogicValue.one
+                                      (module.ports[2].value == LogicValue.one
                                           ? 2
                                           : 0) +
-                                      (module.ports[3].value ==
-                                              LogicValue.one
+                                      (module.ports[3].value == LogicValue.one
                                           ? 1
                                           : 0))
                                   .toRadixString(16)
@@ -302,8 +292,7 @@ class ComponentState extends State<Component> {
               )
             ],
           ),
-        ),
-      );
+        );
     }
 
     return GestureDetector(
