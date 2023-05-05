@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'main.dart';
 
-const size = 200;
+const double size = 100;
 
 class WaveformGraph extends StatelessWidget {
   final List<bool> waveform;
@@ -15,7 +15,7 @@ class WaveformGraph extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final double containerWidth = size / waveform.length;
+    final double containerWidth = size;
     final double containerHeight = size / 2.0;
     
     List<Container> stateWaves = [];
@@ -53,67 +53,86 @@ class WaveformGraph extends StatelessWidget {
   }
 }
 
-// class WaveformGraph extends StatefulWidget {
-//   List<bool> waveform;
-//   double size;
-//   final Color lineColor;
 
-//   WaveformGraph({
-//     Key? key,
-//     required this.waveform,
-//     required this.size,
-//     this.lineColor = Colors.black,
-//   }) : super(key: key);
+class WaveformAnalyzer extends StatefulWidget {
+  const WaveformAnalyzer({Key? key}) : super(key: key);
 
-//   @override
-//   _WaveformGraphState createState() => _WaveformGraphState();
-// }
+  @override
+  WaveformAnalyzerState createState() => WaveformAnalyzerState();
+}
 
-// class _WaveformGraphState extends State<WaveformGraph> {
-//   late List<Container> _waveformContainers;
+class WaveformAnalyzerState extends State<WaveformAnalyzer> {
+  final List<WaveformGraph> _waveforms = [];
 
-//   @override
-//   void initState() {
-//     super.initState();
-//     _generateWaveformContainers();
-//   }
+  void addWaveform(WaveformGraph waveformGraph) {
+    setState(() {
+      _waveforms.add(waveformGraph);
+    });
+  }
 
-//   void _generateWaveformContainers() {
-//     final double containerWidth = widget.size / widget.waveform.length;
-//     final double containerHeight = widget.size / 2.0;
-//     var previousVal = widget.waveform[0];
-//     final List<Container> waveformContainers = [];
-//     for (var value in widget.waveform) {
-//       BorderSide topBorderSide =
-//           value ? BorderSide(color: widget.lineColor) : BorderSide.none;
-//       BorderSide bottomBorderSide =
-//           value ? BorderSide.none : BorderSide(color: widget.lineColor);
-//       BorderSide leftBorderSide;
-//       if (previousVal == value) {
-//         leftBorderSide = BorderSide.none;
-//       } else {
-//         leftBorderSide = BorderSide(color: widget.lineColor);
-//       }
-//       waveformContainers.add(Container(
-//         width: containerWidth,
-//         height: containerHeight,
-//         decoration: BoxDecoration(
-//           border: Border(
-//             top: topBorderSide,
-//             bottom: bottomBorderSide,
-//             left: leftBorderSide,
-//           ),
-//         ),
-//       ));
-//       previousVal = value;
-//     }
-//     _waveformContainers = waveformContainers;
-//   }
+  void removeWaveform(WaveformGraph waveformGraph) {
+    setState(() {
+      _waveforms.remove(waveformGraph);
+    });
+  }
 
-//   @override
-//   Widget build(BuildContext context) {
-//     return Row(
-//       children: _waveformContainers,
-//     );
-//   }
-// }
+  void clearWaveforms() {
+    setState(() {
+      _waveforms.clear();
+    });
+  }
+
+  void updateWaveform(List<List<bool>> newStates) {
+    setState(() {
+      for(int i = 0; i < _waveforms.length; i++) {
+        _waveforms[i] = WaveformGraph(waveform: newStates[i]);
+      }
+    });
+  }
+
+  int getWaveformsLength() {
+    return _waveforms.length;
+  }
+
+  @override 
+  Widget build(BuildContext context) {
+    List<Widget> waveformWidgets = [];
+
+    for (int i = 0; i < _waveforms.length; i++) {
+      WaveformGraph waveformGraph = _waveforms[i];
+      waveformWidgets.add(waveformGraph);
+
+      if (i < _waveforms.length - 1) {
+        waveformWidgets.add(const SizedBox(height: 10));
+      }
+    }
+
+    if (waveformWidgets.isEmpty) {
+      return Container(
+      decoration: const BoxDecoration(
+        color: Colors.grey,
+        border: Border(top: BorderSide(color: Colors.black))),
+        height: 200,
+        padding: const EdgeInsets.all(20),
+    );
+    }
+
+    return SizedBox(
+      height: 200,
+      child: Container(
+        decoration: const BoxDecoration(
+          color: Colors.grey,
+          border: Border(top: BorderSide(color: Colors.black)),
+        ),
+        padding: const EdgeInsets.all(10),
+        child: SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Column(
+            children: waveformWidgets,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
