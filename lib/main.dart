@@ -7,6 +7,7 @@ import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 import 'editor_canvas.dart';
+import 'waveform.dart';
 
 const double toolbarIconSize = 48;
 const double gridSize = 40;
@@ -15,6 +16,13 @@ const bool showToolBar = true;
 const bool debug = false;
 
 Duration tickRate = const Duration(milliseconds: 1);
+
+List<List<bool>> waveformList = [];
+
+List<bool> waveform0 = [true, false, false, true];
+List<bool> waveform1 = [false, true, true, false];
+List<bool> waveform2 = [true, false, false, true];
+List<bool> waveform3 = [false, true, true, false];
 
 void main() {
   runApp(const Oz());
@@ -42,6 +50,9 @@ class MainPage extends StatefulWidget {
 late GlobalKey<EditorCanvasState>
     _editorCanvasKey; // TODO: consider using callback functions instead of GlobalKey
 
+late GlobalKey<WaveformAnalyzerState>
+    _waveformAnalyzerKey;
+
 class _MainPageState extends State<MainPage> {
   bool _showProjectExplorer = false;
   bool _isRunning = false;
@@ -52,6 +63,12 @@ class _MainPageState extends State<MainPage> {
     super.initState();
     _startSimulation();
     _editorCanvasKey = GlobalKey<EditorCanvasState>();
+    _waveformAnalyzerKey = GlobalKey<WaveformAnalyzerState>();
+
+    waveformList.add(waveform0);
+    waveformList.add(waveform1);
+    waveformList.add(waveform2);
+    waveformList.add(waveform3);
   }
 
   @override
@@ -65,18 +82,22 @@ class _MainPageState extends State<MainPage> {
             Expanded(
               child: Row(
                 children: [
-                  projectExplorer(),
-                  EditorCanvas(key: _editorCanvasKey),
-                  componentList(),
                   Expanded(
                     child: Column(
                       children: [
-                        workSpace(),
-                        waveformAnalyzer()
-                      ]
+                        Expanded(
+                          child: Row(
+                            children: [
+                              projectExplorer(),
+                              EditorCanvas(key: _editorCanvasKey),
+                            ],
+                          ),
+                        ),
+                        WaveformAnalyzer(key: _waveformAnalyzerKey)
+                      ],
                     ),
                   ),
-                  sidebar(),
+                  componentList(),
                 ],
               ),
             ),
@@ -174,6 +195,16 @@ class _MainPageState extends State<MainPage> {
             onPressed: () {
               _stopSimulation();
               SimulationUpdater.tick();
+              if(_waveformAnalyzerKey.currentState!.getWaveformsLength() != waveformList.length) {
+                for(List<bool> waveform in waveformList) {
+                  _waveformAnalyzerKey.currentState!.addWaveform(WaveformGraph(waveform: waveform));
+                }
+              }
+              
+              for(List<bool> waveform in waveformList) {
+                waveform.add(!waveform[waveform.length - 1]);
+              }
+              _waveformAnalyzerKey.currentState!.updateWaveform(waveformList);
             },
             icon: const Icon(Icons.slow_motion_video_rounded),
             iconSize: toolbarIconSize,

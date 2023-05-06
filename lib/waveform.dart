@@ -127,9 +127,12 @@ class WaveformAnalyzerState extends State<WaveformAnalyzer> {
         padding: const EdgeInsets.all(10),
         child: SingleChildScrollView(
           scrollDirection: Axis.horizontal,
-          child: Column(
-            children: waveformWidgets,
-          ),
+          child: SingleChildScrollView(
+            scrollDirection: Axis.vertical,
+            child: Column(
+              children: waveformWidgets,
+            ),
+          )
         ),
       ),
     );
