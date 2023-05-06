@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'component.dart';
+import 'logic.dart';
 import 'main.dart';
 
 class EditorCanvas extends StatefulWidget {
@@ -14,16 +15,22 @@ class EditorCanvasState extends State<EditorCanvas> {
 
   String mode = 'select';
 
-  final List<Component> _components = [];
+  final Map<GlobalKey<ComponentState>, Component> _components = {};
   final Map<Component, Offset> _componentPositions = {};
   final List<Component> _selectedComponents = [];
 
   final List<List<Offset>> _wires = [];
   int _wireIndex = -1;
+  bool validWireStart = false;
 
-  void addComponent(Component component, {Offset offset = Offset.zero}) {
+  void addComponent(Type moduleType, {Offset offset = Offset.zero}) {
+    GlobalKey<ComponentState> componentKey = GlobalKey<ComponentState>();
+    Component component = Component(
+      moduleType: moduleType,
+      key: componentKey,
+    );
     setState(() {
-      _components.add(component);
+      _components[componentKey] = component;
       _componentPositions[component] = offset;
     });
   }
@@ -32,7 +39,6 @@ class EditorCanvasState extends State<EditorCanvas> {
     setState(() {
       _components.remove(component);
       _componentPositions.remove(component);
-      _selectedComponents.remove(component);
     });
   }
 
@@ -41,6 +47,7 @@ class EditorCanvasState extends State<EditorCanvas> {
       for (final Component component in _selectedComponents) {
         _removeComponent(component);
       }
+      _selectedComponents.clear();
     });
   }
 
@@ -73,100 +80,140 @@ class EditorCanvasState extends State<EditorCanvas> {
   @override
   Widget build(BuildContext context) {
     return Expanded(
-        child: Stack(children: [
-      GridPaper(
-        divisions: 1,
-        subdivisions: 1,
-        interval: gridSize,
-        color: Colors.black12,
-        child: Container(),
-      ),
-      Stack(children: [
-        for (final Component component in _components)
-          Positioned(
-            left: (_componentPositions[component]!.dx / gridSize)
-                        .roundToDouble() *
-                    gridSize -
-                (_selectedComponents.contains(component)
-                    ? selectedComponentBorderWidth
-                    : 0),
-            top: (_componentPositions[component]!.dy / gridSize)
-                        .roundToDouble() *
-                    gridSize -
-                (_selectedComponents.contains(component)
-                    ? selectedComponentBorderWidth
-                    : 0),
-            child: GestureDetector(
-                onTap: () {
-                  setState(() {
-                    _selectedComponents.add(component);
-                  });
-                },
-                onPanStart: (_) {
-                  setState(() {
-                    _selectedComponents.add(component);
-                  });
-                },
-                onPanUpdate: (details) {
-                  for (final Component component in _selectedComponents) {
-                    updateComponentPosition(component, details.delta);
-                  }
-                },
-                onPanEnd: (_) {
-                  _snapToGrid(component);
-                },
-                child: Container(
-                    decoration: _selectedComponents.contains(component)
-                        ? BoxDecoration(
-                            border: Border.all(
-                                width: selectedComponentBorderWidth,
-                                color: Colors.blue))
-                        : null,
-                    child: component)),
-          )
-      ]),
-      CustomPaint(
-        painter: MyPainter(
-          wires: _wires,
-        ),
-        child: mode == 'draw'
-            ? GestureDetector(
-                onPanStart: (details) {
-                  setState(() {
-                    Offset offset = MyPainter._snapToGrid(Offset(
-                        details.localPosition.dx, details.localPosition.dy));
-                    _wireIndex++;
-                    _wires.add([offset]);
-                  });
-                },
-                onPanUpdate: (details) {
-                  setState(() {
-                    Offset offset = MyPainter._snapToGrid(Offset(
-                        details.localPosition.dx, details.localPosition.dy));
-                    if (offset != _wires[_wireIndex].last) {
-                      _wires[_wireIndex].add(offset);
-                    }
-                  });
-                },
-                onPanEnd: (_) {
-                  for (int i = 0; i < _wires.length; i++) {
-                    if (_wires[i].last == _wires[_wireIndex].first) {
-                      _wires[i] = _wires[i] + _wires[_wireIndex].sublist(1);
-                      _wires.removeAt(_wireIndex);
-                      _wireIndex--;
-                    } else if (_wires[_wireIndex].last == _wires[i].first) {
-                      _wires[i] = _wires[_wireIndex] + _wires[i].sublist(1);
-                      _wires.removeAt(_wireIndex);
-                      _wireIndex--;
-                    }
-                  }
+        child: GestureDetector(
+            onTap: () {
+              setState(() {
+                debugPrint('clearing selected components');
+                _selectedComponents.clear();
+              });
+            },
+            child: Stack(children: [
+              GridPaper(
+                divisions: 1,
+                subdivisions: 1,
+                interval: gridSize,
+                color: Colors.black12,
+                child: Container(),
+              ),
+              Stack(children: [
+                for (final GlobalKey componentKey in _components.keys)
+                  Positioned(
+                    left: (_componentPositions[_components[componentKey]]!.dx /
+                                    gridSize)
+                                .roundToDouble() *
+                            gridSize -
+                        (_selectedComponents.contains(_components[componentKey])
+                            ? selectedComponentBorderWidth
+                            : 0),
+                    top: (_componentPositions[_components[componentKey]]!.dy /
+                                    gridSize)
+                                .roundToDouble() *
+                            gridSize -
+                        (_selectedComponents.contains(_components[componentKey])
+                            ? selectedComponentBorderWidth
+                            : 0),
+                    child: GestureDetector(
+                        onTap: () {
+                          setState(() {
+                            _selectedComponents.add(_components[componentKey]!);
+                          });
+                        },
+                        onPanUpdate: (details) {
+                          for (final Component component
+                              in _selectedComponents) {
+                            updateComponentPosition(component, details.delta);
+                          }
+                        },
+                        onPanEnd: (_) {
+                          for (final Component component
+                              in _selectedComponents) {
+                            _snapToGrid(component);
+                          }
+                        },
+                        child: Container(
+                            decoration: _selectedComponents
+                                    .contains(_components[componentKey]!)
+                                ? BoxDecoration(
+                                    border: Border.all(
+                                        width: selectedComponentBorderWidth,
+                                        color: Colors.blue))
+                                : null,
+                            child: _components[componentKey]!)),
+                  )
+              ]),
+              CustomPaint(
+                painter: MyPainter(
+                  wires: _wires,
+                ),
+                child: mode == 'draw'
+                    ? GestureDetector(
+                        onPanStart: (details) {
+                          Offset startOffset = MyPainter._snapToGrid(Offset(
+                              details.localPosition.dx,
+                              details.localPosition.dy));
 
-                  debugPrint(_wires.length.toString());
-                },
-              )
-            : null,
-      ),
-    ]));
+                          for (final GlobalKey<ComponentState> componentKey
+                              in _components.keys) {
+                            ComponentState componentState =
+                                componentKey.currentState!;
+                            Offset componentOffset =
+                                _componentPositions[_components[componentKey]]!;
+                            List<Offset> rightSideOffsets = [
+                              for (int i = 0;
+                                  i < componentState.module.rightSide.length;
+                                  i++)
+                                Offset(componentOffset.dx,
+                                    componentOffset.dy + (gridSize * (i + 2)))
+                            ];
+                            if (rightSideOffsets.contains(startOffset)) {
+                              debugPrint(
+                                  'found valid wire start at ${startOffset / gridSize} on component ${componentState.widget.moduleType} port ${rightSideOffsets.indexOf(startOffset)}');
+                              setState(() {
+                                validWireStart = true;
+                                _wireIndex++;
+                                _wires.add([startOffset]);
+                              });
+                              return;
+                            }
+                          }
+                        },
+                        onPanUpdate: (details) {
+                          if (validWireStart) {
+                            setState(() {
+                              Offset offset = MyPainter._snapToGrid(Offset(
+                                  details.localPosition.dx,
+                                  details.localPosition.dy));
+                              if (offset != _wires[_wireIndex].last) {
+                                _wires[_wireIndex].add(offset);
+                              }
+                            });
+                          }
+                        },
+                        onPanEnd: (_) {
+                          if (validWireStart) {
+                            for (int i = 0; i < _wires.length; i++) {
+                              if (_wires[i].last == _wires[_wireIndex].first) {
+                                _wires[i] =
+                                    _wires[i] + _wires[_wireIndex].sublist(1);
+                                _wires.removeAt(_wireIndex);
+                                _wireIndex--;
+                              } else if (_wires[_wireIndex].last ==
+                                  _wires[i].first) {
+                                _wires[i] =
+                                    _wires[_wireIndex] + _wires[i].sublist(1);
+                                _wires.removeAt(_wireIndex);
+                                _wireIndex--;
+                              }
+                            }
+                            validWireStart = false;
+                          }
+
+                          debugPrint(_wires.length.toString());
+                        },
+                      )
+                    : null,
+              ),
+            ])));
   }
 }
 

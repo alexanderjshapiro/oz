@@ -294,8 +294,7 @@ class _MainPageState extends State<MainPage> {
                 },
                 onDragEnd: (DraggableDetails details) {
                   setState(() {
-                    _editorCanvasKey.currentState!.addComponent(
-                        Component(moduleType: moduleType),
+                    _editorCanvasKey.currentState!.addComponent(moduleType,
                         offset: Offset(
                             details.offset.dx - 56,
                             details.offset.dy -
