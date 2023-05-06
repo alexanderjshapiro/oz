@@ -289,9 +289,6 @@ class _MainPageState extends State<MainPage> {
                     fontSize: 24,
                   ),
                 ),
-                onDragUpdate: (details) {
-                  setState(() {});
-                },
                 onDragEnd: (DraggableDetails details) {
                   setState(() {
                     _editorCanvasKey.currentState!.addComponent(moduleType,
