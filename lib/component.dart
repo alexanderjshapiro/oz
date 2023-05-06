@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'main.dart';
 import 'dart:math';
-//import 'package:Oz/logic.dart' as rohd;
-import 'package:Oz/logic.dart';
+import 'logic.dart';
 
 //Logic? wiringPortSelected;
 Node? wiringNodeSelected;
@@ -58,6 +57,8 @@ class ComponentPreview extends StatelessWidget {
 
 class ComponentState extends State<Component> {
   late Module module; // Add module field
+  late double height;
+  late double width;
 
   @override
   void initState() {
@@ -67,6 +68,8 @@ class ComponentState extends State<Component> {
       setState(() {});
     };
   }
+
+  void test() {}
 
   _toggleInputValue(PhysicalPort port) {
     if (port.value == LogicValue.zero) {
@@ -123,7 +126,7 @@ class ComponentState extends State<Component> {
     double portNameHeight = 0; // Height of longest input or output name
 
     double inputNameWidth = 0; // Width of longest input name
-    for (var input in module.leftSide) {
+    for (final input in module.leftSide) {
       TextSpan span = TextSpan(
           style: const TextStyle(
             fontSize: portNameSize,
@@ -140,7 +143,7 @@ class ComponentState extends State<Component> {
     }
 
     double outputNameWidth = 0; // Width of longest output name
-    for (var output in module.rightSide) {
+    for (final output in module.rightSide) {
       TextSpan span = TextSpan(
           style: const TextStyle(
             fontSize: portNameSize,
@@ -173,149 +176,16 @@ class ComponentState extends State<Component> {
 
     double componentHeight = nameAreaHeight + portAreaHeight;
 
+    height = componentHeight;
+    width = componentWidth;
+
     if (widget.moduleType == HexDisplay) {
       // TODO: clean up code
-      return GestureDetector(
-        onSecondaryTap: () {
-          // TODO fix delete to work right
-          debugPrint("deleting Gate");
-        },
-        child: Container(
-          padding: const EdgeInsets.all(paddingSize),
-          width: alignSizeToGrid(minComponentWidth =
-              ((borderSize + paddingSize) * 2) +
-                  max((inputNameWidth + minCenterPadding + 150), nameWidth)),
-          height: componentHeight,
-          decoration: BoxDecoration(
-              color: Colors.white, border: Border.all(width: borderSize)),
-          child: Column(
-            children: [
-              // Component Name
-              SizedBox(
-                height: nameAreaHeight - (borderSize + paddingSize),
-                child: Text(
-                  module.name,
-                  style: const TextStyle(
-                    fontSize: componentNameSize,
-                  ),
-                ),
-              ),
-              // Inputs and Outputs
-              SizedBox(
-                height: portAreaHeight - (borderSize + paddingSize),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Input column
-                    Column(
-                      mainAxisAlignment: MainAxisAlignment.start,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        for (var port in module.ports)
-                          SizedBox(
-                            height: portHeight,
-                            child: Center(
-                              child: GestureDetector(
-                                //onTap: () => _toggleInputValue(input.item2),
-                                onDoubleTap: () {
-                                  if (wiringNodeSelected == null) {
-                                    debugPrint("Selected Output for wiring");
-                                    wiringNodeSelected = port.connectedNode;
-                                  } else if (wiringNodeSelected ==
-                                      port.connectedNode) {
-                                    debugPrint("Cannot connect wire to itself");
-                                    wiringNodeSelected = null;
-                                  } else {
-                                    port.connectNode(wiringNodeSelected!);
-                                    wiringNodeSelected = null;
-                                    debugPrint("Connected wire");
-                                  }
-                                },
-                                child: Text(port.portName,
-                                    style: TextStyle(
-                                        fontSize: portNameSize,
-                                        fontFamily: 'Courier New',
-                                        color: getColor(port.value))),
-                              ),
-                            ),
-                          )
-                      ],
-                    ),
-                    // Output column
-                    Container(
-                      width: 150,
-                      height: portAreaHeight,
-                      color: Colors.black,
-                      child: FittedBox(
-                        fit: BoxFit.scaleDown,
-                        child: Stack(
-                          children: [
-                            //Creates a hex display/ nixie tube type effect
-                            for (var char in "1234567890ABCDEF".characters)
-                              Opacity(
-                                opacity: 0.05,
-                                child: Text(
-                                  char,
-                                  style: const TextStyle(
-                                    fontSize: 1000,
-                                    fontFamily: 'Consolas',
-                                    color: Colors.grey,
-                                  ),
-                                  textAlign: TextAlign.center,
-                                ),
-                              ),
-                            Text(
-                              ((module.ports[0].value ==
-                                              LogicValue.one
-                                          ? 8
-                                          : 0) +
-                                      (module.ports[1].value ==
-                                              LogicValue.one
-                                          ? 4
-                                          : 0) +
-                                      (module.ports[2].value ==
-                                              LogicValue.one
-                                          ? 2
-                                          : 0) +
-                                      (module.ports[3].value ==
-                                              LogicValue.one
-                                          ? 1
-                                          : 0))
-                                  .toRadixString(16)
-                                  .toUpperCase(),
-                              style: const TextStyle(
-                                  fontSize: 1000,
-                                  fontFamily: 'Consolas',
-                                  color: Colors.amber,
-                                  shadows: [
-                                    Shadow(blurRadius: 12, color: Colors.red)
-                                  ]),
-                              textAlign: TextAlign.center,
-                            ),
-                          ],
-                        ),
-                      ),
-                    )
-                  ],
-                ),
-              )
-            ],
-          ),
-        ),
-      );
-    }
-
-    return GestureDetector(
-      onSecondaryTap: () {
-        // TODO fix delete to work right
-        debugPrint("deleting Gate");
-        //module.release();
-        //canvasKey.currentState!.removeComponent(widget);
-      },
-      child: Container(
+      return Container(
         padding: const EdgeInsets.all(paddingSize),
-        width: componentWidth,
+        width: alignSizeToGrid(minComponentWidth =
+            ((borderSize + paddingSize) * 2) +
+                max((inputNameWidth + minCenterPadding + 150), nameWidth)),
         height: componentHeight,
         decoration: BoxDecoration(
             color: Colors.white, border: Border.all(width: borderSize)),
@@ -343,14 +213,12 @@ class ComponentState extends State<Component> {
                     mainAxisAlignment: MainAxisAlignment.start,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      for (var port in module.leftSide)
+                      for (var port in module.ports)
                         SizedBox(
                           height: portHeight,
                           child: Center(
                             child: GestureDetector(
-                              onTap: () {
-                                //_toggleInputValue(port);
-                              },
+                              //onTap: () => _toggleInputValue(input.item2),
                               onDoubleTap: () {
                                 if (wiringNodeSelected == null) {
                                   debugPrint("Selected Output for wiring");
@@ -376,99 +244,210 @@ class ComponentState extends State<Component> {
                     ],
                   ),
                   // Output column
-                  Column(
-                    mainAxisAlignment: MainAxisAlignment.start,
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      for (var port in module.rightSide)
-                        SizedBox(
-                          height: portHeight,
-                          child: Center(
-                            child: GestureDetector(
-                              onTap: () {
-                                // _toggleInputValue(port);
-                              },
-                              onDoubleTap: () {
-                                if (wiringNodeSelected == null) {
-                                  debugPrint("Selected Output for wiring");
-                                  wiringNodeSelected = port.connectedNode;
-                                } else if (wiringNodeSelected ==
-                                    port.connectedNode) {
-                                  debugPrint("Cannot connect wire to itself");
-                                  wiringNodeSelected = null;
-                                } else {
-                                  port.connectNode(wiringNodeSelected!);
-                                  wiringNodeSelected = null;
-                                  debugPrint("Connected wire");
-                                }
-                              },
-                              child: Text(port.portName,
-                                  textAlign: TextAlign.right,
-                                  style: TextStyle(
-                                      fontSize: portNameSize,
-                                      fontFamily: 'Courier New',
-                                      color: getColor(port.value))),
+                  Container(
+                    width: 150,
+                    height: portAreaHeight,
+                    color: Colors.black,
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Stack(
+                        children: [
+                          //Creates a hex display/ nixie tube type effect
+                          for (var char in "1234567890ABCDEF".characters)
+                            Opacity(
+                              opacity: 0.05,
+                              child: Text(
+                                char,
+                                style: const TextStyle(
+                                  fontSize: 1000,
+                                  fontFamily: 'Consolas',
+                                  color: Colors.grey,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
                             ),
+                          Text(
+                            ((module.ports[0].value == LogicValue.one ? 8 : 0) +
+                                    (module.ports[1].value == LogicValue.one
+                                        ? 4
+                                        : 0) +
+                                    (module.ports[2].value == LogicValue.one
+                                        ? 2
+                                        : 0) +
+                                    (module.ports[3].value == LogicValue.one
+                                        ? 1
+                                        : 0))
+                                .toRadixString(16)
+                                .toUpperCase(),
+                            style: const TextStyle(
+                                fontSize: 1000,
+                                fontFamily: 'Consolas',
+                                color: Colors.amber,
+                                shadows: [
+                                  Shadow(blurRadius: 12, color: Colors.red)
+                                ]),
+                            textAlign: TextAlign.center,
                           ),
-                        )
-                    ],
-                  ),
+                        ],
+                      ),
+                    ),
+                  )
                 ],
               ),
             )
           ],
         ),
+      );
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(paddingSize),
+      width: componentWidth,
+      height: componentHeight,
+      decoration: BoxDecoration(
+          color: Colors.white, border: Border.all(width: borderSize)),
+      child: Column(
+        children: [
+          // Component Name
+          SizedBox(
+            height: nameAreaHeight - (borderSize + paddingSize),
+            child: Text(
+              module.name,
+              style: const TextStyle(
+                fontSize: componentNameSize,
+              ),
+            ),
+          ),
+          // Inputs and Outputs
+          SizedBox(
+            height: portAreaHeight - (borderSize + paddingSize),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Input column
+                Column(
+                  mainAxisAlignment: MainAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    for (var port in module.leftSide)
+                      SizedBox(
+                        height: portHeight,
+                        child: Center(
+                          child: GestureDetector(
+                            onTap: () {
+                              //_toggleInputValue(port);
+                            },
+                            onDoubleTap: () {
+                              if (wiringNodeSelected == null) {
+                                debugPrint("Selected Output for wiring");
+                                wiringNodeSelected = port.connectedNode;
+                              } else if (wiringNodeSelected ==
+                                  port.connectedNode) {
+                                debugPrint("Cannot connect wire to itself");
+                                wiringNodeSelected = null;
+                              } else {
+                                port.connectNode(wiringNodeSelected!);
+                                wiringNodeSelected = null;
+                                debugPrint("Connected wire");
+                              }
+                            },
+                            child: Text(port.portName,
+                                style: TextStyle(
+                                    fontSize: portNameSize,
+                                    fontFamily: 'Courier New',
+                                    color: getColor(port.value))),
+                          ),
+                        ),
+                      )
+                  ],
+                ),
+                // Output column
+                Column(
+                  mainAxisAlignment: MainAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    for (var port in module.rightSide)
+                      SizedBox(
+                        height: portHeight,
+                        child: Center(
+                          child: GestureDetector(
+                            onTap: () {
+                              // _toggleInputValue(port);
+                            },
+                            onDoubleTap: () {
+                              if (wiringNodeSelected == null) {
+                                debugPrint("Selected Output for wiring");
+                                wiringNodeSelected = port.connectedNode;
+                              } else if (wiringNodeSelected ==
+                                  port.connectedNode) {
+                                debugPrint("Cannot connect wire to itself");
+                                wiringNodeSelected = null;
+                              } else {
+                                port.connectNode(wiringNodeSelected!);
+                                wiringNodeSelected = null;
+                                debugPrint("Connected wire");
+                              }
+                            },
+                            child: Text(port.portName,
+                                textAlign: TextAlign.right,
+                                style: TextStyle(
+                                    fontSize: portNameSize,
+                                    fontFamily: 'Courier New',
+                                    color: getColor(port.value))),
+                          ),
+                        ),
+                      )
+                  ],
+                ),
+              ],
+            ),
+          )
+        ],
       ),
     );
   }
 
   Widget buttonBuildOverride() {
     //TODO Figure out a better way render Button component
-    return GestureDetector(
-      onSecondaryTap: () {
-        // TODO fix delete to work right
-        debugPrint("deleting Gate");
-      },
-      child: Stack(
-        children: [
-          Container(
-            width: alignSizeToGrid(50),
-            height: alignSizeToGrid(50),
-            color: Colors.blueGrey,
-          ),
-          Positioned.fill(
-            top: 5,
-            bottom: 5,
-            left: 5,
-            right: 5,
-            child: GestureDetector(
-              onTap: () {
-                _toggleInputValue(module.ports[0]);
-              },
-              onDoubleTap: () {
-                if (wiringNodeSelected == null) {
-                  debugPrint("Selected Output for wiring");
-                  wiringNodeSelected = module.ports[0].connectedNode;
-                } else if (wiringNodeSelected ==
-                    module.ports[0].connectedNode) {
-                  debugPrint("Cannot connect wire to itself");
-                  wiringNodeSelected = null;
-                } else {
-                  module.ports[0].connectNode(wiringNodeSelected!);
-                  wiringNodeSelected = null;
-                  debugPrint("Connected wire");
-                }
-              },
-              child: Container(
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: getColor(module.ports[0].value),
-                ),
+    return Stack(
+      children: [
+        Container(
+          width: alignSizeToGrid(50),
+          height: alignSizeToGrid(50),
+          color: Colors.blueGrey,
+        ),
+        Positioned.fill(
+          top: 5,
+          bottom: 5,
+          left: 5,
+          right: 5,
+          child: GestureDetector(
+            onTap: () {
+              _toggleInputValue(module.ports[0]);
+            },
+            onDoubleTap: () {
+              if (wiringNodeSelected == null) {
+                debugPrint("Selected Output for wiring");
+                wiringNodeSelected = module.ports[0].connectedNode;
+              } else if (wiringNodeSelected == module.ports[0].connectedNode) {
+                debugPrint("Cannot connect wire to itself");
+                wiringNodeSelected = null;
+              } else {
+                module.ports[0].connectNode(wiringNodeSelected!);
+                wiringNodeSelected = null;
+                debugPrint("Connected wire");
+              }
+            },
+            child: Container(
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: getColor(module.ports[0].value),
               ),
             ),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }
