@@ -57,6 +57,8 @@ class ComponentPreview extends StatelessWidget {
 
 class ComponentState extends State<Component> {
   late Module module; // Add module field
+  late double height;
+  late double width;
 
   @override
   void initState() {
@@ -173,6 +175,9 @@ class ComponentState extends State<Component> {
     double portAreaHeight = alignSizeToGrid(minPortAreaHeight, div: 2);
 
     double componentHeight = nameAreaHeight + portAreaHeight;
+
+    height = componentHeight;
+    width = componentWidth;
 
     if (widget.moduleType == HexDisplay) {
       // TODO: clean up code

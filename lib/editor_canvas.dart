@@ -22,6 +22,9 @@ class EditorCanvasState extends State<EditorCanvas> {
   final List<List<Offset>> _wires = [];
   int _wireIndex = -1;
   bool validWireStart = false;
+  Node? wiringNodeSelected;
+
+  Map<GlobalKey<ComponentState>, Component> getComponents() => _components;
 
   void addComponent(Type moduleType, {Offset offset = Offset.zero}) {
     GlobalKey<ComponentState> componentKey = GlobalKey<ComponentState>();
@@ -99,7 +102,9 @@ class EditorCanvasState extends State<EditorCanvas> {
                 onTap: () {
                   // check if component is already selected
                   if (_selectedComponentKey == componentKey) {
-                    _selectedComponentKey = null;
+                    setState(() {
+                      _selectedComponentKey = null;
+                    });
                   } else {
                     setState(() {
                       _selectedComponentKey = componentKey;
@@ -141,23 +146,25 @@ class EditorCanvasState extends State<EditorCanvas> {
                   for (final GlobalKey<ComponentState> componentKey
                       in _components.keys) {
                     ComponentState componentState = componentKey.currentState!;
-                    Offset componentOffset =
-                        _componentPositions[_components[componentKey]]!;
+                    Offset componentOffset = _componentPositions[componentKey]!;
                     List<Offset> rightSideOffsets = [
                       for (int i = 0;
                           i < componentState.module.rightSide.length;
                           i++)
-                        Offset(componentOffset.dx,
+                        Offset(componentOffset.dx + componentState.width,
                             componentOffset.dy + (gridSize * (i + 2)))
                     ];
                     if (rightSideOffsets.contains(startOffset)) {
                       debugPrint(
-                          'found valid wire start at ${startOffset / gridSize} on component ${componentState.widget.moduleType} port ${rightSideOffsets.indexOf(startOffset)}');
+                          'found valid wire start at ${startOffset} on component ${componentState.widget.moduleType} right side port ${rightSideOffsets.indexOf(startOffset)}');
                       setState(() {
                         validWireStart = true;
                         _wireIndex++;
                         _wires.add([startOffset]);
                       });
+                      wiringNodeSelected = componentState.module.rightSide
+                          .elementAt(rightSideOffsets.indexOf(startOffset))
+                          .connectedNode;
                       return;
                     }
                   }
@@ -187,9 +194,32 @@ class EditorCanvasState extends State<EditorCanvas> {
                       }
                     }
                     validWireStart = false;
-                  }
 
-                  debugPrint(_wires.length.toString());
+                    Offset endOffset = _wires[_wireIndex].last;
+
+                    for (final GlobalKey<ComponentState> componentKey
+                        in _components.keys) {
+                      ComponentState componentState =
+                          componentKey.currentState!;
+                      Offset componentOffset =
+                          _componentPositions[componentKey]!;
+                      List<Offset> leftSideOffsets = [
+                        for (int i = 0;
+                            i < componentState.module.leftSide.length;
+                            i++)
+                          Offset(componentOffset.dx,
+                              componentOffset.dy + (gridSize * (i + 2)))
+                      ];
+                      if (leftSideOffsets.contains(endOffset)) {
+                        debugPrint(
+                            'found valid wire end at $endOffset on component ${componentState.widget.moduleType} left side port ${leftSideOffsets.indexOf(endOffset)}');
+                        componentState.module.leftSide
+                            .elementAt(leftSideOffsets.indexOf(endOffset))
+                            .connectNode(wiringNodeSelected!);
+                        return;
+                      }
+                    }
+                  }
                 },
               )
             : null,
