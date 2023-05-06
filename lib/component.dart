@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'main.dart';
 import 'dart:math';
-//import 'package:Oz/logic.dart' as rohd;
 import 'package:Oz/logic.dart';
 import 'package:flutter/services.dart';
 
@@ -64,7 +63,12 @@ class ComponentState extends State<Component> {
     super.initState();
     module = gateTypes[widget.moduleType.toString()]!.call();
     module.guiUpdateCallback = () {
-      setState(() {});
+      if (mounted) {
+        setState(() {});
+      } else {
+        module.delete();
+        debugPrint("Uh Oh, Someone has a bug in the code");
+      }
     };
   }
 
@@ -79,10 +83,68 @@ class ComponentState extends State<Component> {
     return size + ((gridSize / div) - (size % (gridSize / div)));
   }
 
+  _toggleInputValue(PhysicalPort port) {
+    if (port.value == LogicValue.zero) {
+      SimulationUpdater.queue.addFirst(() => port.connectedNode!
+          .drive(portKey: port.key, driveValue: LogicValue.one));
+    } else {
+      SimulationUpdater.queue.addFirst(() => port.connectedNode!
+          .drive(portKey: port.key, driveValue: LogicValue.zero));
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     if (widget.moduleType == BinarySwitch) {
-      return buttonBuildOverride();
+      return GestureDetector(
+        onSecondaryTap: () {
+          if (RawKeyboard.instance.keysPressed
+              .contains(LogicalKeyboardKey.controlLeft)) {
+            module.delete();
+            canvasKey.currentState!.removeComponent(widget);
+          }
+        },
+        child: Stack(
+          children: [
+            Container(
+              width: alignSizeToGrid(10),
+              height: alignSizeToGrid(10),
+              color: Colors.blueGrey,
+            ),
+            Positioned.fill(
+              top: 5,
+              bottom: 5,
+              left: 5,
+              right: 5,
+              child: GestureDetector(
+                onTap: () {
+                  _toggleInputValue(module.ports[0]);
+                },
+                onDoubleTap: () {
+                  if (wiringNodeSelected == null) {
+                    debugPrint("Selected Output for wiring");
+                    wiringNodeSelected = module.ports[0].connectedNode;
+                  } else if (wiringNodeSelected ==
+                      module.ports[0].connectedNode) {
+                    debugPrint("Cannot connect wire to itself");
+                    wiringNodeSelected = null;
+                  } else {
+                    module.ports[0].connectNode(wiringNodeSelected!);
+                    wiringNodeSelected = null;
+                    debugPrint("Connected wire");
+                  }
+                },
+                child: Container(
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: getColor(module.ports[0].value),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
     }
 
     const double componentNameSize = 28;
@@ -402,69 +464,6 @@ class ComponentState extends State<Component> {
             )
           ],
         ),
-      ),
-    );
-  }
-
-  Widget buttonBuildOverride() {
-    toggleInputValue(PhysicalPort port) {
-      if (port.value == LogicValue.zero) {
-        SimulationUpdater.queue.addFirst(() => port.connectedNode!
-            .drive(portKey: port.key, driveValue: LogicValue.one));
-      } else {
-        SimulationUpdater.queue.addFirst(() => port.connectedNode!
-            .drive(portKey: port.key, driveValue: LogicValue.zero));
-      }
-    }
-
-    //TODO Figure out a better way render Button component
-    return GestureDetector(
-      onSecondaryTap: () {
-        if (RawKeyboard.instance.keysPressed
-            .contains(LogicalKeyboardKey.controlLeft)) {
-          module.delete();
-          canvasKey.currentState!.removeComponent(widget);
-        }
-      },
-      child: Stack(
-        children: [
-          Container(
-            width: alignSizeToGrid(10),
-            height: alignSizeToGrid(10),
-            color: Colors.blueGrey,
-          ),
-          Positioned.fill(
-            top: 5,
-            bottom: 5,
-            left: 5,
-            right: 5,
-            child: GestureDetector(
-              onTap: () {
-                toggleInputValue(module.ports[0]);
-              },
-              onDoubleTap: () {
-                if (wiringNodeSelected == null) {
-                  debugPrint("Selected Output for wiring");
-                  wiringNodeSelected = module.ports[0].connectedNode;
-                } else if (wiringNodeSelected ==
-                    module.ports[0].connectedNode) {
-                  debugPrint("Cannot connect wire to itself");
-                  wiringNodeSelected = null;
-                } else {
-                  module.ports[0].connectNode(wiringNodeSelected!);
-                  wiringNodeSelected = null;
-                  debugPrint("Connected wire");
-                }
-              },
-              child: Container(
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: getColor(module.ports[0].value),
-                ),
-              ),
-            ),
-          ),
-        ],
       ),
     );
   }
