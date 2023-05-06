@@ -107,14 +107,15 @@ class WaveformAnalyzerState extends State<WaveformAnalyzer> {
       }
     }
 
+    // If the waveformWidgets array is empty, the box displays wrong so this is a workaround
     if (waveformWidgets.isEmpty) {
       return Container(
-      decoration: const BoxDecoration(
-        color: Colors.grey,
-        border: Border(top: BorderSide(color: Colors.black))),
-        height: 200,
-        padding: const EdgeInsets.all(20),
-    );
+        decoration: const BoxDecoration(
+          color: Colors.grey,
+          border: Border(top: BorderSide(color: Colors.black))),
+          height: 200,
+          padding: const EdgeInsets.all(20),
+      );
     }
 
     return SizedBox(
@@ -126,9 +127,12 @@ class WaveformAnalyzerState extends State<WaveformAnalyzer> {
         ),
         padding: const EdgeInsets.all(10),
         child: SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: Column(
-            children: waveformWidgets,
+          scrollDirection: Axis.vertical,
+          child: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Column(
+              children: waveformWidgets,
+            ) 
           ),
         ),
       ),
