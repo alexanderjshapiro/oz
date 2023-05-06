@@ -6,7 +6,7 @@ class Xor2Gate extends Module {
     ports = [
       for (int i = 0; i < 2; i++)
         PhysicalPort(
-            portName: "In $i", module: this, portLocation: PortLocation.left),
+            portName: "In $i", module: this, portLocation: PortLocation.left, initalState: LogicValue.z),
       for (int i = 0; i < 1; i++)
         PhysicalPort(
             portName: "Out $i", module: this, portLocation: PortLocation.right)
@@ -23,7 +23,7 @@ class NotGate extends Module {
     ports = [
       for (int i = 0; i < 1; i++)
         PhysicalPort(
-            portName: "In $i", module: this, portLocation: PortLocation.left),
+            portName: "In $i", module: this, portLocation: PortLocation.left, initalState: LogicValue.z),
       for (int i = 0; i < 1; i++)
         PhysicalPort(
             portName: "Out $i", module: this, portLocation: PortLocation.right)
@@ -35,8 +35,7 @@ class NotGate extends Module {
   }
 }
 
-//OCTAL BUS TRANSCEIVERS
-//TODO Need to add enable pin for 3 state output
+//OCTAL BUS TRANSCEIVERS WITH 3-STATE OUTPUTS
 class SN74LS245 extends Module {
   SN74LS245() : super(name: "SN74LS245") {
     ports = [
@@ -48,10 +47,20 @@ class SN74LS245 extends Module {
             portName: "B$i", module: this, portLocation: PortLocation.right),
       PhysicalPort(
           portName: "DIR", module: this, portLocation: PortLocation.left),
+      PhysicalPort(
+          portName: "OE'", module: this, portLocation: PortLocation.left),
     ];
   }
   @override
   update() {
+    if (ports.firstWhere((element) => element.portName == "OE'").value ==
+        LogicValue.one) {
+          for(int i = 0; i < 16; i ++){
+            ports[i].connectedNode?.impede(portKey: ports[i].key);
+          }
+          return;
+        }
+
     if (ports.firstWhere((element) => element.portName == "DIR").value ==
         LogicValue.one) {
       // transfer left side values to right side
@@ -79,12 +88,12 @@ class SN74LS373 extends Module {
     ports = [
       for (int i = 0; i < 8; i++)
         PhysicalPort(
-            portName: "D$i", module: this, portLocation: PortLocation.left),
+            portName: "D$i", module: this, portLocation: PortLocation.left, initalState: LogicValue.z),
       for (int i = 0; i < 8; i++)
         PhysicalPort(
             portName: "Q$i", module: this, portLocation: PortLocation.right),
       PhysicalPort(
-          portName: "EN", module: this, portLocation: PortLocation.left),
+          portName: "EN", module: this, portLocation: PortLocation.left, initalState: LogicValue.z),
     ];
   }
 
@@ -107,16 +116,16 @@ class SRAM6116 extends Module {
     ports = [
       for (int i = 0; i < 11; i++)
         PhysicalPort(
-            portName: "A$i", module: this, portLocation: PortLocation.left),
+            portName: "A$i", module: this, portLocation: PortLocation.left, initalState: LogicValue.z),
       for (int i = 0; i < 8; i++)
         PhysicalPort(
             portName: "DIO$i", module: this, portLocation: PortLocation.right),
       PhysicalPort(
-          portName: "WE'", module: this, portLocation: PortLocation.left),
+          portName: "WE'", module: this, portLocation: PortLocation.left, initalState: LogicValue.z),
       PhysicalPort(
-          portName: "OE'", module: this, portLocation: PortLocation.left),
+          portName: "OE'", module: this, portLocation: PortLocation.left, initalState: LogicValue.z),
       PhysicalPort(
-          portName: "CS'", module: this, portLocation: PortLocation.left),
+          portName: "CS'", module: this, portLocation: PortLocation.left, initalState: LogicValue.z),
     ];
   }
 
@@ -232,13 +241,13 @@ class HexDisplay extends Module {
   HexDisplay() : super(name: "HexDisplay") {
     ports = [
       PhysicalPort(
-          portName: "B8", module: this, portLocation: PortLocation.left),
+          portName: "B8", module: this, portLocation: PortLocation.left, initalState: LogicValue.z),
       PhysicalPort(
-          portName: "B4", module: this, portLocation: PortLocation.left),
+          portName: "B4", module: this, portLocation: PortLocation.left, initalState: LogicValue.z),
       PhysicalPort(
-          portName: "B2", module: this, portLocation: PortLocation.left),
+          portName: "B2", module: this, portLocation: PortLocation.left, initalState: LogicValue.z),
       PhysicalPort(
-          portName: "B1", module: this, portLocation: PortLocation.left),
+          portName: "B1", module: this, portLocation: PortLocation.left, initalState: LogicValue.z),
     ];
   }
 
@@ -270,6 +279,13 @@ class Module {
 
   update() {
     throw UnimplementedError("Function must be implemented by child class");
+  }
+
+  delete() {
+    for (var port in ports) {
+      port.connectedNode?.impede(portKey: port.key);
+      port.connectedNode?.connectedModules.remove(port.module);
+    }
   }
 
   Iterable get leftSide =>

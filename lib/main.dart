@@ -273,7 +273,7 @@ class _MainPageState extends State<MainPage> {
                 onDragEnd: (DraggableDetails details) {
                   setState(() {
                     canvasKey.currentState!.addComponent(
-                        Component(moduleType: moduleType),
+                        Component(key: UniqueKey(), moduleType: moduleType),
                         offset: Offset(
                             details.offset.dx - 56,
                             details.offset.dy -

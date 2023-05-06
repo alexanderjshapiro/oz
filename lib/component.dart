@@ -3,8 +3,8 @@ import 'main.dart';
 import 'dart:math';
 //import 'package:Oz/logic.dart' as rohd;
 import 'package:Oz/logic.dart';
+import 'package:flutter/services.dart';
 
-//Logic? wiringPortSelected;
 Node? wiringNodeSelected;
 
 // This should allow us to import in new modules during runtime
@@ -66,24 +66,6 @@ class ComponentState extends State<Component> {
     module.guiUpdateCallback = () {
       setState(() {});
     };
-  }
-
-  _toggleInputValue(PhysicalPort port) {
-    if (port.value == LogicValue.zero) {
-      SimulationUpdater.queue.addFirst(() => port.connectedNode!
-          .drive(portKey: port.key, driveValue: LogicValue.one));
-      //port.drivePort(LogicValue.one);
-    } //else if (port.value == LogicValue.one) {
-    //   SimulationUpdater.queue.addFirst(() => port.connectedNode!
-    //       .drive(portKey: port.key, driveValue: LogicValue.z));
-
-    //   //port.drivePort(LogicValue.z);
-    // }
-    else {
-      //port.drivePort(LogicValue.zero);
-      SimulationUpdater.queue.addFirst(() => port.connectedNode!
-          .drive(portKey: port.key, driveValue: LogicValue.zero));
-    }
   }
 
   Color getColor(LogicValue val) {
@@ -177,8 +159,11 @@ class ComponentState extends State<Component> {
       // TODO: clean up code
       return GestureDetector(
         onSecondaryTap: () {
-          // TODO fix delete to work right
-          debugPrint("deleting Gate");
+          if (RawKeyboard.instance.keysPressed
+              .contains(LogicalKeyboardKey.controlLeft)) {
+            module.delete();
+            canvasKey.currentState!.removeComponent(widget);
+          }
         },
         child: Container(
           padding: const EdgeInsets.all(paddingSize),
@@ -217,7 +202,6 @@ class ComponentState extends State<Component> {
                             height: portHeight,
                             child: Center(
                               child: GestureDetector(
-                                //onTap: () => _toggleInputValue(input.item2),
                                 onDoubleTap: () {
                                   if (wiringNodeSelected == null) {
                                     debugPrint("Selected Output for wiring");
@@ -266,24 +250,26 @@ class ComponentState extends State<Component> {
                                 ),
                               ),
                             Text(
-                              ((module.ports[0].value ==
-                                              LogicValue.one
-                                          ? 8
-                                          : 0) +
-                                      (module.ports[1].value ==
-                                              LogicValue.one
-                                          ? 4
-                                          : 0) +
-                                      (module.ports[2].value ==
-                                              LogicValue.one
-                                          ? 2
-                                          : 0) +
-                                      (module.ports[3].value ==
-                                              LogicValue.one
-                                          ? 1
-                                          : 0))
-                                  .toRadixString(16)
-                                  .toUpperCase(),
+                              (module.leftSide.any((element) =>
+                                      element.value == LogicValue.x)
+                                  ? "?"
+                                  : ((module.ports[0].value == LogicValue.one
+                                              ? 8
+                                              : 0) +
+                                          (module.ports[1].value ==
+                                                  LogicValue.one
+                                              ? 4
+                                              : 0) +
+                                          (module.ports[2].value ==
+                                                  LogicValue.one
+                                              ? 2
+                                              : 0) +
+                                          (module.ports[3].value ==
+                                                  LogicValue.one
+                                              ? 1
+                                              : 0))
+                                      .toRadixString(16)
+                                      .toUpperCase()),
                               style: const TextStyle(
                                   fontSize: 1000,
                                   fontFamily: 'Consolas',
@@ -308,10 +294,11 @@ class ComponentState extends State<Component> {
 
     return GestureDetector(
       onSecondaryTap: () {
-        // TODO fix delete to work right
-        debugPrint("deleting Gate");
-        //module.release();
-        //canvasKey.currentState!.removeComponent(widget);
+        if (RawKeyboard.instance.keysPressed
+            .contains(LogicalKeyboardKey.controlLeft)) {
+          module.delete();
+          canvasKey.currentState!.removeComponent(widget);
+        }
       },
       child: Container(
         padding: const EdgeInsets.all(paddingSize),
@@ -348,9 +335,6 @@ class ComponentState extends State<Component> {
                           height: portHeight,
                           child: Center(
                             child: GestureDetector(
-                              onTap: () {
-                                //_toggleInputValue(port);
-                              },
                               onDoubleTap: () {
                                 if (wiringNodeSelected == null) {
                                   debugPrint("Selected Output for wiring");
@@ -423,17 +407,30 @@ class ComponentState extends State<Component> {
   }
 
   Widget buttonBuildOverride() {
+    toggleInputValue(PhysicalPort port) {
+      if (port.value == LogicValue.zero) {
+        SimulationUpdater.queue.addFirst(() => port.connectedNode!
+            .drive(portKey: port.key, driveValue: LogicValue.one));
+      } else {
+        SimulationUpdater.queue.addFirst(() => port.connectedNode!
+            .drive(portKey: port.key, driveValue: LogicValue.zero));
+      }
+    }
+
     //TODO Figure out a better way render Button component
     return GestureDetector(
       onSecondaryTap: () {
-        // TODO fix delete to work right
-        debugPrint("deleting Gate");
+        if (RawKeyboard.instance.keysPressed
+            .contains(LogicalKeyboardKey.controlLeft)) {
+          module.delete();
+          canvasKey.currentState!.removeComponent(widget);
+        }
       },
       child: Stack(
         children: [
           Container(
-            width: alignSizeToGrid(50),
-            height: alignSizeToGrid(50),
+            width: alignSizeToGrid(10),
+            height: alignSizeToGrid(10),
             color: Colors.blueGrey,
           ),
           Positioned.fill(
@@ -443,7 +440,7 @@ class ComponentState extends State<Component> {
             right: 5,
             child: GestureDetector(
               onTap: () {
-                _toggleInputValue(module.ports[0]);
+                toggleInputValue(module.ports[0]);
               },
               onDoubleTap: () {
                 if (wiringNodeSelected == null) {
