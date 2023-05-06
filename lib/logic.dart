@@ -15,6 +15,7 @@ class Xor2Gate extends Module {
             portName: "Out $i", module: this, portLocation: PortLocation.right)
     ];
   }
+
   @override
   update() {
     ports[2].drivePort(ports[0].value ^ ports[1].value);
@@ -35,6 +36,7 @@ class NotGate extends Module {
             portName: "Out $i", module: this, portLocation: PortLocation.right)
     ];
   }
+
   @override
   update() {
     ports[1].drivePort(~ports[0].value);
@@ -57,6 +59,7 @@ class SN74LS245 extends Module {
           portName: "OE'", module: this, portLocation: PortLocation.left),
     ];
   }
+
   @override
   update() {
     if (ports.firstWhere((element) => element.portName == "OE'").value ==
@@ -226,6 +229,7 @@ class Nor2Gate extends Module {
             initalState: LogicValue.x)
     ];
   }
+
   @override
   update() {
     ports[2].drivePort(~(ports[0].value | ports[1].value));
@@ -243,6 +247,7 @@ class Xor2GateRev extends Module {
             portName: "In $i", module: this, portLocation: PortLocation.right)
     ];
   }
+
   @override
   update() {
     ports[0].drivePort(ports[1].value ^ ports[2].value);
@@ -293,6 +298,7 @@ class HexDisplay extends Module {
 
 class SimulationUpdater {
   static final Queue<Function> queue = Queue();
+
   SimulationUpdater();
 
   static void tick() {
@@ -337,6 +343,7 @@ class PhysicalPort {
   String key = KeyGen.key();
   Node? connectedNode;
   Module module;
+
   PhysicalPort(
       {required this.portName,
       required this.module,
@@ -377,6 +384,7 @@ class Node {
   Map<String, LogicValue> drivers = {};
 
   List<Module> connectedModules;
+
   Node([Module? module, LogicValue? initVal])
       : connectedModules = [if (module != null) module],
         _value = initVal ?? LogicValue.x;
@@ -431,6 +439,7 @@ class Node {
 
 class KeyGen {
   static int _keyCounter = 0;
+
   static String key([String prefix = ""]) {
     _keyCounter++;
     return "$prefix${_keyCounter - 1}";

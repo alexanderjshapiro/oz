@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:Oz/logic.dart';
+import 'logic.dart';
 import 'package:flutter/services.dart';
 import 'component.dart';
 import 'dart:async';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
-import 'canvas.dart';
+import 'editor_canvas.dart';
 
 const double toolbarIconSize = 48;
 const double gridSize = 40;
@@ -39,8 +39,8 @@ class MainPage extends StatefulWidget {
   State<MainPage> createState() => _MainPageState();
 }
 
-late GlobalKey<CanvasState>
-    canvasKey; // TODO: consider using callback functions instead of GlobalKey
+late GlobalKey<EditorCanvasState>
+    _editorCanvasKey; // TODO: consider using callback functions instead of GlobalKey
 
 class _MainPageState extends State<MainPage> {
   bool _showProjectExplorer = false;
@@ -51,7 +51,7 @@ class _MainPageState extends State<MainPage> {
   void initState() {
     super.initState();
     _startSimulation();
-    canvasKey = GlobalKey<CanvasState>();
+    _editorCanvasKey = GlobalKey<EditorCanvasState>();
   }
 
   @override
@@ -66,7 +66,7 @@ class _MainPageState extends State<MainPage> {
               child: Row(
                 children: [
                   projectExplorer(),
-                  Canvas(key: canvasKey),
+                  EditorCanvas(key: _editorCanvasKey),
                   componentList(),
                 ],
               ),
@@ -84,36 +84,60 @@ class _MainPageState extends State<MainPage> {
           border: Border(bottom: BorderSide(color: Colors.black))),
       child: Row(
         children: [
-          const Icon(Icons.save, size: toolbarIconSize),
-          GestureDetector(
-            onTap: () {
-              printScreen();
-            },
-            child: const Icon(Icons.print, size: toolbarIconSize),
-          ),
-          GestureDetector(
-            onTap: () {
+          IconButton(
+            onPressed: () {
               setState(() {
-                canvasKey.currentState!.clearComponents();
+                _editorCanvasKey.currentState!.mode = 'select';
               });
             },
-            child: const Tooltip(
-              message: "Reset Canvas",
-              child: Icon(Icons.restart_alt_rounded, size: toolbarIconSize),
-            ),
+            icon: const Icon(Icons.highlight_alt),
+            iconSize: toolbarIconSize,
+            tooltip: 'Select Components',
           ),
-          GestureDetector(
-            onTap: () {
+          IconButton(
+            onPressed: () {
+              setState(() {
+                _editorCanvasKey.currentState!.mode = 'draw';
+              });
+            },
+            icon: const Icon(Icons.mode),
+            iconSize: toolbarIconSize,
+            tooltip: 'Draw Wires',
+          ),
+          IconButton(
+            onPressed: () {
+              setState(() {
+                _editorCanvasKey.currentState!.removeSelectedComponents();
+              });
+            },
+            icon: const Icon(Icons.delete),
+            iconSize: toolbarIconSize,
+            tooltip: 'Delete',
+          ),
+          IconButton(
+            onPressed: () {
+              setState(() {
+                _editorCanvasKey.currentState!.clear();
+              });
+            },
+            icon: const Icon(Icons.restart_alt),
+            iconSize: toolbarIconSize,
+            tooltip: 'Reset Canvas',
+          ),
+          const SizedBox(width: 40),
+          IconButton(
+            onPressed: () {
               _isRunning ? _stopSimulation() : _startSimulation();
             },
-            child: Tooltip(
-              message: _isRunning ? "Stop Simulation" : "Run Simultation",
-              child: _isRunning
-                  ? const Icon(Icons.stop_circle_outlined,
-                      size: toolbarIconSize)
-                  : const Icon(Icons.play_circle_outline,
-                      size: toolbarIconSize),
-            ),
+            icon: _isRunning
+                ? const Icon(
+                    Icons.stop_circle_outlined,
+                  )
+                : const Icon(
+                    Icons.play_circle_outline,
+                  ),
+            iconSize: toolbarIconSize,
+            tooltip: _isRunning ? 'Stop Simulation' : 'Run Simulation',
           ),
           SizedBox(
             height: toolbarIconSize,
@@ -137,16 +161,14 @@ class _MainPageState extends State<MainPage> {
               ),
             ),
           ),
-          GestureDetector(
-            onTap: () {
+          IconButton(
+            onPressed: () {
               _stopSimulation();
               SimulationUpdater.tick();
             },
-            child: const Tooltip(
-              message: "Step Simulation",
-              child:
-                  Icon(Icons.slow_motion_video_rounded, size: toolbarIconSize),
-            ),
+            icon: const Icon(Icons.slow_motion_video_rounded),
+            iconSize: toolbarIconSize,
+            tooltip: 'Step Simulation',
           ),
         ],
       ),
@@ -267,13 +289,9 @@ class _MainPageState extends State<MainPage> {
                     fontSize: 24,
                   ),
                 ),
-                onDragUpdate: (details) {
-                  setState(() {});
-                },
                 onDragEnd: (DraggableDetails details) {
                   setState(() {
-                    canvasKey.currentState!.addComponent(
-                        Component(key: UniqueKey(), moduleType: moduleType),
+                    _editorCanvasKey.currentState!.addComponent(moduleType,
                         offset: Offset(
                             details.offset.dx - 56,
                             details.offset.dy -
