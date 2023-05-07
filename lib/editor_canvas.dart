@@ -77,6 +77,26 @@ class EditorCanvasState extends State<EditorCanvas> {
     });
   }
 
+  Map<GlobalKey<ComponentState>, Component> getComponents() {
+    return _components;
+  }
+
+  Map<GlobalKey<ComponentState>, List<PhysicalPort>> getOutPorts() {
+    Map<GlobalKey<ComponentState>, List<PhysicalPort>> keyOutPortsMap = {};
+    // Get all the ports for each component key
+    _components.forEach((key, value) {
+      keyOutPortsMap[key] = key.currentState!.module.ports;
+    });
+    // Remove all the ports that aren't output ports
+    keyOutPortsMap.forEach((key, value) {
+      value.removeWhere((element) => !element.portName.contains("Out") && 
+                                     !element.portName.contains("Button"));
+    });
+    // Remove all keys with an empty output port array
+    keyOutPortsMap.removeWhere((key, value) => value.isEmpty);
+    return keyOutPortsMap;
+  }
+
   @override
   Widget build(BuildContext context) {
     return Expanded(

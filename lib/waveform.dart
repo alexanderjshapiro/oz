@@ -1,10 +1,12 @@
+import 'package:Oz/component.dart';
 import 'package:flutter/material.dart';
+import 'logic.dart';
 import 'main.dart';
 
 const double size = 100;
 
 class WaveformGraph extends StatelessWidget {
-  final List<bool> waveform;
+  final List<LogicValue> waveform;
   final Color lineColor;
 
   const WaveformGraph({
@@ -22,10 +24,15 @@ class WaveformGraph extends StatelessWidget {
 
     var previousVal = waveform[0];
     for (var value in waveform) {
+      bool state = false;
+      if (value == LogicValue.one)
+        state = true;
+      else if (value == LogicValue.zero)
+        state = false;
       BorderSide topBorderSide = 
-        value ? BorderSide(color: lineColor) : BorderSide.none;
+        state ? BorderSide(color: lineColor) : BorderSide.none;
       BorderSide bottomBorderSide = 
-        value ? BorderSide.none : BorderSide(color: lineColor);
+        state ? BorderSide.none : BorderSide(color: lineColor);
       BorderSide leftBorderSide;
       if (previousVal == value) {
         leftBorderSide = BorderSide.none;
@@ -62,17 +69,17 @@ class WaveformAnalyzer extends StatefulWidget {
 }
 
 class WaveformAnalyzerState extends State<WaveformAnalyzer> {
-  final List<WaveformGraph> _waveforms = [];
+  final Map<GlobalKey<ComponentState>, WaveformGraph> _waveforms = {};
 
-  void addWaveform(WaveformGraph waveformGraph) {
+  void addWaveform(GlobalKey<ComponentState> componentKey, WaveformGraph waveformGraph) {
     setState(() {
-      _waveforms.add(waveformGraph);
+      _waveforms[componentKey] = waveformGraph;
     });
   }
 
-  void removeWaveform(WaveformGraph waveformGraph) {
+  void removeWaveform(GlobalKey<ComponentState> componentKey) {
     setState(() {
-      _waveforms.remove(waveformGraph);
+      _waveforms.remove(componentKey);
     });
   }
 
@@ -82,11 +89,11 @@ class WaveformAnalyzerState extends State<WaveformAnalyzer> {
     });
   }
 
-  void updateWaveform(List<List<bool>> newStates) {
+  void updateWaveform(Map<GlobalKey<ComponentState>, List<LogicValue>> newStates) {
     setState(() {
-      for(int i = 0; i < _waveforms.length; i++) {
-        _waveforms[i] = WaveformGraph(waveform: newStates[i]);
-      }
+      newStates.forEach((key, value) {
+        _waveforms[key] = WaveformGraph(waveform: value);
+      });
     });
   }
 
@@ -98,14 +105,14 @@ class WaveformAnalyzerState extends State<WaveformAnalyzer> {
   Widget build(BuildContext context) {
     List<Widget> waveformWidgets = [];
 
-    for (int i = 0; i < _waveforms.length; i++) {
-      WaveformGraph waveformGraph = _waveforms[i];
-      waveformWidgets.add(waveformGraph);
-
-      if (i < _waveforms.length - 1) {
+    int count = 0;
+    _waveforms.forEach((key, value) {
+      waveformWidgets.add(value);
+      if (count < _waveforms.length - 1) {
         waveformWidgets.add(const SizedBox(height: 10));
       }
-    }
+      count++;
+    });
 
     if (waveformWidgets.isEmpty) {
       return Container(

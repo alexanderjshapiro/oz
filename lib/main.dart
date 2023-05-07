@@ -17,12 +17,8 @@ const bool debug = false;
 
 Duration tickRate = const Duration(milliseconds: 1);
 
-List<List<bool>> waveformList = [];
-
-List<bool> waveform0 = [true, false, false, true];
-List<bool> waveform1 = [false, true, true, false];
-List<bool> waveform2 = [true, false, false, true];
-List<bool> waveform3 = [false, true, true, false];
+Map<GlobalKey<ComponentState>, List<LogicValue>> componentWaveforms = {};
+Map<GlobalKey<ComponentState>, List<PhysicalPort>> componentOutPorts = {};
 
 void main() {
   runApp(const Oz());
@@ -64,11 +60,6 @@ class _MainPageState extends State<MainPage> {
     _startSimulation();
     _editorCanvasKey = GlobalKey<EditorCanvasState>();
     _waveformAnalyzerKey = GlobalKey<WaveformAnalyzerState>();
-
-    waveformList.add(waveform0);
-    waveformList.add(waveform1);
-    waveformList.add(waveform2);
-    waveformList.add(waveform3);
   }
 
   @override
@@ -148,6 +139,8 @@ class _MainPageState extends State<MainPage> {
             onPressed: () {
               setState(() {
                 _editorCanvasKey.currentState!.clear();
+                componentWaveforms.clear();
+                _waveformAnalyzerKey.currentState!.clearWaveforms();
               });
             },
             icon: const Icon(Icons.restart_alt),
@@ -195,16 +188,20 @@ class _MainPageState extends State<MainPage> {
             onPressed: () {
               _stopSimulation();
               SimulationUpdater.tick();
-              if(_waveformAnalyzerKey.currentState!.getWaveformsLength() != waveformList.length) {
-                for(List<bool> waveform in waveformList) {
-                  _waveformAnalyzerKey.currentState!.addWaveform(WaveformGraph(waveform: waveform));
-                }
+              print("Component Waveforms Array:");
+              print(componentWaveforms);
+              if(_editorCanvasKey.currentState!.getComponents().isNotEmpty) {
+                print("Ports Map");
+                componentOutPorts =_editorCanvasKey.currentState!.getOutPorts();
+                print(componentOutPorts);
+                componentOutPorts.forEach((key, value) {
+                  print(value[0].value);
+                  componentWaveforms[key]!.add(value[0].value);
+                });
+                _waveformAnalyzerKey.currentState!.updateWaveform(componentWaveforms);
+              } else {
+                print("Canvas currently empty");
               }
-              
-              for(List<bool> waveform in waveformList) {
-                waveform.add(!waveform[waveform.length - 1]);
-              }
-              _waveformAnalyzerKey.currentState!.updateWaveform(waveformList);
             },
             icon: const Icon(Icons.slow_motion_video_rounded),
             iconSize: toolbarIconSize,
@@ -339,6 +336,9 @@ class _MainPageState extends State<MainPage> {
                             details.offset.dx - 56,
                             details.offset.dy -
                                 48)); // TODO: don't manually define offset's offset
+                    _editorCanvasKey.currentState!.getComponents().forEach((key, value) {
+                      componentWaveforms.putIfAbsent(key, () => []);
+                    });
                   });
                 },
               ),
@@ -371,6 +371,18 @@ class _MainPageState extends State<MainPage> {
       tickRate,
       (timer) {
         SimulationUpdater.tick();
+        if(_editorCanvasKey.currentState!.getComponents().isNotEmpty) {
+          print("Ports Map");
+          componentOutPorts =_editorCanvasKey.currentState!.getOutPorts();
+          print(componentOutPorts);
+          componentOutPorts.forEach((key, value) {
+            print(value[0].value);
+            componentWaveforms[key]!.add(value[0].value);
+          });
+          _waveformAnalyzerKey.currentState!.updateWaveform(componentWaveforms);
+        } else {
+          print("Canvas currently empty");
+        }
       },
     );
   }
