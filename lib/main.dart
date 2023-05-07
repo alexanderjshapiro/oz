@@ -17,7 +17,7 @@ const bool debug = false;
 
 Duration tickRate = const Duration(milliseconds: 1);
 
-Map<GlobalKey<ComponentState>, List<LogicValue>> componentWaveforms = {};
+Map<GlobalKey<ComponentState>, LogicValue> currentComponentStates = {};
 Map<GlobalKey<ComponentState>, List<PhysicalPort>> componentOutPorts = {};
 
 void main() {
@@ -139,7 +139,7 @@ class _MainPageState extends State<MainPage> {
             onPressed: () {
               setState(() {
                 _editorCanvasKey.currentState!.clear();
-                componentWaveforms.clear();
+                currentComponentStates.clear();
                 _waveformAnalyzerKey.currentState!.clearWaveforms();
               });
             },
@@ -188,17 +188,18 @@ class _MainPageState extends State<MainPage> {
             onPressed: () {
               _stopSimulation();
               SimulationUpdater.tick();
-              print("Component Waveforms Array:");
-              print(componentWaveforms);
+              // If the canvas isn't empty, update the waveforms
               if(_editorCanvasKey.currentState!.getComponents().isNotEmpty) {
-                print("Ports Map");
+                // Update current output port states
                 componentOutPorts =_editorCanvasKey.currentState!.getOutPorts();
-                print(componentOutPorts);
                 componentOutPorts.forEach((key, value) {
-                  print(value[0].value);
-                  componentWaveforms[key]!.add(value[0].value);
+                  currentComponentStates[key] = (value[0].value);
+                  // Add the component output port if it hasn't been added to the analyzer yet
+                  if(!_waveformAnalyzerKey.currentState!.getWaveforms().containsKey(key)) {
+                    _waveformAnalyzerKey.currentState!.addWaveform(key);
+                  }
                 });
-                _waveformAnalyzerKey.currentState!.updateWaveform(componentWaveforms);
+                _waveformAnalyzerKey.currentState!.updateWaveforms(currentComponentStates);
               } else {
                 print("Canvas currently empty");
               }
@@ -337,7 +338,7 @@ class _MainPageState extends State<MainPage> {
                             details.offset.dy -
                                 48)); // TODO: don't manually define offset's offset
                     _editorCanvasKey.currentState!.getComponents().forEach((key, value) {
-                      componentWaveforms.putIfAbsent(key, () => []);
+                      currentComponentStates.putIfAbsent(key, () => LogicValue.zero);
                     });
                   });
                 },
@@ -371,18 +372,21 @@ class _MainPageState extends State<MainPage> {
       tickRate,
       (timer) {
         SimulationUpdater.tick();
-        if(_editorCanvasKey.currentState!.getComponents().isNotEmpty) {
-          print("Ports Map");
-          componentOutPorts =_editorCanvasKey.currentState!.getOutPorts();
-          print(componentOutPorts);
-          componentOutPorts.forEach((key, value) {
-            print(value[0].value);
-            componentWaveforms[key]!.add(value[0].value);
-          });
-          _waveformAnalyzerKey.currentState!.updateWaveform(componentWaveforms);
-        } else {
-          print("Canvas currently empty");
-        }
+        // If the canvas isn't empty, update the waveforms
+          if(_editorCanvasKey.currentState!.getComponents().isNotEmpty) {
+            // Update current output port states
+            componentOutPorts =_editorCanvasKey.currentState!.getOutPorts();
+            componentOutPorts.forEach((key, value) {
+              currentComponentStates[key] = (value[0].value);
+              // Add the component output port if it hasn't been added to the analyzer yet
+              if(!_waveformAnalyzerKey.currentState!.getWaveforms().containsKey(key)) {
+                _waveformAnalyzerKey.currentState!.addWaveform(key);
+              }
+            });
+            _waveformAnalyzerKey.currentState!.updateWaveforms(currentComponentStates);
+          } else {
+            print("Canvas currently empty");
+          }
       },
     );
   }

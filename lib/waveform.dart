@@ -69,11 +69,34 @@ class WaveformAnalyzer extends StatefulWidget {
 }
 
 class WaveformAnalyzerState extends State<WaveformAnalyzer> {
-  final Map<GlobalKey<ComponentState>, WaveformGraph> _waveforms = {};
+  final Map<GlobalKey<ComponentState>, List<LogicValue>> _waveforms = {};
 
-  void addWaveform(GlobalKey<ComponentState> componentKey, WaveformGraph waveformGraph) {
+  @override
+  void initState() {
+    super.initState();
+  }
+
+  void addWaveform(GlobalKey<ComponentState> componentKey) {
     setState(() {
-      _waveforms[componentKey] = waveformGraph;
+      if (_waveforms.isNotEmpty) {
+        _waveforms[componentKey] = [];
+        // Find the longest list
+        List<LogicValue> longestList = [];
+        // This breaks everything if there's only one element in _waveforms
+        if (_waveforms.length > 1) {
+          longestList = _waveforms.values.reduce((value, element) => value.length > element.length ? value : element);
+        } else {
+          longestList = _waveforms.values.first;
+        }
+        
+        // Fill the new component list with LogicValue.zero 
+        // so that the new waveform gets displayed properly
+        for (int i = 0; i < longestList.length; i++) {
+          _waveforms[componentKey]!.add(LogicValue.zero);
+        }
+      } else {
+        _waveforms[componentKey] = [];
+      }
     });
   }
 
@@ -89,10 +112,10 @@ class WaveformAnalyzerState extends State<WaveformAnalyzer> {
     });
   }
 
-  void updateWaveform(Map<GlobalKey<ComponentState>, List<LogicValue>> newStates) {
+  void updateWaveforms(Map<GlobalKey<ComponentState>, LogicValue> newStates) {
     setState(() {
       newStates.forEach((key, value) {
-        _waveforms[key] = WaveformGraph(waveform: value);
+        _waveforms[key]!.add(value);
       });
     });
   }
@@ -101,13 +124,17 @@ class WaveformAnalyzerState extends State<WaveformAnalyzer> {
     return _waveforms.length;
   }
 
+  Map<GlobalKey<ComponentState>, List<LogicValue>> getWaveforms() {
+    return _waveforms;
+  }
+
   @override 
   Widget build(BuildContext context) {
     List<Widget> waveformWidgets = [];
 
     int count = 0;
     _waveforms.forEach((key, value) {
-      waveformWidgets.add(value);
+      waveformWidgets.add(WaveformGraph(waveform: value));
       if (count < _waveforms.length - 1) {
         waveformWidgets.add(const SizedBox(height: 10));
       }
