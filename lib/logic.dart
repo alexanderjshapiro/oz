@@ -365,10 +365,10 @@ class PhysicalPort {
     }
   }
 
-  void drivePort(LogicValue value, {Module? callingModule}) {
+  void drivePort(LogicValue value) {
     if (connectedNode != null) {
-      SimulationUpdater.queue.addLast(() => connectedNode!.drive(
-          portKey: key, driveValue: value, callingModule: callingModule));
+      SimulationUpdater.queue
+          .addLast(() => connectedNode!.drive(portKey: key, driveValue: value));
     }
   }
 
@@ -389,37 +389,20 @@ class Node {
       : connectedModules = [if (module != null) module],
         _value = initVal ?? LogicValue.x;
 
-  impede({required String portKey}) {
-    drivers.remove(portKey);
-    List<LogicValue> drivingValues = drivers.values.toList(growable: false);
-    LogicValue uniformityValue =
-        drivingValues.firstWhere((element) => element != LogicValue.z, orElse: () => LogicValue.z);
-    if (!drivingValues.every((element) => element == uniformityValue)) {
-      uniformityValue = LogicValue.x;
-    }
-
-    if (_value != uniformityValue) {
-      _value = uniformityValue;
-      for (var module in connectedModules.toSet()) {
-        module.update();
-        module.guiUpdateCallback?.call();
-      }
-    }
-  }
+  impede({required String portKey}) =>
+      drive(portKey: portKey, driveValue: LogicValue.z);
 
   /// Sets the value of a logic to be the value given iff all other drivers are matching or z
-  drive(
-      {required String portKey,
-      required LogicValue driveValue,
-      Module? callingModule}) {
+  drive({required String portKey, required LogicValue driveValue}) {
     if (driveValue == LogicValue.z) {
-      impede(portKey: portKey);
-      return;
+      drivers.remove(portKey);
+    } else {
+      drivers[portKey] = driveValue;
     }
-    drivers[portKey] = driveValue;
     List<LogicValue> drivingValues = drivers.values.toList(growable: false);
-    LogicValue uniformityValue =
-        drivingValues.firstWhere((element) => element != LogicValue.z, orElse: () => LogicValue.z);
+    LogicValue uniformityValue = drivingValues.firstWhere(
+        (element) => element != LogicValue.z,
+        orElse: () => LogicValue.z);
     if (!drivingValues.every((element) => element == uniformityValue)) {
       uniformityValue = LogicValue.x;
     }
