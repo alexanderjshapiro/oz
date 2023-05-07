@@ -6,7 +6,10 @@ class Xor2Gate extends Module {
     ports = [
       for (int i = 0; i < 2; i++)
         PhysicalPort(
-            portName: "In $i", module: this, portLocation: PortLocation.left),
+            portName: "In $i",
+            module: this,
+            portLocation: PortLocation.left,
+            initalState: LogicValue.z),
       for (int i = 0; i < 1; i++)
         PhysicalPort(
             portName: "Out $i", module: this, portLocation: PortLocation.right)
@@ -24,7 +27,10 @@ class NotGate extends Module {
     ports = [
       for (int i = 0; i < 1; i++)
         PhysicalPort(
-            portName: "In $i", module: this, portLocation: PortLocation.left),
+            portName: "In $i",
+            module: this,
+            portLocation: PortLocation.left,
+            initalState: LogicValue.z),
       for (int i = 0; i < 1; i++)
         PhysicalPort(
             portName: "Out $i", module: this, portLocation: PortLocation.right)
@@ -37,8 +43,7 @@ class NotGate extends Module {
   }
 }
 
-//OCTAL BUS TRANSCEIVERS
-//TODO Need to add enable pin for 3 state output
+//OCTAL BUS TRANSCEIVERS WITH 3-STATE OUTPUTS
 class SN74LS245 extends Module {
   SN74LS245() : super(name: "SN74LS245") {
     ports = [
@@ -50,11 +55,21 @@ class SN74LS245 extends Module {
             portName: "B$i", module: this, portLocation: PortLocation.right),
       PhysicalPort(
           portName: "DIR", module: this, portLocation: PortLocation.left),
+      PhysicalPort(
+          portName: "OE'", module: this, portLocation: PortLocation.left),
     ];
   }
 
   @override
   update() {
+    if (ports.firstWhere((element) => element.portName == "OE'").value ==
+        LogicValue.one) {
+      for (int i = 0; i < 16; i++) {
+        ports[i].connectedNode?.impede(portKey: ports[i].key);
+      }
+      return;
+    }
+
     if (ports.firstWhere((element) => element.portName == "DIR").value ==
         LogicValue.one) {
       // transfer left side values to right side
@@ -82,12 +97,18 @@ class SN74LS373 extends Module {
     ports = [
       for (int i = 0; i < 8; i++)
         PhysicalPort(
-            portName: "D$i", module: this, portLocation: PortLocation.left),
+            portName: "D$i",
+            module: this,
+            portLocation: PortLocation.left,
+            initalState: LogicValue.z),
       for (int i = 0; i < 8; i++)
         PhysicalPort(
             portName: "Q$i", module: this, portLocation: PortLocation.right),
       PhysicalPort(
-          portName: "EN", module: this, portLocation: PortLocation.left),
+          portName: "EN",
+          module: this,
+          portLocation: PortLocation.left,
+          initalState: LogicValue.z),
     ];
   }
 
@@ -110,16 +131,28 @@ class SRAM6116 extends Module {
     ports = [
       for (int i = 0; i < 11; i++)
         PhysicalPort(
-            portName: "A$i", module: this, portLocation: PortLocation.left),
+            portName: "A$i",
+            module: this,
+            portLocation: PortLocation.left,
+            initalState: LogicValue.z),
       for (int i = 0; i < 8; i++)
         PhysicalPort(
             portName: "DIO$i", module: this, portLocation: PortLocation.right),
       PhysicalPort(
-          portName: "WE'", module: this, portLocation: PortLocation.left),
+          portName: "WE'",
+          module: this,
+          portLocation: PortLocation.left,
+          initalState: LogicValue.z),
       PhysicalPort(
-          portName: "OE'", module: this, portLocation: PortLocation.left),
+          portName: "OE'",
+          module: this,
+          portLocation: PortLocation.left,
+          initalState: LogicValue.z),
       PhysicalPort(
-          portName: "CS'", module: this, portLocation: PortLocation.left),
+          portName: "CS'",
+          module: this,
+          portLocation: PortLocation.left,
+          initalState: LogicValue.z),
     ];
   }
 
@@ -131,7 +164,7 @@ class SRAM6116 extends Module {
       LogicValue.one,
       LogicValue.zero,
       LogicValue.one,
-      LogicValue.zero,
+      LogicValue.one,
       LogicValue.one,
       LogicValue.zero,
     ],
@@ -237,13 +270,25 @@ class HexDisplay extends Module {
   HexDisplay() : super(name: "HexDisplay") {
     ports = [
       PhysicalPort(
-          portName: "B8", module: this, portLocation: PortLocation.left),
+          portName: "B8",
+          module: this,
+          portLocation: PortLocation.left,
+          initalState: LogicValue.z),
       PhysicalPort(
-          portName: "B4", module: this, portLocation: PortLocation.left),
+          portName: "B4",
+          module: this,
+          portLocation: PortLocation.left,
+          initalState: LogicValue.z),
       PhysicalPort(
-          portName: "B2", module: this, portLocation: PortLocation.left),
+          portName: "B2",
+          module: this,
+          portLocation: PortLocation.left,
+          initalState: LogicValue.z),
       PhysicalPort(
-          portName: "B1", module: this, portLocation: PortLocation.left),
+          portName: "B1",
+          module: this,
+          portLocation: PortLocation.left,
+          initalState: LogicValue.z),
     ];
   }
 
@@ -276,6 +321,13 @@ class Module {
 
   update() {
     throw UnimplementedError("Function must be implemented by child class");
+  }
+
+  delete() {
+    for (var port in ports) {
+      port.connectedNode?.impede(portKey: port.key);
+      port.connectedNode?.connectedModules.remove(port.module);
+    }
   }
 
   Iterable get leftSide =>
@@ -313,10 +365,10 @@ class PhysicalPort {
     }
   }
 
-  void drivePort(LogicValue value, {Module? callingModule}) {
+  void drivePort(LogicValue value) {
     if (connectedNode != null) {
-      SimulationUpdater.queue.addLast(() => connectedNode!.drive(
-          portKey: key, driveValue: value, callingModule: callingModule));
+      SimulationUpdater.queue
+          .addLast(() => connectedNode!.drive(portKey: key, driveValue: value));
     }
   }
 
@@ -337,46 +389,30 @@ class Node {
       : connectedModules = [if (module != null) module],
         _value = initVal ?? LogicValue.x;
 
-  impede({required String portKey}) {
-    drivers.remove(portKey);
-    List<LogicValue> drivingValues = drivers.values.toList(growable: false);
-    LogicValue uniformityValue = drivingValues.firstWhere(
-        (element) => element != LogicValue.z,
-        orElse: () => LogicValue.z);
-    if (drivingValues.every(
-        (element) => element == uniformityValue || element == LogicValue.z)) {
-      _value = uniformityValue;
-    } else {
-      _value = LogicValue.x;
-    }
-  }
+  impede({required String portKey}) =>
+      drive(portKey: portKey, driveValue: LogicValue.z);
 
   /// Sets the value of a logic to be the value given iff all other drivers are matching or z
-  drive(
-      {required String portKey,
-      required LogicValue driveValue,
-      Module? callingModule}) {
-    drivers[portKey] = driveValue;
+  drive({required String portKey, required LogicValue driveValue}) {
+    if (driveValue == LogicValue.z) {
+      drivers.remove(portKey);
+    } else {
+      drivers[portKey] = driveValue;
+    }
     List<LogicValue> drivingValues = drivers.values.toList(growable: false);
     LogicValue uniformityValue = drivingValues.firstWhere(
         (element) => element != LogicValue.z,
         orElse: () => LogicValue.z);
-    if (drivingValues.every(
-        (element) => element == uniformityValue || element == LogicValue.z)) {
-      if (_value != uniformityValue) {
-        _value = uniformityValue;
-        for (var module in connectedModules.toSet()) {
-          if (callingModule == null || callingModule != module) {
-            module.update();
-            module.guiUpdateCallback?.call();
-          } else {
-            debugPrint("Lazy updating");
-          }
-        }
-      }
+    if (!drivingValues.every((element) => element == uniformityValue)) {
+      uniformityValue = LogicValue.x;
+    }
+
+    if (_value != uniformityValue) {
       _value = uniformityValue;
-    } else {
-      _value = LogicValue.x;
+      for (var module in connectedModules.toSet()) {
+        module.update();
+        module.guiUpdateCallback?.call();
+      }
     }
   }
 
