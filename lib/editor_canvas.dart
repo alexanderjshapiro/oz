@@ -77,9 +77,7 @@ class EditorCanvasState extends State<EditorCanvas> {
     });
   }
 
-  Map<GlobalKey<ComponentState>, Component> getComponents() {
-    return _components;
-  }
+  Map<GlobalKey<ComponentState>, Component> getComponents() => _components;
 
   Map<GlobalKey<ComponentState>, List<PhysicalPort>> getOutPorts() {
     Map<GlobalKey<ComponentState>, List<PhysicalPort>> keyOutPortsMap = {};

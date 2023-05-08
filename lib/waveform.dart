@@ -1,18 +1,18 @@
-import 'package:Oz/component.dart';
+import 'package:oz/component.dart';
 import 'package:flutter/material.dart';
 import 'logic.dart';
 import 'main.dart';
 
 const double size = 100;
 
+const BorderSide blackBorder = BorderSide(color: Colors.black);
+
 class WaveformGraph extends StatelessWidget {
   final List<LogicValue> waveform;
-  final Color lineColor;
 
   const WaveformGraph({
     Key? key,
     required this.waveform,
-    this.lineColor = Colors.black,
   }) : super(key: key);
 
   @override
@@ -25,19 +25,21 @@ class WaveformGraph extends StatelessWidget {
     var previousVal = waveform[0];
     for (var value in waveform) {
       bool state = false;
-      if (value == LogicValue.one)
+      if (value == LogicValue.one) {
         state = true;
-      else if (value == LogicValue.zero)
+      }  
+      else if (value == LogicValue.zero) {
         state = false;
+      }  
       BorderSide topBorderSide = 
-        state ? BorderSide(color: lineColor) : BorderSide.none;
+        state ? blackBorder : BorderSide.none;
       BorderSide bottomBorderSide = 
-        state ? BorderSide.none : BorderSide(color: lineColor);
+        state ? BorderSide.none : blackBorder;
       BorderSide leftBorderSide;
       if (previousVal == value) {
         leftBorderSide = BorderSide.none;
       } else {
-        leftBorderSide = BorderSide(color: lineColor);
+        leftBorderSide = blackBorder;
       }
       stateWaves.add(
         Container(
@@ -120,13 +122,9 @@ class WaveformAnalyzerState extends State<WaveformAnalyzer> {
     });
   }
 
-  int getWaveformsLength() {
-    return _waveforms.length;
-  }
-
-  Map<GlobalKey<ComponentState>, List<LogicValue>> getWaveforms() {
-    return _waveforms;
-  }
+  int getWaveformsLength() => _waveforms.length;
+  
+  Map<GlobalKey<ComponentState>, List<LogicValue>> getWaveforms() => _waveforms;
 
   @override 
   Widget build(BuildContext context) {
