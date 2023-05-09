@@ -57,13 +57,20 @@ class ComponentPreview extends StatelessWidget {
 
 class ComponentState extends State<Component> {
   late Module module; // Add module field
+  late double height;
+  late double width;
 
   @override
   void initState() {
     super.initState();
     module = gateTypes[widget.moduleType.toString()]!.call();
     module.guiUpdateCallback = () {
-      setState(() {});
+      if (mounted) {
+        setState(() {});
+      } else {
+        module.delete();
+        debugPrint("Uh Oh, Someone has a bug in the code");
+      }
     };
   }
 
@@ -73,15 +80,7 @@ class ComponentState extends State<Component> {
     if (port.value == LogicValue.zero) {
       SimulationUpdater.queue.addFirst(() => port.connectedNode!
           .drive(portKey: port.key, driveValue: LogicValue.one));
-      //port.drivePort(LogicValue.one);
-    } //else if (port.value == LogicValue.one) {
-    //   SimulationUpdater.queue.addFirst(() => port.connectedNode!
-    //       .drive(portKey: port.key, driveValue: LogicValue.z));
-
-    //   //port.drivePort(LogicValue.z);
-    // }
-    else {
-      //port.drivePort(LogicValue.zero);
+    } else {
       SimulationUpdater.queue.addFirst(() => port.connectedNode!
           .drive(portKey: port.key, driveValue: LogicValue.zero));
     }
@@ -174,8 +173,10 @@ class ComponentState extends State<Component> {
 
     double componentHeight = nameAreaHeight + portAreaHeight;
 
+    height = componentHeight;
+    width = componentWidth;
+
     if (widget.moduleType == HexDisplay) {
-      // TODO: clean up code
       return Container(
         padding: const EdgeInsets.all(paddingSize),
         width: alignSizeToGrid(minComponentWidth =
@@ -213,7 +214,6 @@ class ComponentState extends State<Component> {
                           height: portHeight,
                           child: Center(
                             child: GestureDetector(
-                              //onTap: () => _toggleInputValue(input.item2),
                               onDoubleTap: () {
                                 if (wiringNodeSelected == null) {
                                   debugPrint("Selected Output for wiring");
@@ -262,18 +262,23 @@ class ComponentState extends State<Component> {
                               ),
                             ),
                           Text(
-                            ((module.ports[0].value == LogicValue.one ? 8 : 0) +
-                                    (module.ports[1].value == LogicValue.one
-                                        ? 4
-                                        : 0) +
-                                    (module.ports[2].value == LogicValue.one
-                                        ? 2
-                                        : 0) +
-                                    (module.ports[3].value == LogicValue.one
-                                        ? 1
-                                        : 0))
-                                .toRadixString(16)
-                                .toUpperCase(),
+                            (module.leftSide.any(
+                                    (element) => element.value == LogicValue.x)
+                                ? "?"
+                                : ((module.ports[0].value == LogicValue.one
+                                            ? 8
+                                            : 0) +
+                                        (module.ports[1].value == LogicValue.one
+                                            ? 4
+                                            : 0) +
+                                        (module.ports[2].value == LogicValue.one
+                                            ? 2
+                                            : 0) +
+                                        (module.ports[3].value == LogicValue.one
+                                            ? 1
+                                            : 0))
+                                    .toRadixString(16)
+                                    .toUpperCase()),
                             style: const TextStyle(
                                 fontSize: 1000,
                                 fontFamily: 'Consolas',
@@ -320,7 +325,7 @@ class ComponentState extends State<Component> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Input column
+                // Left side column (Normally inputs)
                 Column(
                   mainAxisAlignment: MainAxisAlignment.start,
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -330,9 +335,6 @@ class ComponentState extends State<Component> {
                         height: portHeight,
                         child: Center(
                           child: GestureDetector(
-                            onTap: () {
-                              //_toggleInputValue(port);
-                            },
                             onDoubleTap: () {
                               if (wiringNodeSelected == null) {
                                 debugPrint("Selected Output for wiring");
@@ -357,7 +359,7 @@ class ComponentState extends State<Component> {
                       )
                   ],
                 ),
-                // Output column
+                // Right side column (normally outputs)
                 Column(
                   mainAxisAlignment: MainAxisAlignment.start,
                   crossAxisAlignment: CrossAxisAlignment.end,
@@ -367,9 +369,6 @@ class ComponentState extends State<Component> {
                         height: portHeight,
                         child: Center(
                           child: GestureDetector(
-                            onTap: () {
-                              // _toggleInputValue(port);
-                            },
                             onDoubleTap: () {
                               if (wiringNodeSelected == null) {
                                 debugPrint("Selected Output for wiring");
@@ -408,8 +407,8 @@ class ComponentState extends State<Component> {
     return Stack(
       children: [
         Container(
-          width: alignSizeToGrid(50),
-          height: alignSizeToGrid(50),
+          width: alignSizeToGrid(10),
+          height: alignSizeToGrid(10),
           color: Colors.blueGrey,
         ),
         Positioned.fill(
