@@ -22,6 +22,17 @@ Map<String, Function> gateTypes = {
   'SRAM6116': () => SRAM6116(),
 };
 
+Map<Type, String> gateNames = {
+  BinarySwitch: "BinarySwitch",
+  HexDisplay: "HexDisplay",
+  NotGate:  "NotGate",
+  Nor2Gate: "Nor2Gate",
+  Xor2Gate: "Xor2Gate",
+  SN74LS373: "SN74LS373",
+  SN74LS245: "SN74LS245",
+  SRAM6116: "SRAM6116",
+};
+
 class Component extends StatefulWidget {
   final Type moduleType; // Add module field
 
@@ -63,7 +74,7 @@ class ComponentState extends State<Component> {
   @override
   void initState() {
     super.initState();
-    module = gateTypes[widget.moduleType.toString()]!.call();
+    module = gateTypes[gateNames[widget.moduleType]]!.call();
     module.guiUpdateCallback = () {
       if (mounted) {
         setState(() {});

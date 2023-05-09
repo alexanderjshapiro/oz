@@ -274,20 +274,7 @@ class _MainPageState extends State<MainPage> {
         padding: const EdgeInsets.all(padding),
         child: ListView(
           children: [
-            for (var moduleType in [
-              BinarySwitch,
-              HexDisplay,
-              Xor2Gate,
-              //Xor2GateRev,
-              // Or2Gate,
-              // And2Gate,
-              Nor2Gate,
-              NotGate,
-              // FlipFlop,
-              SN74LS373,
-              SN74LS245,
-              SRAM6116,
-            ])
+            for (var moduleType in gateNames.keys)
               Draggable(
                 data: Component(
                   moduleType: moduleType,
@@ -303,11 +290,11 @@ class _MainPageState extends State<MainPage> {
                       ),
                     )),
                 childWhenDragging: Text(
-                  moduleType.toString(),
+                  gateNames[moduleType]!,
                   style: const TextStyle(fontSize: 24, color: Colors.grey),
                 ),
                 child: Text(
-                  moduleType.toString(),
+                  gateNames[moduleType]!,
                   style: const TextStyle(
                     fontSize: 24,
                   ),
