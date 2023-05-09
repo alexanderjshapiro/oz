@@ -78,21 +78,17 @@ class EditorCanvasState extends State<EditorCanvas> {
     return Offset(dx, dy);
   }
 
-  Map<GlobalKey<ComponentState>, Component> getComponents() => _components;
-
   Map<GlobalKey<ComponentState>, List<PhysicalPort>> getOutPorts() {
     Map<GlobalKey<ComponentState>, List<PhysicalPort>> keyOutPortsMap = {};
+
+    //Note for Wayne: It looked like the code you had before was somehow deleting ports with key.remove()
+    
     // Get all the ports for each component key
     _components.forEach((key, value) {
-      keyOutPortsMap[key] = key.currentState!.module.ports;
-    });
-    // Remove all the ports that aren't output ports
-    keyOutPortsMap.forEach((key, value) {
-      value.removeWhere((element) => !element.portName.contains("Out") && 
-                                     !element.portName.contains("Button"));
+      if (key.currentState != null && key.currentState!.module.ports.any((element) => element.portName.contains("Out"))) keyOutPortsMap[key] = key.currentState!.module.ports;
     });
     // Remove all keys with an empty output port array
-    keyOutPortsMap.removeWhere((key, value) => value.isEmpty);
+    //keyOutPortsMap.removeWhere((key, value) => value.isEmpty);
     return keyOutPortsMap;
   }
 

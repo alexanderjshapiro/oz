@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'dart:collection';
+import 'main.dart';
 
 class Xor2Gate extends Module {
   Xor2Gate() : super(name: "Xor2Gate") {
@@ -305,6 +306,25 @@ class SimulationUpdater {
     if (queue.isEmpty) return;
     queue.first.call();
     queue.removeFirst();
+
+    // Note for Wayne: I moved your waveform update into my update function.
+    // This way it only draws if something changes, otherwise the canvas gets very laggy
+    // With you drawing every tick.
+
+    if (editorCanvasKey.currentState!.getComponents().isNotEmpty) {
+      // Update current output port states
+      componentOutPorts = editorCanvasKey.currentState!.getOutPorts();
+      componentOutPorts.forEach((key, value) {
+        currentComponentStates[key] = (value[0].value);
+        // Add the component output port if it hasn't been added to the analyzer yet
+        if (!waveformAnalyzerKey.currentState!
+            .getWaveforms()
+            .containsKey(key)) {
+          waveformAnalyzerKey.currentState!.addWaveform(key);
+        }
+      });
+      waveformAnalyzerKey.currentState!.updateWaveforms(currentComponentStates);
+    }
   }
 }
 

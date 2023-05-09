@@ -117,7 +117,7 @@ class WaveformAnalyzerState extends State<WaveformAnalyzer> {
   void updateWaveforms(Map<GlobalKey<ComponentState>, LogicValue> newStates) {
     setState(() {
       newStates.forEach((key, value) {
-        _waveforms[key]!.add(value);
+        _waveforms[key]?.add(value);
       });
     });
   }

@@ -44,10 +44,10 @@ class MainPage extends StatefulWidget {
 }
 
 late GlobalKey<EditorCanvasState>
-    _editorCanvasKey; // TODO: consider using callback functions instead of GlobalKey
+    editorCanvasKey; // TODO: consider using callback functions instead of GlobalKey
 
 late GlobalKey<WaveformAnalyzerState>
-    _waveformAnalyzerKey;
+    waveformAnalyzerKey;
 
 class _MainPageState extends State<MainPage> {
   bool _showProjectExplorer = false;
@@ -58,8 +58,8 @@ class _MainPageState extends State<MainPage> {
   void initState() {
     super.initState();
     _startSimulation();
-    _editorCanvasKey = GlobalKey<EditorCanvasState>();
-    _waveformAnalyzerKey = GlobalKey<WaveformAnalyzerState>();
+    editorCanvasKey = GlobalKey<EditorCanvasState>();
+    waveformAnalyzerKey = GlobalKey<WaveformAnalyzerState>();
   }
 
   @override
@@ -80,11 +80,11 @@ class _MainPageState extends State<MainPage> {
                           child: Row(
                             children: [
                               projectExplorer(),
-                              EditorCanvas(key: _editorCanvasKey),
+                              EditorCanvas(key: editorCanvasKey),
                             ],
                           ),
                         ),
-                        WaveformAnalyzer(key: _waveformAnalyzerKey)
+                        WaveformAnalyzer(key: waveformAnalyzerKey)
                       ],
                     ),
                   ),
@@ -108,7 +108,7 @@ class _MainPageState extends State<MainPage> {
           IconButton(
             onPressed: () {
               setState(() {
-                _editorCanvasKey.currentState!.mode = 'select';
+                editorCanvasKey.currentState!.mode = 'select';
               });
             },
             icon: const Icon(Icons.highlight_alt),
@@ -118,7 +118,7 @@ class _MainPageState extends State<MainPage> {
           IconButton(
             onPressed: () {
               setState(() {
-                _editorCanvasKey.currentState!.mode = 'draw';
+                editorCanvasKey.currentState!.mode = 'draw';
               });
             },
             icon: const Icon(Icons.mode),
@@ -128,7 +128,7 @@ class _MainPageState extends State<MainPage> {
           IconButton(
             onPressed: () {
               setState(() {
-                _editorCanvasKey.currentState!.removeSelectedComponents();
+                editorCanvasKey.currentState!.removeSelectedComponents();
               });
             },
             icon: const Icon(Icons.delete),
@@ -138,9 +138,9 @@ class _MainPageState extends State<MainPage> {
           IconButton(
             onPressed: () {
               setState(() {
-                _editorCanvasKey.currentState!.clear();
+                editorCanvasKey.currentState!.clear();
                 currentComponentStates.clear();
-                _waveformAnalyzerKey.currentState!.clearWaveforms();
+                waveformAnalyzerKey.currentState!.clearWaveforms();
               });
             },
             icon: const Icon(Icons.restart_alt),
@@ -188,21 +188,6 @@ class _MainPageState extends State<MainPage> {
             onPressed: () {
               _stopSimulation();
               SimulationUpdater.tick();
-              // If the canvas isn't empty, update the waveforms
-              if(_editorCanvasKey.currentState!.getComponents().isNotEmpty) {
-                // Update current output port states
-                componentOutPorts =_editorCanvasKey.currentState!.getOutPorts();
-                componentOutPorts.forEach((key, value) {
-                  currentComponentStates[key] = (value[0].value);
-                  // Add the component output port if it hasn't been added to the analyzer yet
-                  if(!_waveformAnalyzerKey.currentState!.getWaveforms().containsKey(key)) {
-                    _waveformAnalyzerKey.currentState!.addWaveform(key);
-                  }
-                });
-                _waveformAnalyzerKey.currentState!.updateWaveforms(currentComponentStates);
-              } else {
-                print("Canvas currently empty");
-              }
             },
             icon: const Icon(Icons.slow_motion_video_rounded),
             iconSize: toolbarIconSize,
@@ -329,12 +314,12 @@ class _MainPageState extends State<MainPage> {
                 ),
                 onDragEnd: (DraggableDetails details) {
                   setState(() {
-                    _editorCanvasKey.currentState!.addComponent(moduleType,
+                    editorCanvasKey.currentState!.addComponent(moduleType,
                         offset: Offset(
                             details.offset.dx - 56,
                             details.offset.dy -
                                 48)); // TODO: don't manually define offset's offset
-                    _editorCanvasKey.currentState!.getComponents().forEach((key, value) {
+                    editorCanvasKey.currentState!.getComponents().forEach((key, value) {
                       currentComponentStates.putIfAbsent(key, () => LogicValue.zero);
                     });
                   });
@@ -369,21 +354,6 @@ class _MainPageState extends State<MainPage> {
       tickRate,
       (timer) {
         SimulationUpdater.tick();
-        // If the canvas isn't empty, update the waveforms
-          if(_editorCanvasKey.currentState!.getComponents().isNotEmpty) {
-            // Update current output port states
-            componentOutPorts =_editorCanvasKey.currentState!.getOutPorts();
-            componentOutPorts.forEach((key, value) {
-              currentComponentStates[key] = (value[0].value);
-              // Add the component output port if it hasn't been added to the analyzer yet
-              if(!_waveformAnalyzerKey.currentState!.getWaveforms().containsKey(key)) {
-                _waveformAnalyzerKey.currentState!.addWaveform(key);
-              }
-            });
-            _waveformAnalyzerKey.currentState!.updateWaveforms(currentComponentStates);
-          } else {
-            print("Canvas currently empty");
-          }
       },
     );
   }
