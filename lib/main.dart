@@ -16,7 +16,7 @@ const bool debug = false;
 Duration tickRate = const Duration(milliseconds: 1);
 
 Map<GlobalKey<ComponentState>, LogicValue> currentComponentStates = {};
-Map<GlobalKey<ComponentState>, List<PhysicalPort>> componentOutPorts = {};
+Map<GlobalKey<ComponentState>, PhysicalPort> probedPorts = {};
 
 void main() {
   // TODO: Enable this code section as a fail safe
@@ -157,6 +157,7 @@ class _MainPageState extends State<MainPage> {
                 editorCanvasKey.currentState!.clear();
                 currentComponentStates.clear();
                 waveformAnalyzerKey.currentState!.clearWaveforms();
+                probedPorts.clear();
               });
             },
             icon: const Icon(Icons.restart_alt),
@@ -209,6 +210,27 @@ class _MainPageState extends State<MainPage> {
             iconSize: toolbarIconSize,
             tooltip: 'Step Simulation',
           ),
+          const SizedBox(width: 40),
+          IconButton(
+            onPressed: () {
+              setState(() {
+                editorCanvasKey.currentState!.mode = 'Probe Port';
+              });
+            },
+            icon: const Icon(Icons.near_me),
+            iconSize: toolbarIconSize,
+            tooltip: 'Add Port Waveform',
+          ),
+          IconButton(
+            onPressed: () {
+              setState(() {
+                editorCanvasKey.currentState!.mode = 'Remove Probe';
+              });
+            },
+            icon: const Icon(Icons.near_me_disabled),
+            iconSize: toolbarIconSize,
+            tooltip: 'Remove Port Waveform',
+          )
         ],
       ),
     );
@@ -336,6 +358,7 @@ class _MainPageState extends State<MainPage> {
       tickRate,
       (timer) {
         SimulationUpdater.tick();
+        print("help");
       },
     );
   }
