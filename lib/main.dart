@@ -87,7 +87,7 @@ class _MainPageState extends State<MainPage> {
           IconButton(
             onPressed: () {
               setState(() {
-                _editorCanvasKey.currentState!.mode = 'select';
+                _editorCanvasKey.currentState!.drawMode = false;
               });
             },
             icon: const Icon(Icons.highlight_alt),
@@ -97,7 +97,7 @@ class _MainPageState extends State<MainPage> {
           IconButton(
             onPressed: () {
               setState(() {
-                _editorCanvasKey.currentState!.mode = 'draw';
+                _editorCanvasKey.currentState!.drawMode = true;
               });
             },
             icon: const Icon(Icons.mode),
@@ -107,12 +107,12 @@ class _MainPageState extends State<MainPage> {
           IconButton(
             onPressed: () {
               setState(() {
-                _editorCanvasKey.currentState!.removeSelectedComponents();
+                _editorCanvasKey.currentState!.removeSelected();
               });
             },
             icon: const Icon(Icons.delete),
             iconSize: toolbarIconSize,
-            tooltip: 'Delete',
+            tooltip: 'Remove Selected',
           ),
           IconButton(
             onPressed: () {
