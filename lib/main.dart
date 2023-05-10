@@ -5,6 +5,7 @@ import 'component.dart';
 import 'dart:async';
 import 'editor_canvas.dart';
 import 'waveform.dart';
+import 'package:resizable_widget/resizable_widget.dart';
 
 const double toolbarIconSize = 48;
 const double gridSize = 40;
@@ -85,17 +86,21 @@ class _MainPageState extends State<MainPage> {
               child: Row(
                 children: [
                   Expanded(
-                    child: Column(
+                    child: Row(
                       children: [
+                        projectExplorer(),
                         Expanded(
-                          child: Row(
+                          child: ResizableWidget(
+                            isHorizontalSeparator: true,
+                            separatorSize: 4,
+                            separatorColor: Colors.black,
+                            percentages: const [0.7, 0.3],
                             children: [
-                              projectExplorer(),
                               EditorCanvas(key: editorCanvasKey),
+                              WaveformAnalyzer(key: waveformAnalyzerKey),
                             ],
                           ),
                         ),
-                        WaveformAnalyzer(key: waveformAnalyzerKey)
                       ],
                     ),
                   ),

@@ -82,10 +82,14 @@ class EditorCanvasState extends State<EditorCanvas> {
     Map<GlobalKey<ComponentState>, List<PhysicalPort>> keyOutPortsMap = {};
 
     //Note for Wayne: It looked like the code you had before was somehow deleting ports with key.remove()
-    
+
     // Get all the ports for each component key
     _components.forEach((key, value) {
-      if (key.currentState != null && key.currentState!.module.ports.any((element) => element.portName.contains("Out"))) keyOutPortsMap[key] = key.currentState!.module.ports;
+      if (key.currentState != null &&
+          key.currentState!.module.ports
+              .any((element) => element.portName.contains("Out"))) {
+        keyOutPortsMap[key] = key.currentState!.module.ports;
+      }
     });
     // Remove all keys with an empty output port array
     //keyOutPortsMap.removeWhere((key, value) => value.isEmpty);
@@ -94,8 +98,7 @@ class EditorCanvasState extends State<EditorCanvas> {
 
   @override
   Widget build(BuildContext context) {
-    return Expanded(
-        child: Stack(children: [
+    return Stack(children: [
       GridPaper(
         divisions: 1,
         subdivisions: 1,
@@ -266,7 +269,7 @@ class EditorCanvasState extends State<EditorCanvas> {
               )
             : null,
       ),
-    ]));
+    ]);
   }
 }
 

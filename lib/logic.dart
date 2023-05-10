@@ -162,7 +162,8 @@ class SRAM6116 extends Module {
 
 //Preset the memory for testing purposes
   Map<int, List<LogicValue>> memory = {
-    1: [
+    //andrew
+    514: [
       LogicValue.one,
       LogicValue.zero,
       LogicValue.one,
@@ -171,6 +172,28 @@ class SRAM6116 extends Module {
       LogicValue.one,
       LogicValue.one,
       LogicValue.zero,
+    ],
+    //alex
+    1013: [
+      LogicValue.one,
+      LogicValue.zero,
+      LogicValue.one,
+      LogicValue.zero,
+      LogicValue.zero,
+      LogicValue.one,
+      LogicValue.zero,
+      LogicValue.one,
+    ],
+    //wayne
+    127: [
+      LogicValue.zero,
+      LogicValue.zero,
+      LogicValue.one,
+      LogicValue.one,
+      LogicValue.one,
+      LogicValue.one,
+      LogicValue.one,
+      LogicValue.one,
     ],
   };
 
