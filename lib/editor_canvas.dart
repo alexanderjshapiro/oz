@@ -81,14 +81,10 @@ class EditorCanvasState extends State<EditorCanvas> {
   Map<GlobalKey<ComponentState>, List<PhysicalPort>> getOutPorts() {
     Map<GlobalKey<ComponentState>, List<PhysicalPort>> keyOutPortsMap = {};
 
-    //Note for Wayne: It looked like the code you had before was somehow deleting ports with key.remove()
-    
     // Get all the ports for each component key
     _components.forEach((key, value) {
       if (key.currentState != null && key.currentState!.module.ports.any((element) => element.portName.contains("Out"))) keyOutPortsMap[key] = key.currentState!.module.ports;
     });
-    // Remove all keys with an empty output port array
-    //keyOutPortsMap.removeWhere((key, value) => value.isEmpty);
     return keyOutPortsMap;
   }
 
@@ -266,6 +262,97 @@ class EditorCanvasState extends State<EditorCanvas> {
               )
             : null,
       ),
+    mode == "Probe Port"
+      ? GestureDetector(
+        onTapUp: (TapUpDetails details) {
+          // Get the position of where you click and snap to the grid
+          Offset tapOffset = _snapToGrid(Offset(
+                      details.localPosition.dx, details.localPosition.dy));
+
+          // Go through all the components 
+          for (final GlobalKey<ComponentState> componentKey
+                      in _components.keys) {
+            ComponentState componentState = componentKey.currentState!;
+            Offset componentOffset = _componentPositions[componentKey]!;
+            // Make a list the right port positions
+            List<Offset> rightSideOffsets = [
+              for (int i = 0;
+                  i < componentState.module.rightSide.length;
+                  i++)
+                Offset(componentOffset.dx + componentState.width,
+                    componentOffset.dy + (gridSize * (i + 2)))
+            ];
+            // Make a list of the left port positions
+            List<Offset> leftSideOffsets = [
+              for (int i = 0;
+                  i < componentState.module.leftSide.length;
+                  i++)
+                Offset(componentOffset.dx,
+                    componentOffset.dy + (gridSize * (i + 2)))
+            ];
+
+            // If any of the left/right port positions is equal to where we tapped,
+            // Add that component to the probedPorts map
+            if (rightSideOffsets.contains(tapOffset)) {
+              probedPorts[componentKey] = componentState.module.rightSide
+                .elementAt(rightSideOffsets.indexOf(tapOffset));
+              print("Component ports");
+              print(probedPorts);
+              return;
+            } else if (leftSideOffsets.contains(tapOffset)) {
+              probedPorts[componentKey] = componentState.module.leftSide
+                .elementAt(leftSideOffsets.indexOf(tapOffset))
+                .connectedNode;
+            }
+          }
+        },
+      ) : const SizedBox.shrink(),
+    
+    mode == "Remove Probe"
+      ? GestureDetector(
+        onTapUp: (TapUpDetails details) {
+          // Get the position of where you click and snap to the grid
+          Offset tapOffset = _snapToGrid(Offset(
+                      details.localPosition.dx, details.localPosition.dy));
+
+          // Go through all the components 
+          for (final GlobalKey<ComponentState> componentKey
+                      in _components.keys) {
+            if (probedPorts.containsKey(componentKey)) {
+              ComponentState componentState = componentKey.currentState!;
+              Offset componentOffset = _componentPositions[componentKey]!;
+              // Make a list the right port positions
+              List<Offset> rightSideOffsets = [
+                for (int i = 0;
+                    i < componentState.module.rightSide.length;
+                    i++)
+                  Offset(componentOffset.dx + componentState.width,
+                      componentOffset.dy + (gridSize * (i + 2)))
+              ];
+              // Make a list of the left port positions
+              List<Offset> leftSideOffsets = [
+                for (int i = 0;
+                    i < componentState.module.leftSide.length;
+                    i++)
+                  Offset(componentOffset.dx,
+                      componentOffset.dy + (gridSize * (i + 2)))
+              ];
+
+              // If any of the left/right port positions is equal to where we tapped,
+              // Remove the probed component from the map
+              if (rightSideOffsets.contains(tapOffset)) {
+                probedPorts.remove(componentKey);
+                waveformAnalyzerKey.currentState!.removeWaveform(componentKey);
+                return;
+              } else if (leftSideOffsets.contains(tapOffset)) {
+                probedPorts.remove(componentKey);
+                waveformAnalyzerKey.currentState!.removeWaveform(componentKey);
+                return;
+              }
+            }   
+          }
+        },
+      ) : const SizedBox.shrink(),
     ]));
   }
 }
