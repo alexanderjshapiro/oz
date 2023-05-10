@@ -144,12 +144,12 @@ class _MainPageState extends State<MainPage> {
           IconButton(
             onPressed: () {
               setState(() {
-                editorCanvasKey.currentState!.removeSelectedComponents();
+                editorCanvasKey.currentState!.removeSelected();
               });
             },
             icon: const Icon(Icons.delete),
             iconSize: toolbarIconSize,
-            tooltip: 'Delete',
+            tooltip: 'Remove Selected',
           ),
           IconButton(
             onPressed: () {
