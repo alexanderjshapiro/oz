@@ -3,9 +3,6 @@ import 'logic.dart';
 import 'package:flutter/services.dart';
 import 'component.dart';
 import 'dart:async';
-import 'package:pdf/pdf.dart';
-import 'package:pdf/widgets.dart' as pw;
-import 'package:printing/printing.dart';
 import 'editor_canvas.dart';
 import 'waveform.dart';
 
@@ -21,7 +18,22 @@ Map<GlobalKey<ComponentState>, LogicValue> currentComponentStates = {};
 Map<GlobalKey<ComponentState>, List<PhysicalPort>> componentOutPorts = {};
 
 void main() {
-  runApp(const Oz());
+  // TODO: Enable this code section as a fail safe
+  // If we get an error the program just restarts.
+  // ignore: dead_code
+  if (false) {
+    bool goodExit = false;
+    while (!goodExit) {
+      try {
+        runApp(const Oz());
+        goodExit = true;
+      } catch (e) {
+        debugPrint("error: $e");
+      }
+    }
+  } else {
+    runApp(const Oz());
+  }
 }
 
 class Oz extends StatelessWidget {
@@ -46,8 +58,7 @@ class MainPage extends StatefulWidget {
 late GlobalKey<EditorCanvasState>
     editorCanvasKey; // TODO: consider using callback functions instead of GlobalKey
 
-late GlobalKey<WaveformAnalyzerState>
-    waveformAnalyzerKey;
+late GlobalKey<WaveformAnalyzerState> waveformAnalyzerKey;
 
 class _MainPageState extends State<MainPage> {
   bool _showProjectExplorer = false;
@@ -239,30 +250,6 @@ class _MainPageState extends State<MainPage> {
     );
   }
 
-  void printScreen() {
-    Printing.layoutPdf(
-      onLayout: (PdfPageFormat format) async {
-        final doc = pw.Document();
-
-        final image = await WidgetWrapper.fromKey(key: GlobalKey());
-
-        doc.addPage(
-          pw.Page(
-            pageFormat: format,
-            build: (pw.Context context) {
-              return pw.Center(
-                child: pw.Expanded(
-                  child: pw.Image(image),
-                ),
-              );
-            },
-          ),
-        );
-        return doc.save();
-      },
-    );
-  }
-
   Widget componentList() {
     const double padding = 16;
 
@@ -306,8 +293,11 @@ class _MainPageState extends State<MainPage> {
                             details.offset.dx - 56,
                             details.offset.dy -
                                 48)); // TODO: don't manually define offset's offset
-                    editorCanvasKey.currentState!.getComponents().forEach((key, value) {
-                      currentComponentStates.putIfAbsent(key, () => LogicValue.zero);
+                    editorCanvasKey.currentState!
+                        .getComponents()
+                        .forEach((key, value) {
+                      currentComponentStates.putIfAbsent(
+                          key, () => LogicValue.zero);
                     });
                   });
                 },

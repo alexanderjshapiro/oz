@@ -414,7 +414,6 @@ class ComponentState extends State<Component> {
   }
 
   Widget buttonBuildOverride() {
-    //TODO Figure out a better way render Button component
     return Stack(
       children: [
         Container(

@@ -121,9 +121,10 @@ class SN74LS373 extends Module {
         LogicValue.one) {
       for (int i = 0; i < 8; i++) {
         if (ports[i].value != ports[i + 8].value) {
-          ports[i + 8].drivePort(ports[i].value);
+          ports[i + 8].queueDrivePort(ports[i].value);
         }
       }
+      SimulationUpdater.submitStage(key);
     }
   }
 }
@@ -178,8 +179,9 @@ class SRAM6116 extends Module {
     if (ports.firstWhere((element) => element.portName == "CS'").value ==
         LogicValue.one) {
       for (int i = 0; i < 8; i++) {
-        ports[i + 11].connectedNode?.impede(portKey: ports[i + 11].key);
+        ports[i + 11].queueDrivePort(LogicValue.z);
       }
+      SimulationUpdater.submitStage(key);
       return;
     }
     //chip must be enabled at this point
@@ -193,12 +195,12 @@ class SRAM6116 extends Module {
         }
       }
       for (int i = 0; i < 8; i++) {
-        ports[i + 11].drivePort(memory[address]?[i] ?? LogicValue.zero);
+        ports[i + 11].queueDrivePort(memory[address]?[i] ?? LogicValue.zero);
       }
       debugPrint("value = $address");
     } else {
       for (int i = 0; i < 8; i++) {
-        ports[i + 11].connectedNode?.impede(portKey: ports[i + 11].key);
+        ports[i + 11].queueDrivePort(LogicValue.zero);
       }
       if (ports.firstWhere((element) => element.portName == "WE'").value ==
           LogicValue.zero) {
@@ -212,6 +214,7 @@ class SRAM6116 extends Module {
         memory[address] = List.generate(8, (index) => ports[index + 11].value);
       }
     }
+    SimulationUpdater.submitStage(key);
   }
 }
 
@@ -301,7 +304,7 @@ class HexDisplay extends Module {
 
 class SimulationUpdater {
   static final Queue<List<Function>> queue = Queue();
-  static final Map<String,List<Function>> staging = {};
+  static final Map<String, List<Function>> staging = {};
 
   SimulationUpdater();
 
@@ -332,13 +335,15 @@ class SimulationUpdater {
     }
   }
 
-  static void submitStage(String moduleKey){
+  static void submitStage(String moduleKey) {
     queue.addLast(staging[moduleKey]!);
     staging.remove(moduleKey);
   }
 
-  static void pushStage(String moduleKey, Function fun){
-    staging[moduleKey] != null ? staging[moduleKey]?.add(fun) : staging[moduleKey] = [fun];
+  static void pushStage(String moduleKey, Function fun) {
+    staging[moduleKey] != null
+        ? staging[moduleKey]?.add(fun)
+        : staging[moduleKey] = [fun];
   }
 }
 
@@ -402,14 +407,15 @@ class PhysicalPort {
 
   void drivePort(LogicValue value) {
     if (connectedNode != null) {
-      SimulationUpdater.queue
-          .addLast([() => connectedNode!.drive(portKey: key, driveValue: value)]);
+      SimulationUpdater.queue.addLast(
+          [() => connectedNode!.drive(portKey: key, driveValue: value)]);
     }
   }
 
-  void queueDrivePort(LogicValue value){
+  void queueDrivePort(LogicValue value) {
     if (connectedNode != null) {
-      SimulationUpdater.pushStage(module.key,() => connectedNode!.drive(portKey: key, driveValue: value));
+      SimulationUpdater.pushStage(module.key,
+          () => connectedNode!.drive(portKey: key, driveValue: value));
     }
   }
 

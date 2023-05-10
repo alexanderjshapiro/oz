@@ -1,7 +1,6 @@
 import 'package:oz/component.dart';
 import 'package:flutter/material.dart';
 import 'logic.dart';
-import 'main.dart';
 
 const double size = 100;
 
@@ -17,9 +16,9 @@ class WaveformGraph extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final double containerWidth = size;
-    final double containerHeight = size / 2.0;
-    
+    const double containerWidth = size;
+    const double containerHeight = size / 2.0;
+
     List<Container> stateWaves = [];
 
     var previousVal = waveform[0];
@@ -27,41 +26,33 @@ class WaveformGraph extends StatelessWidget {
       bool state = false;
       if (value == LogicValue.one) {
         state = true;
-      }  
-      else if (value == LogicValue.zero) {
+      } else if (value == LogicValue.zero) {
         state = false;
-      }  
-      BorderSide topBorderSide = 
-        state ? blackBorder : BorderSide.none;
-      BorderSide bottomBorderSide = 
-        state ? BorderSide.none : blackBorder;
+      }
+      BorderSide topBorderSide = state ? blackBorder : BorderSide.none;
+      BorderSide bottomBorderSide = state ? BorderSide.none : blackBorder;
       BorderSide leftBorderSide;
       if (previousVal == value) {
         leftBorderSide = BorderSide.none;
       } else {
         leftBorderSide = blackBorder;
       }
-      stateWaves.add(
-        Container(
-          width: containerWidth,
-          height: containerHeight,
-          decoration: BoxDecoration(
+      stateWaves.add(Container(
+        width: containerWidth,
+        height: containerHeight,
+        decoration: BoxDecoration(
             border: Border(
-              top: topBorderSide,
-              bottom: bottomBorderSide,
-              left: leftBorderSide
-            )
-          ),
-        )
-      );
+                top: topBorderSide,
+                bottom: bottomBorderSide,
+                left: leftBorderSide)),
+      ));
       previousVal = value;
     }
     return Row(
-      children: stateWaves, 
+      children: stateWaves,
     );
   }
 }
-
 
 class WaveformAnalyzer extends StatefulWidget {
   const WaveformAnalyzer({Key? key}) : super(key: key);
@@ -72,6 +63,7 @@ class WaveformAnalyzer extends StatefulWidget {
 
 class WaveformAnalyzerState extends State<WaveformAnalyzer> {
   final Map<GlobalKey<ComponentState>, List<LogicValue>> _waveforms = {};
+  final scrollController = ScrollController();
 
   @override
   void initState() {
@@ -86,12 +78,13 @@ class WaveformAnalyzerState extends State<WaveformAnalyzer> {
         List<LogicValue> longestList = [];
         // This breaks everything if there's only one element in _waveforms
         if (_waveforms.length > 1) {
-          longestList = _waveforms.values.reduce((value, element) => value.length > element.length ? value : element);
+          longestList = _waveforms.values.reduce((value, element) =>
+              value.length > element.length ? value : element);
         } else {
           longestList = _waveforms.values.first;
         }
-        
-        // Fill the new component list with LogicValue.zero 
+
+        // Fill the new component list with LogicValue.zero
         // so that the new waveform gets displayed properly
         for (int i = 0; i < longestList.length; i++) {
           _waveforms[componentKey]!.add(LogicValue.zero);
@@ -123,10 +116,10 @@ class WaveformAnalyzerState extends State<WaveformAnalyzer> {
   }
 
   int getWaveformsLength() => _waveforms.length;
-  
+
   Map<GlobalKey<ComponentState>, List<LogicValue>> getWaveforms() => _waveforms;
 
-  @override 
+  @override
   Widget build(BuildContext context) {
     List<Widget> waveformWidgets = [];
 
@@ -139,14 +132,26 @@ class WaveformAnalyzerState extends State<WaveformAnalyzer> {
       count++;
     });
 
+    //Update the position of the scrollbar must occur after the widget is updated
+    // Else the bar will scroll to the second to last position instead of the end.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (scrollController.hasClients) {
+        scrollController.animateTo(
+          scrollController.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 100),
+          curve: Curves.easeInOutSine,
+        );
+      }
+    });
+
     if (waveformWidgets.isEmpty) {
       return Container(
-      decoration: const BoxDecoration(
-        color: Colors.grey,
-        border: Border(top: BorderSide(color: Colors.black))),
+        decoration: const BoxDecoration(
+            color: Colors.grey,
+            border: Border(top: BorderSide(color: Colors.black))),
         height: 200,
         padding: const EdgeInsets.all(20),
-    );
+      );
     }
 
     return SizedBox(
@@ -157,17 +162,20 @@ class WaveformAnalyzerState extends State<WaveformAnalyzer> {
           border: Border(top: BorderSide(color: Colors.black)),
         ),
         padding: const EdgeInsets.all(10),
-        child: SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
+        child: Scrollbar(
+          controller: scrollController,
           child: SingleChildScrollView(
-            scrollDirection: Axis.vertical,
-            child: Column(
-              children: waveformWidgets,
+            controller: scrollController,
+            scrollDirection: Axis.horizontal,
+            child: SingleChildScrollView(
+              scrollDirection: Axis.vertical,
+              child: Column(
+                children: waveformWidgets,
+              ),
             ),
-          )
+          ),
         ),
       ),
     );
   }
 }
-
