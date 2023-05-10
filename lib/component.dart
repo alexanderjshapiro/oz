@@ -89,11 +89,11 @@ class ComponentState extends State<Component> {
 
   _toggleInputValue(PhysicalPort port) {
     if (port.value == LogicValue.zero) {
-      SimulationUpdater.queue.addFirst(() => port.connectedNode!
-          .drive(portKey: port.key, driveValue: LogicValue.one));
+      SimulationUpdater.queue.addFirst([() => port.connectedNode!
+          .drive(portKey: port.key, driveValue: LogicValue.one)]);
     } else {
-      SimulationUpdater.queue.addFirst(() => port.connectedNode!
-          .drive(portKey: port.key, driveValue: LogicValue.zero));
+      SimulationUpdater.queue.addFirst([() => port.connectedNode!
+          .drive(portKey: port.key, driveValue: LogicValue.zero)]);
     }
   }
 

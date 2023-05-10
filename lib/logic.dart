@@ -66,8 +66,9 @@ class SN74LS245 extends Module {
     if (ports.firstWhere((element) => element.portName == "OE'").value ==
         LogicValue.one) {
       for (int i = 0; i < 16; i++) {
-        ports[i].connectedNode?.impede(portKey: ports[i].key);
+        ports[i].queueDrivePort(LogicValue.z);
       }
+      SimulationUpdater.submitStage(key);
       return;
     }
 
@@ -75,20 +76,21 @@ class SN74LS245 extends Module {
         LogicValue.one) {
       // transfer left side values to right side
       for (int i = 0; i < 8; i++) {
-        ports[i].connectedNode?.impede(portKey: ports[i].key);
+        ports[i].queueDrivePort(LogicValue.z);
       }
       for (int i = 0; i < 8; i++) {
-        ports[i + 8].drivePort(ports[i].value);
+        ports[i + 8].queueDrivePort(ports[i].value);
       }
     } else {
       // transfer right side values to left side
       for (int i = 8; i < 16; i++) {
-        ports[i].connectedNode?.impede(portKey: ports[i].key);
+        ports[i].queueDrivePort(LogicValue.z);
       }
       for (int i = 0; i < 8; i++) {
-        ports[i].drivePort(ports[i + 8].value);
+        ports[i].queueDrivePort(ports[i + 8].value);
       }
     }
+    SimulationUpdater.submitStage(key);
   }
 }
 
@@ -298,13 +300,16 @@ class HexDisplay extends Module {
 }
 
 class SimulationUpdater {
-  static final Queue<Function> queue = Queue();
+  static final Queue<List<Function>> queue = Queue();
+  static final Map<String,List<Function>> staging = {};
 
   SimulationUpdater();
 
   static void tick() {
     if (queue.isEmpty) return;
-    queue.first.call();
+    for (var element in queue.first) {
+      element.call();
+    }
     queue.removeFirst();
 
     // Note for Wayne: I moved your waveform update into my update function.
@@ -326,11 +331,21 @@ class SimulationUpdater {
       waveformAnalyzerKey.currentState!.updateWaveforms(currentComponentStates);
     }
   }
+
+  static void submitStage(String moduleKey){
+    queue.addLast(staging[moduleKey]!);
+    staging.remove(moduleKey);
+  }
+
+  static void pushStage(String moduleKey, Function fun){
+    staging[moduleKey] != null ? staging[moduleKey]?.add(fun) : staging[moduleKey] = [fun];
+  }
 }
 
 class Module {
   Function? guiUpdateCallback;
   String name;
+  String key = KeyGen.key();
   late List<PhysicalPort> ports;
 
   Module({
@@ -388,7 +403,13 @@ class PhysicalPort {
   void drivePort(LogicValue value) {
     if (connectedNode != null) {
       SimulationUpdater.queue
-          .addLast(() => connectedNode!.drive(portKey: key, driveValue: value));
+          .addLast([() => connectedNode!.drive(portKey: key, driveValue: value)]);
+    }
+  }
+
+  void queueDrivePort(LogicValue value){
+    if (connectedNode != null) {
+      SimulationUpdater.pushStage(module.key,() => connectedNode!.drive(portKey: key, driveValue: value));
     }
   }
 
