@@ -8,24 +8,20 @@ Node? wiringNodeSelected;
 
 // This should allow us to import in new modules during runtime
 Map<String, Function> gateTypes = {
-  'Xor2Gate': () => Xor2Gate(),
-  'Xor2GateRev': () => Xor2GateRev(),
-  // 'And2Gate': () => And2Gate(),
-  // 'FlipFlop': () => FlipFlop(),
+  'BinarySwitch': () => BinarySwitch(),
+  'HexDisplay': () => HexDisplay(),
   'NotGate': () => NotGate(),
   'Nor2Gate': () => Nor2Gate(),
-  // 'Or2Gate': () => Or2Gate(),
+  'Xor2Gate': () => Xor2Gate(),
   'SN74LS373': () => SN74LS373(),
-  'BinarySwitch': () => BinarySwitch(),
   'SN74LS245': () => SN74LS245(),
-  'HexDisplay': () => HexDisplay(),
   'SRAM6116': () => SRAM6116(),
 };
 
 Map<Type, String> gateNames = {
   BinarySwitch: "BinarySwitch",
   HexDisplay: "HexDisplay",
-  NotGate:  "NotGate",
+  NotGate: "NotGate",
   Nor2Gate: "Nor2Gate",
   Xor2Gate: "Xor2Gate",
   SN74LS373: "SN74LS373",
@@ -89,11 +85,15 @@ class ComponentState extends State<Component> {
 
   _toggleInputValue(PhysicalPort port) {
     if (port.value == LogicValue.zero) {
-      SimulationUpdater.queue.addFirst([() => port.connectedNode!
-          .drive(portKey: port.key, driveValue: LogicValue.one)]);
+      SimulationUpdater.queue.addFirst([
+        () => port.connectedNode!
+            .drive(portKey: port.key, driveValue: LogicValue.one)
+      ]);
     } else {
-      SimulationUpdater.queue.addFirst([() => port.connectedNode!
-          .drive(portKey: port.key, driveValue: LogicValue.zero)]);
+      SimulationUpdater.queue.addFirst([
+        () => port.connectedNode!
+            .drive(portKey: port.key, driveValue: LogicValue.zero)
+      ]);
     }
   }
 

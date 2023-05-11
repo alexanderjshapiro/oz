@@ -10,10 +10,17 @@ class EditorCanvas extends StatefulWidget {
   EditorCanvasState createState() => EditorCanvasState();
 }
 
+enum CanvasModes {
+  select,
+  draw,
+  probePort,
+  removeProbe,
+}
+
 class EditorCanvasState extends State<EditorCanvas> {
   static const double selectedComponentBorderWidth = 1.0;
 
-  String mode = "select";
+  CanvasModes mode = CanvasModes.select;
 
   final Map<GlobalKey<ComponentState>, Component> _components = {};
   final Map<GlobalKey<ComponentState>, Offset> _componentPositions = {};
@@ -114,7 +121,7 @@ class EditorCanvasState extends State<EditorCanvas> {
         ),
         GestureDetector(
           onTapUp: (TapUpDetails details) {
-            if (mode == "select") {
+            if (mode == CanvasModes.select) {
               Offset offset = _snapToGrid(details.localPosition);
               for (var i = 0; i < _wires.length; i++) {
                 if (_wires[i].contains(offset)) {
@@ -130,7 +137,7 @@ class EditorCanvasState extends State<EditorCanvas> {
                 _selectedComponentKey = null;
                 _selectedWireIndex = null;
               });
-            } else if (mode == "Probe Port") {
+            } else if (mode == CanvasModes.probePort) {
               // Get the position of where you click and snap to the grid
               Offset tapOffset = _snapToGrid(
                   Offset(details.localPosition.dx, details.localPosition.dy));
@@ -168,7 +175,7 @@ class EditorCanvasState extends State<EditorCanvas> {
                       .elementAt(leftSideOffsets.indexOf(tapOffset));
                 }
               }
-            } else if (mode == "Remove Probe") {
+            } else if (mode == CanvasModes.removeProbe) {
               // Get the position of where you click and snap to the grid
               Offset tapOffset = _snapToGrid(
                   Offset(details.localPosition.dx, details.localPosition.dy));
@@ -214,7 +221,7 @@ class EditorCanvasState extends State<EditorCanvas> {
             }
           },
           onPanStart: (DragStartDetails details) {
-            if (mode == "draw") {
+            if (mode == CanvasModes.draw) {
               Offset startOffset = _snapToGrid(
                   Offset(details.localPosition.dx, details.localPosition.dy));
 
@@ -266,10 +273,10 @@ class EditorCanvasState extends State<EditorCanvas> {
                   }
                 }
               }
-            } else if (mode == "Probe Port") {}
+            }
           },
           onPanUpdate: (DragUpdateDetails details) {
-            if (mode == "draw") {
+            if (mode == CanvasModes.draw) {
               if (validWireStart) {
                 setState(() {
                   Offset offset = _snapToGrid(Offset(
@@ -282,7 +289,7 @@ class EditorCanvasState extends State<EditorCanvas> {
             }
           },
           onPanEnd: (_) {
-            if (mode == "draw") {
+            if (mode == CanvasModes.draw) {
               if (validWireStart) {
                 for (int i = 0; i < _wires.length; i++) {
                   if (_wires[i].last == _wires[_wireIndex!].first) {

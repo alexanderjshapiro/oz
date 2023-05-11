@@ -124,22 +124,28 @@ class _MainPageState extends State<MainPage> {
           IconButton(
             onPressed: () {
               setState(() {
-                editorCanvasKey.currentState!.mode = 'select';
+                editorCanvasKey.currentState!.mode = CanvasModes.select;
               });
             },
             icon: const Icon(Icons.highlight_alt),
             iconSize: toolbarIconSize,
             tooltip: 'Select Components',
+            color: editorCanvasKey.currentState?.mode == CanvasModes.select
+                ? Colors.blue
+                : null,
           ),
           IconButton(
             onPressed: () {
               setState(() {
-                editorCanvasKey.currentState!.mode = 'draw';
+                editorCanvasKey.currentState!.mode = CanvasModes.draw;
               });
             },
             icon: const Icon(Icons.mode),
             iconSize: toolbarIconSize,
             tooltip: 'Draw Wires',
+            color: editorCanvasKey.currentState?.mode == CanvasModes.draw
+                ? Colors.blue
+                : null,
           ),
           IconButton(
             onPressed: () {
@@ -214,22 +220,28 @@ class _MainPageState extends State<MainPage> {
           IconButton(
             onPressed: () {
               setState(() {
-                editorCanvasKey.currentState!.mode = 'Probe Port';
+                editorCanvasKey.currentState!.mode = CanvasModes.probePort;
               });
             },
             icon: const Icon(Icons.near_me),
             iconSize: toolbarIconSize,
             tooltip: 'Add Port Waveform',
+            color: editorCanvasKey.currentState?.mode == CanvasModes.probePort
+                ? Colors.blue
+                : null,
           ),
           IconButton(
             onPressed: () {
               setState(() {
-                editorCanvasKey.currentState!.mode = 'Remove Probe';
+                editorCanvasKey.currentState!.mode = CanvasModes.removeProbe;
               });
             },
             icon: const Icon(Icons.near_me_disabled),
             iconSize: toolbarIconSize,
             tooltip: 'Remove Port Waveform',
+            color: editorCanvasKey.currentState?.mode == CanvasModes.removeProbe
+                ? Colors.blue
+                : null,
           )
         ],
       ),

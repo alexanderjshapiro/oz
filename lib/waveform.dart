@@ -14,9 +14,7 @@ void updateWaveformAnalyzer() {
     probedPorts.forEach((key, value) {
       currentComponentStates[key] = (value.value);
       // Add the component output port if it hasn't been added to the analyzer yet
-      if (!waveformAnalyzerKey.currentState!
-          .getWaveforms()
-          .containsKey(key)) {
+      if (!waveformAnalyzerKey.currentState!.getWaveforms().containsKey(key)) {
         waveformAnalyzerKey.currentState!.addWaveform(key);
       }
     });
