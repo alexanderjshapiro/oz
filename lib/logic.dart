@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'dart:collection';
+import 'waveform.dart';
 
 class Xor2Gate extends Module {
   Xor2Gate() : super(name: "Xor2Gate") {
@@ -65,8 +66,9 @@ class SN74LS245 extends Module {
     if (ports.firstWhere((element) => element.portName == "OE'").value ==
         LogicValue.one) {
       for (int i = 0; i < 16; i++) {
-        ports[i].connectedNode?.impede(portKey: ports[i].key);
+        ports[i].queueDrivePort(LogicValue.z);
       }
+      SimulationUpdater.submitStage(key);
       return;
     }
 
@@ -74,20 +76,21 @@ class SN74LS245 extends Module {
         LogicValue.one) {
       // transfer left side values to right side
       for (int i = 0; i < 8; i++) {
-        ports[i].connectedNode?.impede(portKey: ports[i].key);
+        ports[i].queueDrivePort(LogicValue.z);
       }
       for (int i = 0; i < 8; i++) {
-        ports[i + 8].drivePort(ports[i].value);
+        ports[i + 8].queueDrivePort(ports[i].value);
       }
     } else {
       // transfer right side values to left side
       for (int i = 8; i < 16; i++) {
-        ports[i].connectedNode?.impede(portKey: ports[i].key);
+        ports[i].queueDrivePort(LogicValue.z);
       }
       for (int i = 0; i < 8; i++) {
-        ports[i].drivePort(ports[i + 8].value);
+        ports[i].queueDrivePort(ports[i + 8].value);
       }
     }
+    SimulationUpdater.submitStage(key);
   }
 }
 
@@ -118,9 +121,10 @@ class SN74LS373 extends Module {
         LogicValue.one) {
       for (int i = 0; i < 8; i++) {
         if (ports[i].value != ports[i + 8].value) {
-          ports[i + 8].drivePort(ports[i].value);
+          ports[i + 8].queueDrivePort(ports[i].value);
         }
       }
+      SimulationUpdater.submitStage(key);
     }
   }
 }
@@ -158,7 +162,8 @@ class SRAM6116 extends Module {
 
 //Preset the memory for testing purposes
   Map<int, List<LogicValue>> memory = {
-    1: [
+    //andrew
+    514: [
       LogicValue.one,
       LogicValue.zero,
       LogicValue.one,
@@ -168,6 +173,28 @@ class SRAM6116 extends Module {
       LogicValue.one,
       LogicValue.zero,
     ],
+    //alex
+    1013: [
+      LogicValue.one,
+      LogicValue.zero,
+      LogicValue.one,
+      LogicValue.zero,
+      LogicValue.zero,
+      LogicValue.one,
+      LogicValue.zero,
+      LogicValue.one,
+    ],
+    //wayne
+    127: [
+      LogicValue.zero,
+      LogicValue.zero,
+      LogicValue.one,
+      LogicValue.one,
+      LogicValue.one,
+      LogicValue.one,
+      LogicValue.one,
+      LogicValue.one,
+    ],
   };
 
   @override
@@ -175,8 +202,9 @@ class SRAM6116 extends Module {
     if (ports.firstWhere((element) => element.portName == "CS'").value ==
         LogicValue.one) {
       for (int i = 0; i < 8; i++) {
-        ports[i + 11].connectedNode?.impede(portKey: ports[i + 11].key);
+        ports[i + 11].queueDrivePort(LogicValue.z);
       }
+      SimulationUpdater.submitStage(key);
       return;
     }
     //chip must be enabled at this point
@@ -190,12 +218,12 @@ class SRAM6116 extends Module {
         }
       }
       for (int i = 0; i < 8; i++) {
-        ports[i + 11].drivePort(memory[address]?[i] ?? LogicValue.zero);
+        ports[i + 11].queueDrivePort(memory[address]?[i] ?? LogicValue.zero);
       }
       debugPrint("value = $address");
     } else {
       for (int i = 0; i < 8; i++) {
-        ports[i + 11].connectedNode?.impede(portKey: ports[i + 11].key);
+        ports[i + 11].queueDrivePort(LogicValue.zero);
       }
       if (ports.firstWhere((element) => element.portName == "WE'").value ==
           LogicValue.zero) {
@@ -209,6 +237,7 @@ class SRAM6116 extends Module {
         memory[address] = List.generate(8, (index) => ports[index + 11].value);
       }
     }
+    SimulationUpdater.submitStage(key);
   }
 }
 
@@ -297,20 +326,37 @@ class HexDisplay extends Module {
 }
 
 class SimulationUpdater {
-  static final Queue<Function> queue = Queue();
+  static final Queue<List<Function>> queue = Queue();
+  static final Map<String, List<Function>> staging = {};
 
   SimulationUpdater();
 
   static void tick() {
     if (queue.isEmpty) return;
-    queue.first.call();
+    updateWaveformAnalyzer();
+    for (var element in queue.first) {
+      element.call();
+    }
     queue.removeFirst();
+    updateWaveformAnalyzer();
+  }
+
+  static void submitStage(String moduleKey) {
+    queue.addLast(staging[moduleKey]!);
+    staging.remove(moduleKey);
+  }
+
+  static void pushStage(String moduleKey, Function fun) {
+    staging[moduleKey] != null
+        ? staging[moduleKey]?.add(fun)
+        : staging[moduleKey] = [fun];
   }
 }
 
 class Module {
   Function? guiUpdateCallback;
   String name;
+  String key = KeyGen.key();
   late List<PhysicalPort> ports;
 
   Module({
@@ -367,8 +413,15 @@ class PhysicalPort {
 
   void drivePort(LogicValue value) {
     if (connectedNode != null) {
-      SimulationUpdater.queue
-          .addLast(() => connectedNode!.drive(portKey: key, driveValue: value));
+      SimulationUpdater.queue.addLast(
+          [() => connectedNode!.drive(portKey: key, driveValue: value)]);
+    }
+  }
+
+  void queueDrivePort(LogicValue value) {
+    if (connectedNode != null) {
+      SimulationUpdater.pushStage(module.key,
+          () => connectedNode!.drive(portKey: key, driveValue: value));
     }
   }
 

@@ -3,10 +3,9 @@ import 'logic.dart';
 import 'package:flutter/services.dart';
 import 'component.dart';
 import 'dart:async';
-import 'package:pdf/pdf.dart';
-import 'package:pdf/widgets.dart' as pw;
-import 'package:printing/printing.dart';
 import 'editor_canvas.dart';
+import 'waveform.dart';
+import 'package:resizable_widget/resizable_widget.dart';
 
 const double toolbarIconSize = 48;
 const double gridSize = 40;
@@ -16,8 +15,26 @@ const bool debug = false;
 
 Duration tickRate = const Duration(milliseconds: 1);
 
+Map<GlobalKey<ComponentState>, LogicValue> currentComponentStates = {};
+Map<GlobalKey<ComponentState>, PhysicalPort> probedPorts = {};
+
 void main() {
-  runApp(const Oz());
+  // TODO: Enable this code section as a fail safe
+  // If we get an error the program just restarts.
+  // ignore: dead_code
+  if (false) {
+    bool goodExit = false;
+    while (!goodExit) {
+      try {
+        runApp(const Oz());
+        goodExit = true;
+      } catch (e) {
+        debugPrint("error: $e");
+      }
+    }
+  } else {
+    runApp(const Oz());
+  }
 }
 
 class Oz extends StatelessWidget {
@@ -40,7 +57,9 @@ class MainPage extends StatefulWidget {
 }
 
 late GlobalKey<EditorCanvasState>
-    _editorCanvasKey; // TODO: consider using callback functions instead of GlobalKey
+    editorCanvasKey; // TODO: consider using callback functions instead of GlobalKey
+
+late GlobalKey<WaveformAnalyzerState> waveformAnalyzerKey;
 
 class _MainPageState extends State<MainPage> {
   bool _showProjectExplorer = false;
@@ -51,7 +70,8 @@ class _MainPageState extends State<MainPage> {
   void initState() {
     super.initState();
     _startSimulation();
-    _editorCanvasKey = GlobalKey<EditorCanvasState>();
+    editorCanvasKey = GlobalKey<EditorCanvasState>();
+    waveformAnalyzerKey = GlobalKey<WaveformAnalyzerState>();
   }
 
   @override
@@ -65,8 +85,25 @@ class _MainPageState extends State<MainPage> {
             Expanded(
               child: Row(
                 children: [
-                  projectExplorer(),
-                  EditorCanvas(key: _editorCanvasKey),
+                  Expanded(
+                    child: Row(
+                      children: [
+                        projectExplorer(),
+                        Expanded(
+                          child: ResizableWidget(
+                            isHorizontalSeparator: true,
+                            separatorSize: 4,
+                            separatorColor: Colors.black,
+                            percentages: const [0.7, 0.3],
+                            children: [
+                              EditorCanvas(key: editorCanvasKey),
+                              WaveformAnalyzer(key: waveformAnalyzerKey),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                   componentList(),
                 ],
               ),
@@ -87,37 +124,46 @@ class _MainPageState extends State<MainPage> {
           IconButton(
             onPressed: () {
               setState(() {
-                _editorCanvasKey.currentState!.mode = 'select';
+                editorCanvasKey.currentState!.mode = CanvasModes.select;
               });
             },
             icon: const Icon(Icons.highlight_alt),
             iconSize: toolbarIconSize,
             tooltip: 'Select Components',
+            color: editorCanvasKey.currentState?.mode == CanvasModes.select
+                ? Colors.blue
+                : null,
           ),
           IconButton(
             onPressed: () {
               setState(() {
-                _editorCanvasKey.currentState!.mode = 'draw';
+                editorCanvasKey.currentState!.mode = CanvasModes.draw;
               });
             },
             icon: const Icon(Icons.mode),
             iconSize: toolbarIconSize,
             tooltip: 'Draw Wires',
+            color: editorCanvasKey.currentState?.mode == CanvasModes.draw
+                ? Colors.blue
+                : null,
           ),
           IconButton(
             onPressed: () {
               setState(() {
-                _editorCanvasKey.currentState!.removeSelectedComponents();
+                editorCanvasKey.currentState!.removeSelected();
               });
             },
             icon: const Icon(Icons.delete),
             iconSize: toolbarIconSize,
-            tooltip: 'Delete',
+            tooltip: 'Remove Selected',
           ),
           IconButton(
             onPressed: () {
               setState(() {
-                _editorCanvasKey.currentState!.clear();
+                editorCanvasKey.currentState!.clear();
+                currentComponentStates.clear();
+                waveformAnalyzerKey.currentState!.clearWaveforms();
+                probedPorts.clear();
               });
             },
             icon: const Icon(Icons.restart_alt),
@@ -170,6 +216,33 @@ class _MainPageState extends State<MainPage> {
             iconSize: toolbarIconSize,
             tooltip: 'Step Simulation',
           ),
+          const SizedBox(width: 40),
+          IconButton(
+            onPressed: () {
+              setState(() {
+                editorCanvasKey.currentState!.mode = CanvasModes.probePort;
+              });
+            },
+            icon: const Icon(Icons.near_me),
+            iconSize: toolbarIconSize,
+            tooltip: 'Add Port Waveform',
+            color: editorCanvasKey.currentState?.mode == CanvasModes.probePort
+                ? Colors.blue
+                : null,
+          ),
+          IconButton(
+            onPressed: () {
+              setState(() {
+                editorCanvasKey.currentState!.mode = CanvasModes.removeProbe;
+              });
+            },
+            icon: const Icon(Icons.near_me_disabled),
+            iconSize: toolbarIconSize,
+            tooltip: 'Remove Port Waveform',
+            color: editorCanvasKey.currentState?.mode == CanvasModes.removeProbe
+                ? Colors.blue
+                : null,
+          )
         ],
       ),
     );
@@ -216,30 +289,6 @@ class _MainPageState extends State<MainPage> {
     );
   }
 
-  void printScreen() {
-    Printing.layoutPdf(
-      onLayout: (PdfPageFormat format) async {
-        final doc = pw.Document();
-
-        final image = await WidgetWrapper.fromKey(key: GlobalKey());
-
-        doc.addPage(
-          pw.Page(
-            pageFormat: format,
-            build: (pw.Context context) {
-              return pw.Center(
-                child: pw.Expanded(
-                  child: pw.Image(image),
-                ),
-              );
-            },
-          ),
-        );
-        return doc.save();
-      },
-    );
-  }
-
   Widget componentList() {
     const double padding = 16;
 
@@ -251,20 +300,7 @@ class _MainPageState extends State<MainPage> {
         padding: const EdgeInsets.all(padding),
         child: ListView(
           children: [
-            for (var moduleType in [
-              BinarySwitch,
-              HexDisplay,
-              Xor2Gate,
-              //Xor2GateRev,
-              // Or2Gate,
-              // And2Gate,
-              Nor2Gate,
-              NotGate,
-              // FlipFlop,
-              SN74LS373,
-              SN74LS245,
-              SRAM6116,
-            ])
+            for (var moduleType in gateNames.keys)
               Draggable(
                 data: Component(
                   moduleType: moduleType,
@@ -280,22 +316,28 @@ class _MainPageState extends State<MainPage> {
                       ),
                     )),
                 childWhenDragging: Text(
-                  moduleType.toString(),
+                  gateNames[moduleType]!,
                   style: const TextStyle(fontSize: 24, color: Colors.grey),
                 ),
                 child: Text(
-                  moduleType.toString(),
+                  gateNames[moduleType]!,
                   style: const TextStyle(
                     fontSize: 24,
                   ),
                 ),
                 onDragEnd: (DraggableDetails details) {
                   setState(() {
-                    _editorCanvasKey.currentState!.addComponent(moduleType,
+                    editorCanvasKey.currentState!.addComponent(moduleType,
                         offset: Offset(
                             details.offset.dx - 56,
                             details.offset.dy -
                                 48)); // TODO: don't manually define offset's offset
+                    editorCanvasKey.currentState!
+                        .getComponents()
+                        .forEach((key, value) {
+                      currentComponentStates.putIfAbsent(
+                          key, () => LogicValue.zero);
+                    });
                   });
                 },
               ),
@@ -328,6 +370,7 @@ class _MainPageState extends State<MainPage> {
       tickRate,
       (timer) {
         SimulationUpdater.tick();
+        debugPrint("help");
       },
     );
   }
