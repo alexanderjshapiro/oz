@@ -358,7 +358,7 @@ class _MainPageState extends State<MainPage> {
       tickRate,
       (timer) {
         SimulationUpdater.tick();
-        print("help");
+        debugPrint("help");
       },
     );
   }

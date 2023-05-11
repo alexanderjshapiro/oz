@@ -11,10 +11,7 @@ void updateWaveformAnalyzer() {
   if (editorCanvasKey.currentState!.getComponents().isNotEmpty &&
       probedPorts.isNotEmpty) {
     // Update current output port states
-    // probedPorts = editorCanvasKey.currentState!.getOutPorts();
     probedPorts.forEach((key, value) {
-      print(key);
-      print(value.value);
       currentComponentStates[key] = (value.value);
       // Add the component output port if it hasn't been added to the analyzer yet
       if (!waveformAnalyzerKey.currentState!

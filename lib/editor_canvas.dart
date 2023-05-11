@@ -162,13 +162,10 @@ class EditorCanvasState extends State<EditorCanvas> {
                 if (rightSideOffsets.contains(tapOffset)) {
                   probedPorts[componentKey] = componentState.module.rightSide
                       .elementAt(rightSideOffsets.indexOf(tapOffset));
-                  print("Component ports");
-                  print(probedPorts);
                   return;
                 } else if (leftSideOffsets.contains(tapOffset)) {
                   probedPorts[componentKey] = componentState.module.leftSide
-                      .elementAt(leftSideOffsets.indexOf(tapOffset))
-                      .connectedNode;
+                      .elementAt(leftSideOffsets.indexOf(tapOffset));
                 }
               }
             } else if (mode == "Remove Probe") {
