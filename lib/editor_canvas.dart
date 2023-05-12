@@ -295,7 +295,6 @@ class EditorCanvasState extends State<EditorCanvas> {
                       node = componentState.module.rightPorts
                           .elementAt(i)
                           .connectedNode;
-                      debugPrint('found right start');
                     }
                   }
 
@@ -307,7 +306,6 @@ class EditorCanvasState extends State<EditorCanvas> {
                       node = componentState.module.leftPorts
                           .elementAt(i)
                           .connectedNode;
-                      debugPrint('found left start');
                     }
                   }
                 }
@@ -334,7 +332,6 @@ class EditorCanvasState extends State<EditorCanvas> {
                         node = componentState.module.leftPorts
                             .elementAt(i)
                             .connectNode(node);
-                        debugPrint('found left end');
                       }
                     }
 
@@ -346,7 +343,6 @@ class EditorCanvasState extends State<EditorCanvas> {
                         node = componentState.module.rightPorts
                             .elementAt(i)
                             .connectNode(node);
-                        debugPrint('found right end');
                       }
                     }
                   }

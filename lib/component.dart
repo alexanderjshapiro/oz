@@ -328,7 +328,7 @@ class ComponentState extends State<Component> {
                             width: leftPortsNameWidth,
                             height: portHeight,
                             child: Text(port.portName,
-                                textAlign: TextAlign.right,
+                                textAlign: TextAlign.left,
                                 style: portNameTextStyle))
                     ]),
                 // Right side column (normally outputs)

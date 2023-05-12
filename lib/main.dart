@@ -7,11 +7,7 @@ import 'editor_canvas.dart';
 import 'waveform.dart';
 import 'package:resizable_widget/resizable_widget.dart';
 
-const double toolbarIconSize = 48;
 const double gridSize = 40;
-
-const bool showToolBar = true;
-const bool debug = false;
 
 Duration tickRate = const Duration(milliseconds: 1);
 
@@ -56,15 +52,18 @@ class MainPage extends StatefulWidget {
   State<MainPage> createState() => _MainPageState();
 }
 
-late GlobalKey<EditorCanvasState>
-    editorCanvasKey; // TODO: consider using callback functions instead of GlobalKey
+late GlobalKey<EditorCanvasState> editorCanvasKey;
 
 late GlobalKey<WaveformAnalyzerState> waveformAnalyzerKey;
 
 class _MainPageState extends State<MainPage> {
-  bool _showProjectExplorer = false;
+  static const double toolbarIconSize = 48.0;
+
   bool _isRunning = false;
   Timer? _simulationTickTimer;
+
+  final _scrollControllerVertical = ScrollController();
+  final _scrollControllerHorizontal = ScrollController();
 
   @override
   void initState() {
@@ -74,9 +73,6 @@ class _MainPageState extends State<MainPage> {
     waveformAnalyzerKey = GlobalKey<WaveformAnalyzerState>();
   }
 
-  final _scrollControllerVertical = ScrollController();
-  final _scrollControllerHorizontal = ScrollController();
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -84,18 +80,17 @@ class _MainPageState extends State<MainPage> {
         color: Colors.white,
         child: Column(
           children: [
-            if (showToolBar) toolbar(),
+            toolbar(),
             Expanded(
               child: Row(
                 children: [
                   Expanded(
                     child: Row(
                       children: [
-                        // projectExplorer(),
                         Expanded(
                           child: ResizableWidget(
                             isHorizontalSeparator: true,
-                            separatorSize: 4,
+                            separatorSize: 8.0,
                             separatorColor: Colors.black,
                             percentages: const [0.7, 0.3],
                             children: [
@@ -122,7 +117,6 @@ class _MainPageState extends State<MainPage> {
                 ],
               ),
             ),
-            if (debug) debugBar(),
           ],
         ),
       ),
@@ -136,11 +130,8 @@ class _MainPageState extends State<MainPage> {
       child: Row(
         children: [
           IconButton(
-            onPressed: () {
-              setState(() {
-                editorCanvasKey.currentState!.mode = CanvasMode.select;
-              });
-            },
+            onPressed: () => setState(
+                () => editorCanvasKey.currentState!.mode = CanvasMode.select),
             icon: const Icon(Icons.highlight_alt),
             iconSize: toolbarIconSize,
             tooltip: 'Select Components',
@@ -149,11 +140,8 @@ class _MainPageState extends State<MainPage> {
                 : null,
           ),
           IconButton(
-            onPressed: () {
-              setState(() {
-                editorCanvasKey.currentState!.mode = CanvasMode.draw;
-              });
-            },
+            onPressed: () => setState(
+                () => editorCanvasKey.currentState!.mode = CanvasMode.draw),
             icon: const Icon(Icons.mode),
             iconSize: toolbarIconSize,
             tooltip: 'Draw Wires',
@@ -162,40 +150,30 @@ class _MainPageState extends State<MainPage> {
                 : null,
           ),
           IconButton(
-            onPressed: () {
-              setState(() {
-                editorCanvasKey.currentState!.removeSelected();
-              });
-            },
+            onPressed: () =>
+                setState(() => editorCanvasKey.currentState!.removeSelected()),
             icon: const Icon(Icons.delete),
             iconSize: toolbarIconSize,
             tooltip: 'Remove Selected',
           ),
           IconButton(
-            onPressed: () {
-              setState(() {
-                editorCanvasKey.currentState!.clear();
-                currentComponentStates.clear();
-                waveformAnalyzerKey.currentState!.clearWaveforms();
-                probedPorts.clear();
-              });
-            },
+            onPressed: () => setState(() {
+              editorCanvasKey.currentState!.clear();
+              currentComponentStates.clear();
+              waveformAnalyzerKey.currentState!.clearWaveforms();
+              probedPorts.clear();
+            }),
             icon: const Icon(Icons.restart_alt),
             iconSize: toolbarIconSize,
             tooltip: 'Reset Canvas',
           ),
           const SizedBox(width: 40),
           IconButton(
-            onPressed: () {
-              _isRunning ? _stopSimulation() : _startSimulation();
-            },
+            onPressed: () =>
+                _isRunning ? _stopSimulation() : _startSimulation(),
             icon: _isRunning
-                ? const Icon(
-                    Icons.stop_circle_outlined,
-                  )
-                : const Icon(
-                    Icons.play_circle_outline,
-                  ),
+                ? const Icon(Icons.stop_circle_outlined)
+                : const Icon(Icons.play_circle_outline),
             iconSize: toolbarIconSize,
             tooltip: _isRunning ? 'Stop Simulation' : 'Run Simulation',
           ),
@@ -232,11 +210,8 @@ class _MainPageState extends State<MainPage> {
           ),
           const SizedBox(width: 40),
           IconButton(
-            onPressed: () {
-              setState(() {
-                editorCanvasKey.currentState!.mode = CanvasMode.addProbe;
-              });
-            },
+            onPressed: () => setState(
+                () => editorCanvasKey.currentState!.mode = CanvasMode.addProbe),
             icon: const Icon(Icons.near_me),
             iconSize: toolbarIconSize,
             tooltip: 'Add Port Waveform',
@@ -245,11 +220,8 @@ class _MainPageState extends State<MainPage> {
                 : null,
           ),
           IconButton(
-            onPressed: () {
-              setState(() {
-                editorCanvasKey.currentState!.mode = CanvasMode.removeProbe;
-              });
-            },
+            onPressed: () => setState(() =>
+                editorCanvasKey.currentState!.mode = CanvasMode.removeProbe),
             icon: const Icon(Icons.near_me_disabled),
             iconSize: toolbarIconSize,
             tooltip: 'Remove Port Waveform',
@@ -258,47 +230,6 @@ class _MainPageState extends State<MainPage> {
                 : null,
           )
         ],
-      ),
-    );
-  }
-
-  Widget projectExplorer() {
-    const double iconSize = 50;
-    const double padding = 16;
-    const double shownWidth = 400;
-    const double hiddenWidth = iconSize + padding;
-
-    return SizedBox(
-      width: _showProjectExplorer ? shownWidth : hiddenWidth,
-      child: Container(
-        decoration: const BoxDecoration(
-            border: Border(right: BorderSide(color: Colors.black))),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.start,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            IconButton(
-              icon: const Icon(Icons.folder),
-              iconSize: iconSize,
-              onPressed: () {
-                setState(() {
-                  _showProjectExplorer = !_showProjectExplorer;
-                });
-              },
-            ),
-            if (_showProjectExplorer)
-              const Padding(
-                padding: EdgeInsets.all(padding),
-                child: Text(
-                  'Project Explorer',
-                  style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              )
-          ],
-        ),
       ),
     );
   }
@@ -347,7 +278,7 @@ class _MainPageState extends State<MainPage> {
                                 _scrollControllerHorizontal.offset,
                             details.offset.dy +
                                 _scrollControllerVertical.offset -
-                                48)); // TODO: don't manually define offset's offset
+                                toolbarIconSize));
                     for (final component
                         in editorCanvasKey.currentState!.components) {
                       currentComponentStates.putIfAbsent(
@@ -362,40 +293,18 @@ class _MainPageState extends State<MainPage> {
     );
   }
 
-  Widget debugBar() {
-    return Container(
-      decoration: const BoxDecoration(
-          border: Border(top: BorderSide(color: Colors.black))),
-      child: Row(
-        children: [
-          const Text('Status:'),
-          const Spacer(),
-          Text('Last State Update: ${DateTime.now()}')
-        ],
-      ),
-    );
-  }
-
   void _startSimulation() {
-    setState(() {
-      _isRunning = true;
-    });
-    //Setup a timer to repeatibly call Simulator.tick();
+    setState(() => _isRunning = true);
+
+    // Setup a timer to repeatedly call Simulator.tick();
     _simulationTickTimer = Timer.periodic(
       tickRate,
-      (timer) {
-        SimulationUpdater.tick();
-        // debugPrint("help");
-      },
+      (_) => SimulationUpdater.tick(),
     );
   }
 
   void _stopSimulation() {
     _simulationTickTimer?.cancel();
-    setState(
-      () {
-        _isRunning = false;
-      },
-    );
+    setState(() => _isRunning = false);
   }
 }
