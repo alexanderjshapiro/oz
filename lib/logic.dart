@@ -336,7 +336,6 @@ class SimulationUpdater {
 
   static void tick() {
     if (queue.isEmpty) return;
-    updateWaveformAnalyzer();
     for (var element in queue.first) {
       element.call();
     }

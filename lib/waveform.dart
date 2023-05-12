@@ -3,8 +3,6 @@ import 'package:flutter/material.dart';
 import 'logic.dart';
 import 'main.dart';
 
-const double size = 100;
-
 const BorderSide blackBorder = BorderSide(color: Colors.black);
 
 void updateWaveformAnalyzer() {
@@ -32,8 +30,8 @@ class WaveformGraph extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const double containerWidth = size;
-    const double containerHeight = size / 2.0;
+    const double containerWidth = 20;
+    const double containerHeight = 50;
 
     List<Container> stateWaves = [];
 
