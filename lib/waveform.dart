@@ -22,19 +22,25 @@ void updateWaveformAnalyzer() {
 
 class WaveformGraph extends StatelessWidget {
   final List<LogicValue> waveform;
+  final GlobalKey<ComponentState> componentKey;
 
   const WaveformGraph({
     Key? key,
     required this.waveform,
+    required this.componentKey,
   }) : super(key: key);
+
+  List<String> getComponentName() {
+    String name = componentKey.currentState!.module.name;
+    String port = probedPorts[componentKey]!.portName;
+    return [name, port];
+  }
 
   @override
   Widget build(BuildContext context) {
     const double containerWidth = 20;
     const double containerHeight = 50;
-
-    List<Container> stateWaves = [];
-
+    List<Widget> stateWaves = [];
     var previousVal = waveform[0];
     for (var value in waveform) {
       bool state = false;
@@ -51,19 +57,42 @@ class WaveformGraph extends StatelessWidget {
       } else {
         leftBorderSide = blackBorder;
       }
-      stateWaves.add(Container(
-        width: containerWidth,
-        height: containerHeight,
-        decoration: BoxDecoration(
+      stateWaves.add(
+        Container(
+          width: containerWidth,
+          height: containerHeight,
+          decoration: BoxDecoration(
             border: Border(
-                top: topBorderSide,
-                bottom: bottomBorderSide,
-                left: leftBorderSide)),
-      ));
+              top: topBorderSide,
+              bottom: bottomBorderSide,
+              left: leftBorderSide,
+            ),
+          ),
+        ),
+      );
       previousVal = value;
     }
+
+    List<Widget> names = [];
+    for (var name in getComponentName()) {
+      names.add(
+        Text(
+          name,
+          style: const TextStyle(fontSize: 12),
+        ),
+      );
+    }
+
     return Row(
-      children: stateWaves,
+      children: [
+        Column(
+          children: names,
+        ),
+        const SizedBox(width: 16), // Adjust the spacing between names and stateWaves
+        Row(
+          children: stateWaves,
+        ),
+      ],
     );
   }
 }
@@ -139,7 +168,7 @@ class WaveformAnalyzerState extends State<WaveformAnalyzer> {
 
     int count = 0;
     _waveforms.forEach((key, value) {
-      waveformWidgets.add(WaveformGraph(waveform: value));
+      waveformWidgets.add(WaveformGraph(waveform: value, componentKey: key,));
       if (count < _waveforms.length - 1) {
         waveformWidgets.add(const SizedBox(height: 10));
       }
