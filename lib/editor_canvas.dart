@@ -10,102 +10,79 @@ class EditorCanvas extends StatefulWidget {
   EditorCanvasState createState() => EditorCanvasState();
 }
 
-enum CanvasModes {
+enum CanvasMode {
   select,
   draw,
-  probePort,
+  addProbe,
   removeProbe,
 }
 
 class EditorCanvasState extends State<EditorCanvas> {
   static const double selectedComponentBorderWidth = 1.0;
+  static const Color selectedComponentColor = Colors.blue;
+  static BoxDecoration selectedComponentDecoration = BoxDecoration(
+      border: Border.all(
+          width: selectedComponentBorderWidth, color: selectedComponentColor));
 
-  CanvasModes mode = CanvasModes.select;
+  CanvasMode mode = CanvasMode.select;
 
-  final Map<GlobalKey<ComponentState>, Component> _components = {};
-  final Map<GlobalKey<ComponentState>, Offset> _componentPositions = {};
-  GlobalKey<ComponentState>? _selectedComponentKey;
+  /// Data structure: `[{'key': GlobalKey<ComponentState>, 'widget': Component, 'offset': Offset, 'selected': bool}]`
+  final List<Map<String, dynamic>> _components = [];
 
-  final List<List<Offset>> _wires = [];
-  int? _wireIndex;
-  bool validWireStart = false;
-  Node? wiringNodeSelected;
-  int? _selectedWireIndex;
-  bool somethingWasSelected = false;
+  List<Map<String, dynamic>> get components => _components;
 
-  Map<GlobalKey<ComponentState>, Component> getComponents() => _components;
+  /// Data structure: `[{'points': List<Offset>, 'selected': bool}]`
+  final List<Map<String, dynamic>> _wires = [];
 
   void addComponent(Type moduleType, {Offset offset = Offset.zero}) {
-    GlobalKey<ComponentState> componentKey = GlobalKey<ComponentState>();
-    Component component = Component(
-      moduleType: moduleType,
-      key: componentKey,
-    );
+    GlobalKey<ComponentState> key = GlobalKey<ComponentState>();
     setState(() {
-      _components[componentKey] = component;
-      _componentPositions[componentKey] = _snapToGrid(offset);
+      _components.add({
+        'key': key,
+        'widget': Component(moduleType: moduleType, key: key),
+        'offset': _snapToGrid(offset),
+        'selected': false
+      });
     });
   }
 
-  void _removeComponent(GlobalKey<ComponentState> componentKey) {
-    setState(() {
-      _components.remove(componentKey);
-      _componentPositions.remove(componentKey);
-    });
+  void deselectSelected() {
+    for (final Map<String, dynamic> component in _components) {
+      if (component['selected']) setState(() => component['selected'] = false);
+    }
+
+    for (final Map<String, dynamic> wire in _wires) {
+      if (wire['selected']) setState(() => wire['selected'] = false);
+    }
   }
 
   void removeSelected() {
-    if (_selectedComponentKey != null) {
-      _removeComponent(_selectedComponentKey!);
-      _selectedComponentKey = null;
-    }
-
-    if (_selectedWireIndex != null) {
-      _wires.removeAt(_selectedWireIndex!);
-      _selectedWireIndex = null;
-    }
+    setState(() {
+      _components.removeWhere((component) => component['selected']);
+      _wires.removeWhere((wire) => wire['selected']);
+    });
   }
 
   void clear() {
     setState(() {
       _components.clear();
-      _componentPositions.clear();
-      _selectedComponentKey = null;
       _wires.clear();
-      _wireIndex = -1;
     });
   }
 
-  void updateComponentPosition(
-      GlobalKey<ComponentState> componentKey, Offset offset) {
-    double dx = _componentPositions[componentKey]!.dx + offset.dx;
-    double dy = _componentPositions[componentKey]!.dy + offset.dy;
-
-    setState(() {
-      _componentPositions[componentKey] = Offset(dx, dy);
-    });
+  bool updateComponentPosition(GlobalKey<ComponentState> key, Offset offset) {
+    int index = _components.indexWhere((component) => component['key'] == key);
+    if (index != -1) {
+      setState(() => _components[index]['offset'] += offset);
+      return true;
+    }
+    return false;
   }
 
   static Offset _snapToGrid(Offset offset) {
     double dx = (offset.dx / gridSize).round() * gridSize;
     double dy = (offset.dy / gridSize).round() * gridSize;
     return Offset(dx, dy);
-  }
-
-  Map<GlobalKey<ComponentState>, List<PhysicalPort>> getOutPorts() {
-    Map<GlobalKey<ComponentState>, List<PhysicalPort>> keyOutPortsMap = {};
-
-    //Note for Wayne: It looked like the code you had before was somehow deleting ports with key.remove()
-
-    // Get all the ports for each component key
-    _components.forEach((key, value) {
-      if (key.currentState != null &&
-          key.currentState!.module.ports
-              .any((element) => element.portName.contains("Out"))) {
-        keyOutPortsMap[key] = key.currentState!.module.ports;
-      }
-    });
-    return keyOutPortsMap;
   }
 
   @override
@@ -121,290 +98,329 @@ class EditorCanvasState extends State<EditorCanvas> {
         ),
         GestureDetector(
           onTapUp: (TapUpDetails details) {
-            if (mode == CanvasModes.select) {
-              Offset offset = _snapToGrid(details.localPosition);
-              for (var i = 0; i < _wires.length; i++) {
-                if (_wires[i].contains(offset)) {
-                  setState(() {
-                    _selectedComponentKey = null;
-                    _selectedWireIndex = i;
-                  });
-                  return;
-                }
-              }
+            Offset tapOffset = _snapToGrid(details.localPosition);
+            switch (mode) {
+              case CanvasMode.select:
+                deselectSelected();
 
-              setState(() {
-                _selectedComponentKey = null;
-                _selectedWireIndex = null;
-              });
-            } else if (mode == CanvasModes.probePort) {
-              // Get the position of where you click and snap to the grid
-              Offset tapOffset = _snapToGrid(
-                  Offset(details.localPosition.dx, details.localPosition.dy));
-
-              // Go through all the components
-              for (final GlobalKey<ComponentState> componentKey
-                  in _components.keys) {
-                ComponentState componentState = componentKey.currentState!;
-                Offset componentOffset = _componentPositions[componentKey]!;
-                // Make a list the right port positions
-                List<Offset> rightSideOffsets = [
-                  for (int i = 0;
-                      i < componentState.module.rightSide.length;
-                      i++)
-                    Offset(componentOffset.dx + componentState.width,
-                        componentOffset.dy + (gridSize * (i + 2)))
-                ];
-                // Make a list of the left port positions
-                List<Offset> leftSideOffsets = [
-                  for (int i = 0;
-                      i < componentState.module.leftSide.length;
-                      i++)
-                    Offset(componentOffset.dx,
-                        componentOffset.dy + (gridSize * (i + 2)))
-                ];
-
-                // If any of the left/right port positions is equal to where we tapped,
-                // Add that component to the probedPorts map
-                if (rightSideOffsets.contains(tapOffset)) {
-                  probedPorts[componentKey] = componentState.module.rightSide
-                      .elementAt(rightSideOffsets.indexOf(tapOffset));
-                  return;
-                } else if (leftSideOffsets.contains(tapOffset)) {
-                  probedPorts[componentKey] = componentState.module.leftSide
-                      .elementAt(leftSideOffsets.indexOf(tapOffset));
-                }
-              }
-            } else if (mode == CanvasModes.removeProbe) {
-              // Get the position of where you click and snap to the grid
-              Offset tapOffset = _snapToGrid(
-                  Offset(details.localPosition.dx, details.localPosition.dy));
-
-              // Go through all the components
-              for (final GlobalKey<ComponentState> componentKey
-                  in _components.keys) {
-                if (probedPorts.containsKey(componentKey)) {
-                  ComponentState componentState = componentKey.currentState!;
-                  Offset componentOffset = _componentPositions[componentKey]!;
-                  // Make a list the right port positions
-                  List<Offset> rightSideOffsets = [
-                    for (int i = 0;
-                        i < componentState.module.rightSide.length;
-                        i++)
-                      Offset(componentOffset.dx + componentState.width,
-                          componentOffset.dy + (gridSize * (i + 2)))
-                  ];
-                  // Make a list of the left port positions
-                  List<Offset> leftSideOffsets = [
-                    for (int i = 0;
-                        i < componentState.module.leftSide.length;
-                        i++)
-                      Offset(componentOffset.dx,
-                          componentOffset.dy + (gridSize * (i + 2)))
-                  ];
-
-                  // If any of the left/right port positions is equal to where we tapped,
-                  // Remove the probed component from the map
-                  if (rightSideOffsets.contains(tapOffset)) {
-                    probedPorts.remove(componentKey);
-                    waveformAnalyzerKey.currentState!
-                        .removeWaveform(componentKey);
-                    return;
-                  } else if (leftSideOffsets.contains(tapOffset)) {
-                    probedPorts.remove(componentKey);
-                    waveformAnalyzerKey.currentState!
-                        .removeWaveform(componentKey);
-                    return;
+                // select wire if it contains tapOffset
+                for (final Map<String, dynamic> element in _wires) {
+                  if (element['points'].contains(tapOffset)) {
+                    setState(() => element['selected'] = true);
                   }
                 }
-              }
-            }
-          },
-          onPanStart: (DragStartDetails details) {
-            if (mode == CanvasModes.draw) {
-              Offset startOffset = _snapToGrid(
-                  Offset(details.localPosition.dx, details.localPosition.dy));
 
-              for (final GlobalKey<ComponentState> componentKey
-                  in _components.keys) {
-                ComponentState componentState = componentKey.currentState!;
-                Offset componentOffset = _componentPositions[componentKey]!;
-                List<Offset> rightSideOffsets = [
-                  for (int i = 0;
-                      i < componentState.module.rightSide.length;
-                      i++)
-                    Offset(componentOffset.dx + componentState.width,
-                        componentOffset.dy + (gridSize * (i + 2)))
-                ];
-                List<Offset> leftSideOffsets = [
-                  for (int i = 0;
-                      i < componentState.module.leftSide.length;
-                      i++)
-                    Offset(componentOffset.dx,
-                        componentOffset.dy + (gridSize * (i + 2)))
-                ];
+                break;
+              case CanvasMode.draw:
+                break;
+              case CanvasMode.addProbe:
+                // Go through all the components
+                for (final Map<String, dynamic> component in _components) {
+                  ComponentState componentState =
+                      component['key'].currentState!;
 
-                if (rightSideOffsets.contains(startOffset)) {
-                  setState(() {
-                    validWireStart = true;
-                    _wires.add([startOffset]);
-                    _wireIndex = _wires.length - 1;
-                  });
-                  wiringNodeSelected = componentState.module.rightSide
-                      .elementAt(rightSideOffsets.indexOf(startOffset))
-                      .connectedNode;
-                  return;
-                } else if (leftSideOffsets.contains(startOffset)) {
-                  setState(() {
-                    validWireStart = true;
-                    _wires.add([startOffset]);
-                    _wireIndex = _wires.length - 1;
-                  });
-                  wiringNodeSelected = componentState.module.leftSide
-                      .elementAt(leftSideOffsets.indexOf(startOffset))
-                      .connectedNode;
-                  return;
-                } else {
-                  for (var wire in _wires) {
-                    if (startOffset == wire.last) {
-                      validWireStart = true;
-                      _wireIndex = _wires.indexOf(wire);
+                  // get offsets of all ports
+                  Map<String, List<Offset>> componentPortOffsets =
+                      Map.from(componentState.portOffsets);
+                  componentPortOffsets.forEach((side, portOffsets) =>
+                      componentPortOffsets[side] = [
+                        for (final Offset portOffset in portOffsets)
+                          component['offset'] + portOffset
+                      ]);
+
+                  // If any of the left/right port positions is equal to where we tapped,
+                  // Add that component to the probedPorts map
+                  if (componentPortOffsets['right']!.contains(tapOffset)) {
+                    probedPorts[component['key']] =
+                        componentState.module.rightPorts.elementAt(
+                            componentPortOffsets['right']!.indexOf(tapOffset));
+                    return;
+                  } else if (componentPortOffsets['left']!
+                      .contains(tapOffset)) {
+                    probedPorts[component['key']] =
+                        componentState.module.leftPorts.elementAt(
+                            componentPortOffsets['left']!.indexOf(tapOffset));
+                  }
+                }
+                break;
+              case CanvasMode.removeProbe:
+                // Go through all the components
+                for (final Map<String, dynamic> component in _components) {
+                  if (probedPorts.containsKey(component['key'])) {
+                    ComponentState componentState =
+                        component['key'].currentState!;
+
+                    // get offsets of all ports
+                    Map<String, List<Offset>> componentPortOffsets =
+                        Map.from(componentState.portOffsets);
+                    componentPortOffsets.forEach((side, portOffsets) =>
+                        componentPortOffsets[side] = [
+                          for (final Offset portOffset in portOffsets)
+                            component['offset'] + portOffset
+                        ]);
+
+                    // If any of the left/right port positions is equal to where we tapped,
+                    // Remove the probed component from the map
+                    if (componentPortOffsets['right']!.contains(tapOffset)) {
+                      probedPorts.remove(component['key']);
+                      waveformAnalyzerKey.currentState!
+                          .removeWaveform(component['key']);
+                      return;
+                    } else if (componentPortOffsets['left']!
+                        .contains(tapOffset)) {
+                      probedPorts.remove(component['key']);
+                      waveformAnalyzerKey.currentState!
+                          .removeWaveform(component['key']);
+                      return;
                     }
                   }
                 }
-              }
+                break;
+            }
+          },
+          onPanStart: (DragStartDetails details) {
+            Offset panStartOffset = _snapToGrid(details.localPosition);
+            switch (mode) {
+              case CanvasMode.select:
+                break;
+              case CanvasMode.draw:
+                deselectSelected();
+
+                bool wireFound = false;
+                for (final Map<String, dynamic> wire in _wires) {
+                  if (panStartOffset == wire['points'].last) {
+                    // append to other wire
+                    setState(() => wire['selected'] = true);
+                    wireFound = true;
+                    break;
+                  } else if (panStartOffset == wire['points'].first) {
+                    // reverse other wire and append to other wire
+                    setState(() {
+                      wire['points'] = wire['points'].reversed.toList();
+                      wire['selected'] = true;
+                    });
+                    wireFound = true;
+                    break;
+                  }
+                }
+
+                if (!wireFound) {
+                  // create new wire
+                  setState(() => _wires.add({
+                        'points': [panStartOffset],
+                        'selected': true
+                      }));
+                }
+
+                break;
+              case CanvasMode.addProbe:
+                break;
+              case CanvasMode.removeProbe:
+                break;
             }
           },
           onPanUpdate: (DragUpdateDetails details) {
-            if (mode == CanvasModes.draw) {
-              if (validWireStart) {
+            Offset panUpdateOffset = _snapToGrid(
+                Offset(details.localPosition.dx, details.localPosition.dy));
+            switch (mode) {
+              case CanvasMode.select:
+                break;
+              case CanvasMode.draw:
+                var i = _wires.indexWhere((wire) => wire['selected']);
+
+                // extend wire
                 setState(() {
-                  Offset offset = _snapToGrid(Offset(
-                      details.localPosition.dx, details.localPosition.dy));
-                  if (offset != _wires[_wireIndex!].last) {
-                    _wires[_wireIndex!].add(offset);
+                  if (panUpdateOffset != _wires[i]['points'].last) {
+                    _wires[i]['points'].add(panUpdateOffset);
                   }
                 });
-              }
+
+                break;
+              case CanvasMode.addProbe:
+                break;
+              case CanvasMode.removeProbe:
+                break;
             }
           },
           onPanEnd: (_) {
-            if (mode == CanvasModes.draw) {
-              if (validWireStart) {
-                for (int i = 0; i < _wires.length; i++) {
-                  if (_wires[i].last == _wires[_wireIndex!].first) {
-                    _wires[i] = _wires[i] + _wires[_wireIndex!].sublist(1);
-                    _wires.removeAt(_wireIndex!);
-                  } else if (_wires[_wireIndex!].last == _wires[i].first) {
-                    _wires[i] = _wires[_wireIndex!] + _wires[i].sublist(1);
-                    _wires.removeAt(_wireIndex!);
-                  }
-                }
-                validWireStart = false;
+            switch (mode) {
+              case CanvasMode.select:
+                break;
+              case CanvasMode.draw:
+                final int wireIndex =
+                    _wires.indexWhere((wire) => wire['selected']);
 
-                Offset endOffset = _wires[_wireIndex!].last;
-
-                for (final GlobalKey<ComponentState> componentKey
-                    in _components.keys) {
-                  ComponentState componentState = componentKey.currentState!;
-                  Offset componentOffset = _componentPositions[componentKey]!;
-                  List<Offset> rightSideOffsets = [
-                    for (int i = 0;
-                        i < componentState.module.rightSide.length;
-                        i++)
-                      Offset(componentOffset.dx + componentState.width,
-                          componentOffset.dy + (gridSize * (i + 2)))
-                  ];
-                  List<Offset> leftSideOffsets = [
-                    for (int i = 0;
-                        i < componentState.module.leftSide.length;
-                        i++)
-                      Offset(componentOffset.dx,
-                          componentOffset.dy + (gridSize * (i + 2)))
-                  ];
-                  if (leftSideOffsets.contains(endOffset)) {
-                    componentState.module.leftSide
-                        .elementAt(leftSideOffsets.indexOf(endOffset))
-                        .connectNode(wiringNodeSelected!);
-                    return;
-                  } else if (rightSideOffsets.contains(endOffset)) {
-                    componentState.module.rightSide
-                        .elementAt(rightSideOffsets.indexOf(endOffset))
-                        .connectNode(wiringNodeSelected!);
-                    return;
+                for (final Map<String, dynamic> wire in _wires) {
+                  if (wire != _wires[wireIndex]) {
+                    if (_wires[wireIndex]['points'].last ==
+                        wire['points'].last) {
+                      // append to other wire
+                      setState(() {
+                        _wires[wireIndex]['points']
+                            .addAll(wire['points'].reversed.toList());
+                        _wires.remove(wire);
+                      });
+                      break;
+                    } else if (_wires[wireIndex]['points'].last ==
+                        wire['points'].first) {
+                      // reverse other wire and append to other wire
+                      setState(() {
+                        _wires[wireIndex]['points'].addAll(wire['points']);
+                        _wires.remove(wire);
+                      });
+                      break;
+                    }
                   }
                 }
 
-                _wireIndex = null;
-              }
+                Node? node;
+                for (final Map<String, dynamic> component in _components) {
+                  ComponentState componentState =
+                      component['key'].currentState!;
+
+                  // get offsets of all ports
+                  Map<String, List<Offset>> componentPortOffsets =
+                      Map.from(componentState.portOffsets);
+                  componentPortOffsets.forEach((side, portOffsets) =>
+                      componentPortOffsets[side] = [
+                        for (final Offset portOffset in portOffsets)
+                          component['offset'] + portOffset
+                      ]);
+
+                  for (int i = 0;
+                      i < componentPortOffsets['right']!.length;
+                      i++) {
+                    if (_wires[wireIndex]['points'].first ==
+                        componentPortOffsets['right']![i]) {
+                      node = componentState.module.rightPorts
+                          .elementAt(i)
+                          .connectedNode;
+                      debugPrint('found right start');
+                    }
+                  }
+
+                  for (int i = 0;
+                      i < componentPortOffsets['left']!.length;
+                      i++) {
+                    if (_wires[wireIndex]['points'].first ==
+                        componentPortOffsets['left']![i]) {
+                      node = componentState.module.leftPorts
+                          .elementAt(i)
+                          .connectedNode;
+                      debugPrint('found left start');
+                    }
+                  }
+                }
+
+                for (final Map<String, dynamic> component in _components) {
+                  ComponentState componentState =
+                      component['key'].currentState!;
+
+                  // get offsets of all ports
+                  Map<String, List<Offset>> componentPortOffsets =
+                      Map.from(componentState.portOffsets);
+                  componentPortOffsets.forEach((side, portOffsets) =>
+                      componentPortOffsets[side] = [
+                        for (final Offset portOffset in portOffsets)
+                          component['offset'] + portOffset
+                      ]);
+
+                  if (node != null) {
+                    for (int i = 0;
+                        i < componentPortOffsets['left']!.length;
+                        i++) {
+                      if (_wires[wireIndex]['points'].last ==
+                          componentPortOffsets['left']![i]) {
+                        node = componentState.module.leftPorts
+                            .elementAt(i)
+                            .connectNode(node);
+                        debugPrint('found left end');
+                      }
+                    }
+
+                    for (int i = 0;
+                        i < componentPortOffsets['right']!.length;
+                        i++) {
+                      if (_wires[wireIndex]['points'].last ==
+                          componentPortOffsets['right']![i]) {
+                        node = componentState.module.rightPorts
+                            .elementAt(i)
+                            .connectNode(node);
+                        debugPrint('found right end');
+                      }
+                    }
+                  }
+                }
+
+                break;
+              case CanvasMode.addProbe:
+                break;
+              case CanvasMode.removeProbe:
+                break;
             }
           },
         ),
         Stack(children: [
-          for (final GlobalKey<ComponentState> componentKey in _components.keys)
+          for (final Map<String, dynamic> component in _components)
             Positioned(
-              left: _snapToGrid(_componentPositions[componentKey]!).dx -
-                  (_selectedComponentKey == componentKey
-                      ? selectedComponentBorderWidth
-                      : 0),
-              top: _snapToGrid(_componentPositions[componentKey]!).dy -
-                  (_selectedComponentKey == componentKey
-                      ? selectedComponentBorderWidth
-                      : 0),
+              // always visually snap to grid, especially when dragging to move Component
+              left: _snapToGrid(component['offset']).dx -
+                  (component['selected'] ? selectedComponentBorderWidth : 0),
+              top: _snapToGrid(component['offset']).dy -
+                  (component['selected'] ? selectedComponentBorderWidth : 0),
               child: GestureDetector(
                   onTap: () {
-                    setState(() {
-                      _selectedComponentKey = componentKey;
-                      _selectedWireIndex = null;
-                    });
+                    // deselect all other Components and wires, then select this Component
+                    deselectSelected();
+                    setState(() => component['selected'] = true);
                   },
                   onPanStart: (_) {
-                    // check if component is already selected
-                    _selectedComponentKey = componentKey;
+                    // select Component if it is dragged without already being selected
+                    if (!component['selected']) {
+                      setState(() => component['selected'] = true);
+                    }
                   },
                   onPanUpdate: (details) {
-                    updateComponentPosition(
-                        _selectedComponentKey!, details.delta);
+                    // update position of Component but only visually snap to the grid
+                    updateComponentPosition(component['key'], details.delta);
                   },
                   onPanEnd: (_) {
-                    _componentPositions[_selectedComponentKey!] = _snapToGrid(
-                        _componentPositions[_selectedComponentKey]!);
+                    // commit the snapped position
+                    setState(() =>
+                        component['offset'] = _snapToGrid(component['offset']));
                   },
                   child: Container(
-                      decoration: _selectedComponentKey == componentKey
-                          ? BoxDecoration(
-                              border: Border.all(
-                                  width: selectedComponentBorderWidth,
-                                  color: Colors.blue))
+                      decoration: component['selected']
+                          ? selectedComponentDecoration
                           : null,
-                      child: _components[componentKey]!)),
+                      child: component['widget'])),
             )
         ]),
-        CustomPaint(
-          painter:
-              MyPainter(wires: _wires, selectedWireIndex: _selectedWireIndex),
-        ),
+        CustomPaint(painter: MyPainter(_wires)),
       ],
     );
   }
 }
 
 class MyPainter extends CustomPainter {
-  final List<List<Offset>> wires;
-  int? selectedWireIndex;
+  static const double wireWidth = 2.0;
+  static const Color wireColor = Colors.black;
+  static const Color selectedWireColor = Colors.blue;
 
-  MyPainter({required this.wires, required this.selectedWireIndex});
+  final List<Map<String, dynamic>> wireMaps;
+
+  MyPainter(this.wireMaps);
 
   @override
   void paint(Canvas canvas, Size size) {
-    for (int i = 0; i < wires.length; i++) {
+    for (var wireMap in wireMaps) {
       final paint = Paint()
-        ..color = i == selectedWireIndex ? Colors.blue : Colors.black
-        ..strokeWidth = 2.0;
+        ..color = wireMap['selected'] ? selectedWireColor : wireColor
+        ..strokeWidth = wireWidth;
 
-      for (int j = 0; j < wires[i].length - 1; j++) {
-        final startPoint = wires[i][j];
-        final endPoint = wires[i][j + 1];
+      for (int j = 0; j < wireMap['points'].length - 1; j++) {
+        final startPoint = wireMap['points'][j];
+        final endPoint = wireMap['points'][j + 1];
         canvas.drawLine(startPoint, endPoint, paint);
       }
     }

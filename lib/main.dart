@@ -29,7 +29,7 @@ void main() {
         runApp(const Oz());
         goodExit = true;
       } catch (e) {
-        debugPrint("error: $e");
+        debugPrint('error: $e');
       }
     }
   } else {
@@ -124,26 +124,26 @@ class _MainPageState extends State<MainPage> {
           IconButton(
             onPressed: () {
               setState(() {
-                editorCanvasKey.currentState!.mode = CanvasModes.select;
+                editorCanvasKey.currentState!.mode = CanvasMode.select;
               });
             },
             icon: const Icon(Icons.highlight_alt),
             iconSize: toolbarIconSize,
             tooltip: 'Select Components',
-            color: editorCanvasKey.currentState?.mode == CanvasModes.select
+            color: editorCanvasKey.currentState?.mode == CanvasMode.select
                 ? Colors.blue
                 : null,
           ),
           IconButton(
             onPressed: () {
               setState(() {
-                editorCanvasKey.currentState!.mode = CanvasModes.draw;
+                editorCanvasKey.currentState!.mode = CanvasMode.draw;
               });
             },
             icon: const Icon(Icons.mode),
             iconSize: toolbarIconSize,
             tooltip: 'Draw Wires',
-            color: editorCanvasKey.currentState?.mode == CanvasModes.draw
+            color: editorCanvasKey.currentState?.mode == CanvasMode.draw
                 ? Colors.blue
                 : null,
           ),
@@ -189,14 +189,14 @@ class _MainPageState extends State<MainPage> {
             height: toolbarIconSize,
             width: 1.5 * toolbarIconSize,
             child: Tooltip(
-              message: "Simulation Speed (ms)",
+              message: 'Simulation Speed (ms)',
               child: TextFormField(
                 keyboardType: TextInputType.number,
                 inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                initialValue: "${tickRate.inMilliseconds}",
+                initialValue: '${tickRate.inMilliseconds}',
                 textAlign: TextAlign.center,
                 decoration: const InputDecoration(
-                  suffixText: "ms",
+                  suffixText: 'ms',
                   border: OutlineInputBorder(),
                 ),
                 onChanged: (String value) {
@@ -220,26 +220,26 @@ class _MainPageState extends State<MainPage> {
           IconButton(
             onPressed: () {
               setState(() {
-                editorCanvasKey.currentState!.mode = CanvasModes.probePort;
+                editorCanvasKey.currentState!.mode = CanvasMode.addProbe;
               });
             },
             icon: const Icon(Icons.near_me),
             iconSize: toolbarIconSize,
             tooltip: 'Add Port Waveform',
-            color: editorCanvasKey.currentState?.mode == CanvasModes.probePort
+            color: editorCanvasKey.currentState?.mode == CanvasMode.addProbe
                 ? Colors.blue
                 : null,
           ),
           IconButton(
             onPressed: () {
               setState(() {
-                editorCanvasKey.currentState!.mode = CanvasModes.removeProbe;
+                editorCanvasKey.currentState!.mode = CanvasMode.removeProbe;
               });
             },
             icon: const Icon(Icons.near_me_disabled),
             iconSize: toolbarIconSize,
             tooltip: 'Remove Port Waveform',
-            color: editorCanvasKey.currentState?.mode == CanvasModes.removeProbe
+            color: editorCanvasKey.currentState?.mode == CanvasMode.removeProbe
                 ? Colors.blue
                 : null,
           )
@@ -332,12 +332,11 @@ class _MainPageState extends State<MainPage> {
                             details.offset.dx - 56,
                             details.offset.dy -
                                 48)); // TODO: don't manually define offset's offset
-                    editorCanvasKey.currentState!
-                        .getComponents()
-                        .forEach((key, value) {
+                    for (final component
+                        in editorCanvasKey.currentState!.components) {
                       currentComponentStates.putIfAbsent(
-                          key, () => LogicValue.zero);
-                    });
+                          component['key'], () => LogicValue.zero);
+                    }
                   });
                 },
               ),
@@ -370,7 +369,7 @@ class _MainPageState extends State<MainPage> {
       tickRate,
       (timer) {
         SimulationUpdater.tick();
-        debugPrint("help");
+        // debugPrint("help");
       },
     );
   }

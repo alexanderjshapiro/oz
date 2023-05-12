@@ -8,7 +8,7 @@ const double size = 100;
 const BorderSide blackBorder = BorderSide(color: Colors.black);
 
 void updateWaveformAnalyzer() {
-  if (editorCanvasKey.currentState!.getComponents().isNotEmpty &&
+  if (editorCanvasKey.currentState!.components.isNotEmpty &&
       probedPorts.isNotEmpty) {
     // Update current output port states
     probedPorts.forEach((key, value) {

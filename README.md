@@ -1,16 +1,21 @@
 # Oz
 
-A new Flutter project.
+Oz is a digital logic design application meant for students and other people learning about digital design. It was created as the senior project for the Computer Engineering Department at San Jose State University.
 
 ## Getting Started
 
-This project is a starting point for a Flutter application.
+### 1. Create platform runners
 
-A few resources to get you started if this is your first Flutter project:
+Create the runner application for each platform that Oz supports.
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+```shell
+flutter create .
+```
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+### 2. Run application
+
+Fetch all package dependencies and run the application.
+
+```shell
+flutter run
+```
