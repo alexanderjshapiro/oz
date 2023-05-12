@@ -226,25 +226,8 @@ class ComponentState extends State<Component> {
                         SizedBox(
                           height: portHeight,
                           child: Center(
-                            child: GestureDetector(
-                              onDoubleTap: () {
-                                if (wiringNodeSelected == null) {
-                                  debugPrint('Selected Output for wiring');
-                                  wiringNodeSelected = port.connectedNode;
-                                } else if (wiringNodeSelected ==
-                                    port.connectedNode) {
-                                  debugPrint('Cannot connect wire to itself');
-                                  wiringNodeSelected = null;
-                                } else {
-                                  port.connectNode(wiringNodeSelected!);
-                                  wiringNodeSelected = null;
-                                  debugPrint('Connected wire');
-                                }
-                              },
-                              child:
-                                  Text(port.portName, style: portNameTextStyle),
-                            ),
-                          ),
+                              child: Text(port.portName,
+                                  style: portNameTextStyle)),
                         )
                     ],
                   ),

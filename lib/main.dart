@@ -74,6 +74,9 @@ class _MainPageState extends State<MainPage> {
     waveformAnalyzerKey = GlobalKey<WaveformAnalyzerState>();
   }
 
+  final _scrollControllerVertical = ScrollController();
+  final _scrollControllerHorizontal = ScrollController();
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -88,7 +91,7 @@ class _MainPageState extends State<MainPage> {
                   Expanded(
                     child: Row(
                       children: [
-                        projectExplorer(),
+                        // projectExplorer(),
                         Expanded(
                           child: ResizableWidget(
                             isHorizontalSeparator: true,
@@ -96,7 +99,18 @@ class _MainPageState extends State<MainPage> {
                             separatorColor: Colors.black,
                             percentages: const [0.7, 0.3],
                             children: [
-                              EditorCanvas(key: editorCanvasKey),
+                              SingleChildScrollView(
+                                controller: _scrollControllerVertical,
+                                scrollDirection: Axis.vertical,
+                                child: SingleChildScrollView(
+                                    controller: _scrollControllerHorizontal,
+                                    scrollDirection: Axis.horizontal,
+                                    child: SizedBox(
+                                        width: gridSize * 100,
+                                        height: gridSize * 100,
+                                        child: EditorCanvas(
+                                            key: editorCanvasKey))),
+                              ),
                               WaveformAnalyzer(key: waveformAnalyzerKey),
                             ],
                           ),
@@ -329,8 +343,10 @@ class _MainPageState extends State<MainPage> {
                   setState(() {
                     editorCanvasKey.currentState!.addComponent(moduleType,
                         offset: Offset(
-                            details.offset.dx - 56,
-                            details.offset.dy -
+                            details.offset.dx +
+                                _scrollControllerHorizontal.offset,
+                            details.offset.dy +
+                                _scrollControllerVertical.offset -
                                 48)); // TODO: don't manually define offset's offset
                     for (final component
                         in editorCanvasKey.currentState!.components) {
