@@ -11,6 +11,11 @@ import 'package:flutter/foundation.dart';
 const double gridSize = 40;
 var colorMode = false;
 
+const Color spartanBlue = Color.fromRGBO(0, 85, 162, 1);
+const Color spartanYellow = Color.fromRGBO(229, 168, 35, 1);
+const Color spartanGrayLight = Color.fromRGBO(147, 149, 151, 1);
+const Color spartanGrayDark = Color.fromRGBO(83, 86, 90, 1);
+
 Duration tickRate = const Duration(milliseconds: 1);
 
 Map<GlobalKey<ComponentState>, LogicValue> currentComponentStates = {};
@@ -39,9 +44,23 @@ class Oz extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const MaterialApp(
+    return MaterialApp(
       title: 'Oz',
-      home: MainPage(),
+      theme: ThemeData(
+        colorScheme: const ColorScheme(
+            brightness: Brightness.light,
+            primary: spartanBlue,
+            onPrimary: Colors.white,
+            secondary: spartanYellow,
+            onSecondary: Colors.black,
+            error: Colors.red,
+            onError: Colors.white,
+            background: Colors.white,
+            onBackground: Colors.black,
+            surface: Colors.white,
+            onSurface: Colors.black),
+      ),
+      home: const MainPage(),
     );
   }
 }
@@ -59,6 +78,7 @@ late GlobalKey<WaveformAnalyzerState> waveformAnalyzerKey;
 
 class _MainPageState extends State<MainPage> {
   static const double toolbarIconSize = 48.0;
+  static const double toolbarHeight = toolbarIconSize * 1.5;
 
   bool _isRunning = false;
   Timer? _simulationTickTimer;
@@ -97,7 +117,6 @@ class _MainPageState extends State<MainPage> {
   Widget build(BuildContext context) {
     Widget canvas = Scrollbar(
       thumbVisibility: true,
-      trackVisibility: true,
       controller: _scrollControllerVertical,
       child: ScrollConfiguration(
         behavior: ScrollConfiguration.of(context).copyWith(dragDevices: {}),
@@ -106,7 +125,6 @@ class _MainPageState extends State<MainPage> {
           scrollDirection: Axis.vertical,
           child: Scrollbar(
             thumbVisibility: true,
-            trackVisibility: true,
             scrollbarOrientation: ScrollbarOrientation.top,
             controller: _scrollControllerHorizontal,
             child: ScrollConfiguration(
@@ -123,207 +141,191 @@ class _MainPageState extends State<MainPage> {
     );
 
     return Scaffold(
-      body: Container(
-        color: Colors.white,
-        child: Column(
-          children: [
-            toolbar(),
-            Expanded(
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Row(
-                      children: [
-                        Expanded(
-                            child: ResizableWidget(
-                          isHorizontalSeparator: true,
-                          separatorSize: 8.0,
-                          separatorColor: Colors.black,
-                          percentages: const [0.7, 0.3],
-                          children: [
-                            canvas,
-                            WaveformAnalyzer(key: waveformAnalyzerKey),
-                          ],
-                        )),
-                      ],
-                    ),
-                  ),
-                  if (_componentListShown) componentList(),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget toolbar() {
-    return RawKeyboardListener(
-      focusNode: globalFocus,
-      onKey: (RawKeyEvent event) {
-        if (event is RawKeyDownEvent &&
-            event.logicalKey == LogicalKeyboardKey.keyD &&
-            !event.data.isControlPressed) {
-          setState(() {
-            editorCanvasKey.currentState?.deselectSelected();
-            editorCanvasKey.currentState!.mode = CanvasMode.draw;
-          });
-        } else if (event is RawKeyDownEvent &&
-            event.logicalKey == LogicalKeyboardKey.keyS &&
-            !event.data.isControlPressed) {
-          setState(
-              () => editorCanvasKey.currentState!.mode = CanvasMode.select);
-        } else if (event is RawKeyDownEvent &&
-            event.logicalKey == LogicalKeyboardKey.keyP &&
-            !event.data.isControlPressed) {
-          setState(
-              () => editorCanvasKey.currentState!.mode = CanvasMode.addProbe);
-        } else if (event is RawKeyDownEvent &&
-            event.logicalKey == LogicalKeyboardKey.keyC &&
-            !event.data.isControlPressed) {
-          setState(() => colorMode = !colorMode);
-        }
-      },
-      child: Container(
-        decoration: const BoxDecoration(
-            border: Border(bottom: BorderSide(color: Colors.black))),
-        child: Row(
-          children: [
-            IconButton(
-              onPressed: () => setState(
-                  () => editorCanvasKey.currentState!.mode = CanvasMode.select),
-              icon: const Icon(Icons.highlight_alt),
-              iconSize: toolbarIconSize,
-              tooltip: 'Select Components',
-              color: editorCanvasKey.currentState?.mode == CanvasMode.select
-                  ? Colors.blue
-                  : null,
-            ),
-            IconButton(
-              onPressed: () => setState(() {
-                editorCanvasKey.currentState?.deselectSelected();
-                editorCanvasKey.currentState!.mode = CanvasMode.draw;
-              }),
-              icon: const Icon(Icons.mode),
-              iconSize: toolbarIconSize,
-              tooltip: 'Draw Wires',
-              color: editorCanvasKey.currentState?.mode == CanvasMode.draw
-                  ? Colors.blue
-                  : null,
-            ),
-            IconButton(
-              onPressed: () => setState(
-                  () => editorCanvasKey.currentState!.removeSelected()),
-              icon: const Icon(Icons.delete),
-              iconSize: toolbarIconSize,
-              tooltip: 'Remove Selected',
-            ),
-            IconButton(
-              onPressed: () => setState(() {
-                _scrollControllerHorizontal.jumpTo(0);
-                _scrollControllerVertical.jumpTo(0);
-                editorCanvasKey.currentState!.clear();
-                currentComponentStates.clear();
-                waveformAnalyzerKey.currentState!.clearWaveforms();
-                probedPorts.clear();
-              }),
-              icon: const Icon(Icons.restart_alt),
-              iconSize: toolbarIconSize,
-              tooltip: 'Reset Canvas',
-            ),
-            const SizedBox(width: 40),
-            IconButton(
-              onPressed: () =>
-                  _isRunning ? _stopSimulation() : _startSimulation(),
-              icon: _isRunning
-                  ? const Icon(Icons.stop_circle_outlined)
-                  : const Icon(Icons.play_circle_outline),
-              iconSize: toolbarIconSize,
-              tooltip: '${_isRunning ? 'Stop' : 'Start'} Simulation',
-            ),
-            SizedBox(
-              height: toolbarIconSize,
-              width: 1.5 * toolbarIconSize,
-              child: Tooltip(
-                message: 'Simulation Speed (ms)',
-                child: TextFormField(
-                  keyboardType: TextInputType.number,
-                  inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                  initialValue: '${tickRate.inMilliseconds}',
-                  textAlign: TextAlign.center,
-                  decoration: const InputDecoration(
-                    suffixText: 'ms',
-                    border: OutlineInputBorder(),
-                  ),
-                  onChanged: (String value) {
-                    _stopSimulation();
-                    int newtick =
-                        int.tryParse(value) ?? tickRate.inMilliseconds;
-                    tickRate = Duration(milliseconds: newtick);
+        appBar: appBar(),
+        body: Container(
+          color: Colors.white,
+          child: Row(
+            children: [
+              RawKeyboardListener(
+                  focusNode: globalFocus,
+                  onKey: (RawKeyEvent event) {
+                    if (event is RawKeyDownEvent &&
+                        event.logicalKey == LogicalKeyboardKey.keyD &&
+                        !event.data.isControlPressed) {
+                      setState(() {
+                        editorCanvasKey.currentState?.deselectSelected();
+                        editorCanvasKey.currentState!.mode = CanvasMode.draw;
+                      });
+                    } else if (event is RawKeyDownEvent &&
+                        event.logicalKey == LogicalKeyboardKey.keyS &&
+                        !event.data.isControlPressed) {
+                      setState(() => editorCanvasKey.currentState!.mode =
+                          CanvasMode.select);
+                    } else if (event is RawKeyDownEvent &&
+                        event.logicalKey == LogicalKeyboardKey.keyP &&
+                        !event.data.isControlPressed) {
+                      setState(() => editorCanvasKey.currentState!.mode =
+                          CanvasMode.addProbe);
+                    } else if (event is RawKeyDownEvent &&
+                        event.logicalKey == LogicalKeyboardKey.keyC &&
+                        !event.data.isControlPressed) {
+                      setState(() => colorMode = !colorMode);
+                    }
                   },
+                  child: Container()),
+              Expanded(
+                child: ResizableWidget(
+                  isHorizontalSeparator: true,
+                  separatorSize: 8.0,
+                  separatorColor: Colors.black,
+                  percentages: const [0.7, 0.3],
+                  children: [
+                    canvas,
+                    WaveformAnalyzer(key: waveformAnalyzerKey),
+                  ],
                 ),
               ),
-            ),
-            IconButton(
-              onPressed: () {
-                _stopSimulation();
-                SimulationUpdater.tick();
-              },
-              icon: const Icon(Icons.slow_motion_video_rounded),
-              iconSize: toolbarIconSize,
-              tooltip: 'Step Simulation',
-            ),
-            const SizedBox(width: 40),
-            IconButton(
-              onPressed: () => setState(() =>
-                  editorCanvasKey.currentState!.mode = CanvasMode.addProbe),
-              icon: const Icon(Icons.near_me),
-              iconSize: toolbarIconSize,
-              tooltip: 'Add Port Waveform',
-              color: editorCanvasKey.currentState?.mode == CanvasMode.addProbe
-                  ? Colors.blue
-                  : null,
-            ),
-            IconButton(
-              onPressed: () => setState(() =>
-                  editorCanvasKey.currentState!.mode = CanvasMode.removeProbe),
-              icon: const Icon(Icons.near_me_disabled),
-              iconSize: toolbarIconSize,
-              tooltip: 'Remove Port Waveform',
-              color:
-                  editorCanvasKey.currentState?.mode == CanvasMode.removeProbe
-                      ? Colors.blue
-                      : null,
-            ),
-            const Spacer(),
-            IconButton(
-              onPressed: () => setState(() => colorMode = !colorMode),
-              icon: const Icon(Icons.color_lens),
-              iconSize: toolbarIconSize,
-              tooltip: 'Color Mode',
-              color: colorMode ? Colors.blue : null,
-            ),
-            IconButton(
-              onPressed: () => setState(
-                  () => _componentListPreviewMode = !_componentListPreviewMode),
-              icon: const Icon(Icons.preview),
-              iconSize: toolbarIconSize,
-              tooltip: 'Component Preview Mode',
-              color: _componentListPreviewMode ? Colors.blue : null,
-            ),
-            IconButton(
-              onPressed: () =>
-                  setState(() => _componentListShown = !_componentListShown),
-              icon: const Icon(Icons.view_sidebar),
-              iconSize: toolbarIconSize,
-              tooltip:
-                  '${_componentListShown ? 'Hide' : 'Show'} Component List',
-              color: _componentListShown ? Colors.blue : null,
-            ),
-          ],
+              if (_componentListShown) componentList(),
+            ],
+          ),
+        ));
+  }
+
+  AppBar appBar() {
+    return AppBar(
+      toolbarHeight: toolbarHeight,
+      actions: [
+        IconButton(
+          onPressed: () => setState(
+              () => editorCanvasKey.currentState!.mode = CanvasMode.select),
+          icon: const Icon(Icons.highlight_alt),
+          iconSize: toolbarIconSize,
+          tooltip: 'Select',
+          color: editorCanvasKey.currentState?.mode == CanvasMode.select
+              ? spartanYellow
+              : null,
         ),
-      ),
+        IconButton(
+          onPressed: () => setState(() {
+            editorCanvasKey.currentState?.deselectSelected();
+            editorCanvasKey.currentState!.mode = CanvasMode.draw;
+          }),
+          icon: const Icon(Icons.mode),
+          iconSize: toolbarIconSize,
+          tooltip: 'Draw Wires',
+          color: editorCanvasKey.currentState?.mode == CanvasMode.draw
+              ? spartanYellow
+              : null,
+        ),
+        IconButton(
+          onPressed: () =>
+              setState(() => editorCanvasKey.currentState!.removeSelected()),
+          icon: const Icon(Icons.delete),
+          iconSize: toolbarIconSize,
+          tooltip: 'Remove Selected',
+        ),
+        IconButton(
+          onPressed: () => setState(() {
+            _scrollControllerHorizontal.jumpTo(0);
+            _scrollControllerVertical.jumpTo(0);
+            editorCanvasKey.currentState!.clear();
+            currentComponentStates.clear();
+            waveformAnalyzerKey.currentState!.clearWaveforms();
+            probedPorts.clear();
+          }),
+          icon: const Icon(Icons.restart_alt),
+          iconSize: toolbarIconSize,
+          tooltip: 'Reset Canvas',
+        ),
+        const SizedBox(width: toolbarIconSize),
+        IconButton(
+          onPressed: () => _isRunning ? _stopSimulation() : _startSimulation(),
+          icon: Icon(_isRunning
+              ? Icons.pause_circle_outline
+              : Icons.play_circle_outline),
+          iconSize: toolbarIconSize,
+          tooltip: '${_isRunning ? 'Pause' : 'Start'} Simulation',
+        ),
+        SizedBox(
+          width: toolbarIconSize * 2,
+          child: Center(
+            child: Tooltip(
+              message: 'Simulation Speed (ms)',
+              child: TextFormField(
+                keyboardType: TextInputType.number,
+                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                initialValue: '${tickRate.inMilliseconds}',
+                textAlign: TextAlign.end,
+                style: const TextStyle(fontSize: 18, fontFamily: 'Courier New'),
+                decoration: const InputDecoration(
+                    filled: true,
+                    fillColor: Colors.white,
+                    suffixText: 'ms',
+                    border: InputBorder.none),
+                onChanged: (String value) {
+                  _stopSimulation();
+                  int newtick = int.tryParse(value) ?? tickRate.inMilliseconds;
+                  tickRate = Duration(milliseconds: newtick);
+                },
+              ),
+            ),
+          ),
+        ),
+        IconButton(
+          onPressed: () {
+            _stopSimulation();
+            SimulationUpdater.tick();
+          },
+          icon: const Icon(Icons.slow_motion_video),
+          iconSize: toolbarIconSize,
+          tooltip: 'Step Simulation',
+        ),
+        const SizedBox(width: toolbarIconSize),
+        IconButton(
+          onPressed: () => setState(
+              () => editorCanvasKey.currentState!.mode = CanvasMode.addProbe),
+          icon: const Icon(Icons.near_me),
+          iconSize: toolbarIconSize,
+          tooltip: 'Add Port Waveform',
+          color: editorCanvasKey.currentState?.mode == CanvasMode.addProbe
+              ? spartanYellow
+              : null,
+        ),
+        IconButton(
+          onPressed: () => setState(() =>
+              editorCanvasKey.currentState!.mode = CanvasMode.removeProbe),
+          icon: const Icon(Icons.near_me_disabled),
+          iconSize: toolbarIconSize,
+          tooltip: 'Remove Port Waveform',
+          color: editorCanvasKey.currentState?.mode == CanvasMode.removeProbe
+              ? spartanYellow
+              : null,
+        ),
+        const Spacer(),
+        IconButton(
+          onPressed: () => setState(() => colorMode = !colorMode),
+          icon: const Icon(Icons.color_lens),
+          iconSize: toolbarIconSize,
+          tooltip: 'Color Mode',
+          color: colorMode ? spartanYellow : null,
+        ),
+        IconButton(
+          onPressed: () => setState(
+              () => _componentListPreviewMode = !_componentListPreviewMode),
+          icon: const Icon(Icons.preview),
+          iconSize: toolbarIconSize,
+          tooltip: 'Component Preview Mode',
+          color: _componentListPreviewMode ? spartanYellow : null,
+        ),
+        IconButton(
+          onPressed: () =>
+              setState(() => _componentListShown = !_componentListShown),
+          icon: const Icon(Icons.view_sidebar),
+          iconSize: toolbarIconSize,
+          tooltip: '${_componentListShown ? 'Hide' : 'Show'} Component List',
+          color: _componentListShown ? spartanYellow : null,
+        ),
+      ],
     );
   }
 
@@ -388,7 +390,10 @@ class _MainPageState extends State<MainPage> {
                       details.offset.dx + _scrollControllerHorizontal.offset,
                       details.offset.dy +
                           _scrollControllerVertical.offset -
-                          toolbarIconSize));
+                          (editorCanvasKey.currentContext?.findRenderObject()
+                                  as RenderBox)
+                              .localToGlobal(Offset.zero)
+                              .dy));
               for (final component
                   in editorCanvasKey.currentState!.components) {
                 currentComponentStates.putIfAbsent(
@@ -436,8 +441,7 @@ class _MainPageState extends State<MainPage> {
                   expandedCrossAxisAlignment: CrossAxisAlignment.start,
                   title: Text(tileName,
                       style: const TextStyle(
-                        fontSize: 24,
-                      )),
+                          fontSize: 24, fontWeight: FontWeight.bold)),
                   collapsedTextColor: Colors.blueGrey,
                   children: [
                     for (var moduleType in tiles[tileName]!)

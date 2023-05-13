@@ -44,7 +44,8 @@ class EditorCanvasState extends State<EditorCanvas> {
     setState(() {
       _components.add({
         'key': key,
-        'widget': Component(moduleType: moduleType, key: key, selected: selected),
+        'widget':
+            Component(moduleType: moduleType, key: key, selected: selected),
         'offset': _snapToGrid(offset),
         'selected': selected
       });
@@ -182,7 +183,8 @@ class EditorCanvasState extends State<EditorCanvas> {
               GlobalKey<ComponentState> newComponentKey = addComponent(
                   toClone?['widget'].moduleType,
                   offset: Offset(toClone?['offset'].dx + gridSize,
-                      toClone?['offset'].dy + gridSize), selected: true);
+                      toClone?['offset'].dy + gridSize),
+                  selected: true);
               Map<String, dynamic> newComponent = components.singleWhere(
                   (component) => component['key'] == newComponentKey);
 

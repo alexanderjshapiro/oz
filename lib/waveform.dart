@@ -184,7 +184,7 @@ class WaveformAnalyzerState extends State<WaveformAnalyzer> {
     if (waveformWidgets.isEmpty) {
       return Container(
         decoration: const BoxDecoration(
-            color: Colors.grey,
+            color: spartanGrayLight,
             border: Border(top: BorderSide(color: Colors.black))),
         height: 200,
         padding: const EdgeInsets.all(20),
@@ -195,7 +195,7 @@ class WaveformAnalyzerState extends State<WaveformAnalyzer> {
       height: 200,
       child: Container(
           decoration: const BoxDecoration(
-            color: Colors.grey,
+            color: spartanGrayLight,
             border: Border(top: BorderSide(color: Colors.black)),
           ),
           padding: const EdgeInsets.all(10),

@@ -49,7 +49,8 @@ class Component extends StatefulWidget {
 
   const Component({
     Key? key, // Make key nullable
-    required this.moduleType, this.selected = false, // Add module parameter
+    required this.moduleType,
+    this.selected = false, // Add module parameter
   }) : super(key: key); // Call super with nullable key
 
   @override
