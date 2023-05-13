@@ -18,9 +18,7 @@ Map<GlobalKey<ComponentState>, PhysicalPort> probedPorts = {};
 final FocusNode globalFocus = FocusNode();
 
 void main() {
-  // TODO: Enable this code section as a fail safe
-  // If we get an error the program just restarts.
-  // ignore: dead_code
+  // If we get an uncaught exception during the program in release build the program just restarts.
   if (!kDebugMode) {
     bool goodExit = false;
     while (!goodExit) {

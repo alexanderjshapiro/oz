@@ -66,7 +66,7 @@ class WaveformGraph extends StatelessWidget {
     }
 
     return Row(
-          children: stateWaves,
+      children: stateWaves,
     );
   }
 }
@@ -137,12 +137,11 @@ class WaveformAnalyzerState extends State<WaveformAnalyzer> {
     String port = probedPorts[componentKey]!.portName;
     return SizedBox(
       height: 50,
-      child: Container (
-        child: Column(children: [
-          Text(name, style: const TextStyle(fontSize: 16)), 
+      child: Column(
+        children: [
+          Text(name, style: const TextStyle(fontSize: 16)),
           Text(port, style: const TextStyle(fontSize: 16)),
-          ],
-        )
+        ],
       ),
     );
   }
@@ -158,13 +157,16 @@ class WaveformAnalyzerState extends State<WaveformAnalyzer> {
 
     int count = 0;
     _waveforms.forEach((key, value) {
-      waveformWidgets.add(WaveformGraph(waveform: value));
-      waveformNames.add(getComponentName(key));
-      if (count < _waveforms.length - 1) {
-        waveformWidgets.add(const SizedBox(height: 10));
-        waveformNames.add(const SizedBox(height: 10));
+      //TODO: properly remove a waveform when a component is deleted
+      if (key.currentState != null) {
+        waveformWidgets.add(WaveformGraph(waveform: value));
+        waveformNames.add(getComponentName(key));
+        if (count < _waveforms.length - 1) {
+          waveformWidgets.add(const SizedBox(height: 10));
+          waveformNames.add(const SizedBox(height: 10));
+        }
+        count++;
       }
-      count++;
     });
 
     //Update the position of the scrollbar must occur after the widget is updated
@@ -192,13 +194,12 @@ class WaveformAnalyzerState extends State<WaveformAnalyzer> {
     return SizedBox(
       height: 200,
       child: Container(
-        decoration: const BoxDecoration(
-          color: Colors.grey,
-          border: Border(top: BorderSide(color: Colors.black)),
-        ),
-        padding: const EdgeInsets.all(10),
-        child: ListView(
-          children: [
+          decoration: const BoxDecoration(
+            color: Colors.grey,
+            border: Border(top: BorderSide(color: Colors.black)),
+          ),
+          padding: const EdgeInsets.all(10),
+          child: ListView(children: [
             Row(
               children: [
                 Column(children: waveformNames),
@@ -220,9 +221,7 @@ class WaveformAnalyzerState extends State<WaveformAnalyzer> {
                 )
               ],
             )
-          ]
-        )
-      ),
+          ])),
     );
   }
 }

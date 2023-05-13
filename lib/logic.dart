@@ -132,7 +132,7 @@ class SN74LS138 extends Module {
 
   @override
   update() {
-    if (ports.firstWhere((element) => element.portName == "G1").value !=
+    if (ports.firstWhere((element) => element.portName == 'G1').value !=
         LogicValue.one || ports.firstWhere((element) => element.portName == "G2A'").value !=
         LogicValue.zero || ports.firstWhere((element) => element.portName == "G2B'").value !=
         LogicValue.zero) {
@@ -540,14 +540,6 @@ class HexDisplay extends Module {
 
   @override
   update() {}
-}
-
-class LoadedModule extends Module {
-  LoadedModule(String componentName) : super(name: componentName) {
-    // TODO Im not sure how to do this, it turns out simulating actual verilog is not an easy task to do
-    // Rohd can connect to an external simulator or verilator can convert verilog to c code,
-    // but these solutions arn't very cross platform
-  }
 }
 
 class SimulationUpdater {
