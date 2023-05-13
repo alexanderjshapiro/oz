@@ -45,10 +45,11 @@ Map<Type, String> gateNames = {
 
 class Component extends StatefulWidget {
   final Type moduleType; // Add module field
+  final bool selected;
 
   const Component({
     Key? key, // Make key nullable
-    required this.moduleType, // Add module parameter
+    required this.moduleType, this.selected = false, // Add module parameter
   }) : super(key: key); // Call super with nullable key
 
   @override
@@ -64,7 +65,7 @@ class ComponentState extends State<Component> {
       16.0; // between input and output columns
 
   late Module module; // Add module field
-  bool _selected = false;
+  late bool _selected;
 
   set selected(bool val) => setState(() {
         _selected = val;
@@ -78,6 +79,8 @@ class ComponentState extends State<Component> {
   @override
   void initState() {
     super.initState();
+    _selected = widget.selected;
+
     module = gateTypes[gateNames[widget.moduleType]]!.call();
     module.guiUpdateCallback = () {
       if (mounted) {

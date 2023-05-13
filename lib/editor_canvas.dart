@@ -38,16 +38,19 @@ class EditorCanvasState extends State<EditorCanvas> {
   int tilingHorizontal = 70;
   int tilingVertical = 40;
 
-  void addComponent(Type moduleType, {Offset offset = Offset.zero}) {
+  GlobalKey<ComponentState> addComponent(Type moduleType,
+      {Offset offset = Offset.zero, bool selected = false}) {
     GlobalKey<ComponentState> key = GlobalKey<ComponentState>();
     setState(() {
       _components.add({
         'key': key,
-        'widget': Component(moduleType: moduleType, key: key),
+        'widget': Component(moduleType: moduleType, key: key, selected: selected),
         'offset': _snapToGrid(offset),
-        'selected': false
+        'selected': selected
       });
     });
+
+    return key;
   }
 
   void deselectSelected() {
@@ -162,7 +165,8 @@ class EditorCanvasState extends State<EditorCanvas> {
         autofocus: true,
         onKey: (RawKeyEvent event) {
           if (event is RawKeyDownEvent &&
-              event.logicalKey == LogicalKeyboardKey.delete) {
+                  event.logicalKey == LogicalKeyboardKey.delete ||
+              event.logicalKey == LogicalKeyboardKey.backspace) {
             removeSelected();
           } else if (event is RawKeyDownEvent &&
               event.logicalKey == LogicalKeyboardKey.keyD &&
@@ -173,34 +177,23 @@ class EditorCanvasState extends State<EditorCanvas> {
               if (component['selected']) toClone = component;
             }
             if (toClone == null) return;
-            setState(
-              () {
-                deselectSelected();
-                //toClone!['key'].currentState?.selected = false;
-                editorCanvasKey.currentState!.addComponent(
-                    toClone?['widget'].moduleType,
-                    offset: Offset(toClone?['offset'].dx,
-                        toClone?['offset'].dy + gridSize));
+            setState(() {
+              deselectSelected();
+              GlobalKey<ComponentState> newComponentKey = addComponent(
+                  toClone?['widget'].moduleType,
+                  offset: Offset(toClone?['offset'].dx + gridSize,
+                      toClone?['offset'].dy + gridSize), selected: true);
+              Map<String, dynamic> newComponent = components.singleWhere(
+                  (component) => component['key'] == newComponentKey);
 
-                for (final component
-                    in editorCanvasKey.currentState!.components) {
-                  currentComponentStates.putIfAbsent(
-                      component['key'], () => LogicValue.zero);
-                }
-                _components.firstWhere((component) =>
-                    component['offset'] ==
-                    Offset(toClone?['offset'].dx,
-                        toClone?['offset'].dy + gridSize))['selected'] = true;
+              for (final component
+                  in editorCanvasKey.currentState!.components) {
+                currentComponentStates.putIfAbsent(
+                    component['key'], () => LogicValue.zero);
+              }
 
-                _components
-                    .firstWhere((component) =>
-                        component['offset'] ==
-                        Offset(toClone?['offset'].dx,
-                            toClone?['offset'].dy + gridSize))['key']
-                    .currentState
-                    ?.selected = true;
-              },
-            );
+              newComponent['selected'] = true;
+            });
           }
         },
         child: Stack(
