@@ -23,7 +23,6 @@ Map<String, Function> gateTypes = {
   'Or2Gate': () => Or2Gate(),
   'Mux2Gate': () => Mux2Gate(),
   'SN74LS138': () => SN74LS138(),
-
 };
 
 Map<Type, String> gateNames = {
@@ -54,27 +53,6 @@ class Component extends StatefulWidget {
 
   @override
   ComponentState createState() => ComponentState();
-}
-
-// Preview of a component when dragging and dropping onto the canvas
-class ComponentPreview extends StatelessWidget {
-  final Component component;
-
-  const ComponentPreview({Key? key, required this.component}) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    return IgnorePointer(
-      child: Opacity(
-        opacity: 0.5,
-        child: RepaintBoundary(
-          child: Component(
-            moduleType: component.moduleType,
-          ),
-        ),
-      ),
-    );
-  }
 }
 
 class ComponentState extends State<Component> {

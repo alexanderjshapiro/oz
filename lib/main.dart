@@ -63,6 +63,8 @@ class _MainPageState extends State<MainPage> {
   bool _isRunning = false;
   Timer? _simulationTickTimer;
 
+  bool _componentListPreviewMode = false;
+
   final _scrollControllerVertical = ScrollController();
   final _scrollControllerHorizontal = ScrollController();
 
@@ -305,6 +307,14 @@ class _MainPageState extends State<MainPage> {
               tooltip: 'Color Mode',
               color: colorMode ? Colors.blue : null,
             ),
+            IconButton(
+              onPressed: () => setState(
+                  () => _componentListPreviewMode = !_componentListPreviewMode),
+              icon: const Icon(Icons.preview),
+              iconSize: toolbarIconSize,
+              tooltip: 'Component Preview Mode',
+              color: _componentListPreviewMode ? Colors.blue : null,
+            ),
           ],
         ),
       ),
@@ -313,258 +323,121 @@ class _MainPageState extends State<MainPage> {
 
   Widget componentList() {
     const double padding = 0;
-    final ScrollController _scrollController = ScrollController();
+    final ScrollController scrollController = ScrollController();
+
+    Map<Type, Widget> components = {};
+    for (var moduleType in gateNames.keys) {
+      components[moduleType] = Padding(
+        padding: const EdgeInsets.fromLTRB(0, 0, 0, 8),
+        child: Draggable(
+          data: Component(
+            moduleType: moduleType,
+          ),
+          feedback: DefaultTextStyle(
+            style: const TextStyle(
+                color: Colors.black,
+                fontWeight: FontWeight.normal,
+                decoration: TextDecoration.none),
+            child: Component(
+              moduleType: moduleType,
+            ),
+          ),
+          childWhenDragging: _componentListPreviewMode
+              ? Opacity(
+                  opacity: 0.2,
+                  child: DefaultTextStyle(
+                    style: const TextStyle(
+                        color: Colors.black,
+                        fontWeight: FontWeight.normal,
+                        decoration: TextDecoration.none),
+                    child: Component(
+                      moduleType: moduleType,
+                    ),
+                  ),
+                )
+              : Text(
+                  gateNames[moduleType]!,
+                  style: const TextStyle(fontSize: 24, color: Colors.grey),
+                ),
+          child: _componentListPreviewMode
+              ? DefaultTextStyle(
+                  style: const TextStyle(
+                      color: Colors.black,
+                      fontWeight: FontWeight.normal,
+                      decoration: TextDecoration.none),
+                  child: Component(
+                    moduleType: moduleType,
+                  ),
+                )
+              : Text(
+                  gateNames[moduleType]!,
+                  style: const TextStyle(
+                    fontSize: 24,
+                  ),
+                ),
+          onDragEnd: (DraggableDetails details) {
+            setState(() {
+              editorCanvasKey.currentState!.addComponent(moduleType,
+                  offset: Offset(
+                      details.offset.dx + _scrollControllerHorizontal.offset,
+                      details.offset.dy +
+                          _scrollControllerVertical.offset -
+                          toolbarIconSize));
+              for (final component
+                  in editorCanvasKey.currentState!.components) {
+                currentComponentStates.putIfAbsent(
+                    component['key'], () => LogicValue.zero);
+              }
+            });
+          },
+        ),
+      );
+    }
+
+    Map<String, List<Type>> tiles = {
+      'Interface': [BinarySwitch, HexDisplay],
+      'Gates': [
+        And2Gate,
+        NotGate,
+        Nor2Gate,
+        Xor2Gate,
+        BufferGate,
+        TriStateBuffer,
+        Nand2Gate,
+        Or2Gate,
+        Mux2Gate,
+      ],
+      'ICs': [SN74LS245, SN74LS373, SN74LS138, SRAM6116],
+      'All Gates': gateNames.keys.toList(),
+    };
 
     return Container(
-      width: 210,
+      width: 400,
       decoration: const BoxDecoration(
           border: Border(left: BorderSide(color: Colors.black))),
-      child: Padding(
-        padding: const EdgeInsets.all(padding),
-        child: Scrollbar(
-          thumbVisibility: true,
-          trackVisibility: true,
-          controller: _scrollController,
-          child: ListView(
-            controller: _scrollController,
-            children: [
+      padding: const EdgeInsets.all(padding),
+      child: Scrollbar(
+        thumbVisibility: true,
+        trackVisibility: true,
+        controller: scrollController,
+        child: ListView(
+          controller: scrollController,
+          children: [
+            for (String tileName in tiles.keys)
               ExpansionTile(
                   childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
                   expandedAlignment: Alignment.topLeft,
                   expandedCrossAxisAlignment: CrossAxisAlignment.start,
-                  title: const Text('Interface',
-                      style: TextStyle(
+                  title: Text(tileName,
+                      style: const TextStyle(
                         fontSize: 24,
                       )),
                   collapsedTextColor: Colors.blueGrey,
                   children: [
-                    for (var moduleType in [BinarySwitch, HexDisplay])
-                      Draggable(
-                        data: Component(
-                          moduleType: moduleType,
-                        ),
-                        feedback: DefaultTextStyle(
-                            style: const TextStyle(
-                                color: Colors.black,
-                                fontWeight: FontWeight.normal,
-                                decoration: TextDecoration.none),
-                            child: ComponentPreview(
-                              component: Component(
-                                moduleType: moduleType,
-                              ),
-                            )),
-                        childWhenDragging: Text(
-                          gateNames[moduleType]!,
-                          style:
-                              const TextStyle(fontSize: 24, color: Colors.grey),
-                        ),
-                        child: Text(
-                          gateNames[moduleType]!,
-                          style: const TextStyle(
-                            fontSize: 24,
-                          ),
-                        ),
-                        onDragEnd: (DraggableDetails details) {
-                          setState(() {
-                            editorCanvasKey.currentState!.addComponent(
-                                moduleType,
-                                offset: Offset(
-                                    details.offset.dx +
-                                        _scrollControllerHorizontal.offset,
-                                    details.offset.dy +
-                                        _scrollControllerVertical.offset -
-                                        toolbarIconSize));
-                            for (final component
-                                in editorCanvasKey.currentState!.components) {
-                              currentComponentStates.putIfAbsent(
-                                  component['key'], () => LogicValue.zero);
-                            }
-                          });
-                        },
-                      ),
+                    for (var moduleType in tiles[tileName]!)
+                      components[moduleType]!
                   ]),
-              ExpansionTile(
-                  childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                  expandedAlignment: Alignment.topLeft,
-                  expandedCrossAxisAlignment: CrossAxisAlignment.start,
-                  title: const Text('Gates',
-                      style: TextStyle(
-                        fontSize: 24,
-                      )),
-                  collapsedTextColor: Colors.blueGrey,
-                  children: [
-                    for (var moduleType in [
-                      And2Gate,
-                      NotGate,
-                      Nor2Gate,
-                      Xor2Gate,
-                      BufferGate,
-                      TriStateBuffer,
-                      Nand2Gate,
-                      Or2Gate,
-                      Mux2Gate,
-                    ])
-                      Draggable(
-                        data: Component(
-                          moduleType: moduleType,
-                        ),
-                        feedback: DefaultTextStyle(
-                            style: const TextStyle(
-                                color: Colors.black,
-                                fontWeight: FontWeight.normal,
-                                decoration: TextDecoration.none),
-                            child: ComponentPreview(
-                              component: Component(
-                                moduleType: moduleType,
-                              ),
-                            )),
-                        childWhenDragging: Text(
-                          gateNames[moduleType]!,
-                          style:
-                              const TextStyle(fontSize: 24, color: Colors.grey),
-                        ),
-                        child: Text(
-                          gateNames[moduleType]!,
-                          style: const TextStyle(
-                            fontSize: 24,
-                          ),
-                        ),
-                        onDragEnd: (DraggableDetails details) {
-                          setState(() {
-                            editorCanvasKey.currentState!.addComponent(
-                                moduleType,
-                                offset: Offset(
-                                    details.offset.dx +
-                                        _scrollControllerHorizontal.offset,
-                                    details.offset.dy +
-                                        _scrollControllerVertical.offset -
-                                        toolbarIconSize));
-                            for (final component
-                                in editorCanvasKey.currentState!.components) {
-                              currentComponentStates.putIfAbsent(
-                                  component['key'], () => LogicValue.zero);
-                            }
-                          });
-                        },
-                      ),
-                  ]),
-              ExpansionTile(
-                  childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                  expandedAlignment: Alignment.topLeft,
-                  expandedCrossAxisAlignment: CrossAxisAlignment.start,
-                  title: const Text('ICs',
-                      style: TextStyle(
-                        fontSize: 24,
-                      )),
-                  collapsedTextColor: Colors.blueGrey,
-                  children: [
-                    for (var moduleType in [
-                      SN74LS245,
-                      SN74LS373,
-                      SN74LS138,
-                      SRAM6116
-                    ])
-                      Draggable(
-                        data: Component(
-                          moduleType: moduleType,
-                        ),
-                        feedback: DefaultTextStyle(
-                            style: const TextStyle(
-                                color: Colors.black,
-                                fontWeight: FontWeight.normal,
-                                decoration: TextDecoration.none),
-                            child: ComponentPreview(
-                              component: Component(
-                                moduleType: moduleType,
-                              ),
-                            )),
-                        childWhenDragging: Text(
-                          gateNames[moduleType]!,
-                          style:
-                              const TextStyle(fontSize: 24, color: Colors.grey),
-                        ),
-                        child: Text(
-                          gateNames[moduleType]!,
-                          style: const TextStyle(
-                            fontSize: 24,
-                          ),
-                        ),
-                        onDragEnd: (DraggableDetails details) {
-                          setState(() {
-                            editorCanvasKey.currentState!.addComponent(
-                                moduleType,
-                                offset: Offset(
-                                    details.offset.dx +
-                                        _scrollControllerHorizontal.offset,
-                                    details.offset.dy +
-                                        _scrollControllerVertical.offset -
-                                        toolbarIconSize));
-                            for (final component
-                                in editorCanvasKey.currentState!.components) {
-                              currentComponentStates.putIfAbsent(
-                                  component['key'], () => LogicValue.zero);
-                            }
-                          });
-                        },
-                      ),
-                  ]),
-              ExpansionTile(
-                  childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                  expandedAlignment: Alignment.topLeft,
-                  expandedCrossAxisAlignment: CrossAxisAlignment.start,
-                  title: const Text('All Gates',
-                      style: TextStyle(
-                        fontSize: 24,
-                      )),
-                  collapsedTextColor: Colors.blueGrey,
-                  children: [
-                    for (var moduleType in gateNames.keys)
-                      Draggable(
-                        data: Component(
-                          moduleType: moduleType,
-                        ),
-                        feedback: DefaultTextStyle(
-                            style: const TextStyle(
-                                color: Colors.black,
-                                fontWeight: FontWeight.normal,
-                                decoration: TextDecoration.none),
-                            child: ComponentPreview(
-                              component: Component(
-                                moduleType: moduleType,
-                              ),
-                            )),
-                        childWhenDragging: Text(
-                          gateNames[moduleType]!,
-                          style:
-                              const TextStyle(fontSize: 24, color: Colors.grey),
-                        ),
-                        child: Text(
-                          gateNames[moduleType]!,
-                          style: const TextStyle(
-                            fontSize: 24,
-                          ),
-                        ),
-                        onDragEnd: (DraggableDetails details) {
-                          setState(() {
-                            editorCanvasKey.currentState!.addComponent(
-                                moduleType,
-                                offset: Offset(
-                                    details.offset.dx +
-                                        _scrollControllerHorizontal.offset,
-                                    details.offset.dy +
-                                        _scrollControllerVertical.offset -
-                                        toolbarIconSize));
-                            for (final component
-                                in editorCanvasKey.currentState!.components) {
-                              currentComponentStates.putIfAbsent(
-                                  component['key'], () => LogicValue.zero);
-                            }
-                          });
-                        },
-                      ),
-                  ]),
-            ],
-          ),
+          ],
         ),
       ),
     );
