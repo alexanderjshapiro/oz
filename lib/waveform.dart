@@ -3,8 +3,6 @@ import 'package:flutter/material.dart';
 import 'logic.dart';
 import 'main.dart';
 
-const double size = 100;
-
 const BorderSide blackBorder = BorderSide(color: Colors.black);
 
 void updateWaveformAnalyzer() {
@@ -32,11 +30,9 @@ class WaveformGraph extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const double containerWidth = size;
-    const double containerHeight = size / 2.0;
-
-    List<Container> stateWaves = [];
-
+    const double containerWidth = 20;
+    const double containerHeight = 50;
+    List<Widget> stateWaves = [];
     var previousVal = waveform[0];
     for (var value in waveform) {
       bool state = false;
@@ -53,19 +49,24 @@ class WaveformGraph extends StatelessWidget {
       } else {
         leftBorderSide = blackBorder;
       }
-      stateWaves.add(Container(
-        width: containerWidth,
-        height: containerHeight,
-        decoration: BoxDecoration(
+      stateWaves.add(
+        Container(
+          width: containerWidth,
+          height: containerHeight,
+          decoration: BoxDecoration(
             border: Border(
-                top: topBorderSide,
-                bottom: bottomBorderSide,
-                left: leftBorderSide)),
-      ));
+              top: topBorderSide,
+              bottom: bottomBorderSide,
+              left: leftBorderSide,
+            ),
+          ),
+        ),
+      );
       previousVal = value;
     }
+
     return Row(
-      children: stateWaves,
+          children: stateWaves,
     );
   }
 }
@@ -131,6 +132,21 @@ class WaveformAnalyzerState extends State<WaveformAnalyzer> {
     });
   }
 
+  Widget getComponentName(GlobalKey<ComponentState> componentKey) {
+    String name = componentKey.currentState!.module.name;
+    String port = probedPorts[componentKey]!.portName;
+    return SizedBox(
+      height: 50,
+      child: Container (
+        child: Column(children: [
+          Text(name, style: const TextStyle(fontSize: 16)), 
+          Text(port, style: const TextStyle(fontSize: 16)),
+          ],
+        )
+      ),
+    );
+  }
+
   int getWaveformsLength() => _waveforms.length;
 
   Map<GlobalKey<ComponentState>, List<LogicValue>> getWaveforms() => _waveforms;
@@ -138,12 +154,15 @@ class WaveformAnalyzerState extends State<WaveformAnalyzer> {
   @override
   Widget build(BuildContext context) {
     List<Widget> waveformWidgets = [];
+    List<Widget> waveformNames = [];
 
     int count = 0;
     _waveforms.forEach((key, value) {
       waveformWidgets.add(WaveformGraph(waveform: value));
+      waveformNames.add(getComponentName(key));
       if (count < _waveforms.length - 1) {
         waveformWidgets.add(const SizedBox(height: 10));
+        waveformNames.add(const SizedBox(height: 10));
       }
       count++;
     });
@@ -178,19 +197,31 @@ class WaveformAnalyzerState extends State<WaveformAnalyzer> {
           border: Border(top: BorderSide(color: Colors.black)),
         ),
         padding: const EdgeInsets.all(10),
-        child: Scrollbar(
-          controller: scrollController,
-          child: SingleChildScrollView(
-            controller: scrollController,
-            scrollDirection: Axis.horizontal,
-            child: SingleChildScrollView(
-              scrollDirection: Axis.vertical,
-              child: Column(
-                children: waveformWidgets,
-              ),
-            ),
-          ),
-        ),
+        child: ListView(
+          children: [
+            Row(
+              children: [
+                Column(children: waveformNames),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Scrollbar(
+                    controller: scrollController,
+                    child: SingleChildScrollView(
+                      controller: scrollController,
+                      scrollDirection: Axis.horizontal,
+                      child: SingleChildScrollView(
+                        scrollDirection: Axis.vertical,
+                        child: Column(
+                          children: waveformWidgets,
+                        ),
+                      ),
+                    ),
+                  ),
+                )
+              ],
+            )
+          ]
+        )
       ),
     );
   }
