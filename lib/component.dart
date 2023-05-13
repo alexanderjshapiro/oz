@@ -85,10 +85,12 @@ class ComponentState extends State<Component> {
   static const double minCenterPadding =
       16.0; // between input and output columns
 
-  static const portNameTextStyle =
-      TextStyle(fontSize: portNameSize, fontFamily: 'Courier New');
-
   late Module module; // Add module field
+  bool _selected = false;
+
+  set selected(bool val) => setState(() {
+        _selected = val;
+      });
 
   /// Data structure: `{'left': List<Offset>, 'right': List<Offset>}`
   final Map<String, List<Offset>> _portOffsets = {};
@@ -140,6 +142,19 @@ class ComponentState extends State<Component> {
     return null;
   }
 
+  static Color getColor(LogicValue logicValue) {
+    switch (logicValue) {
+      case LogicValue.zero:
+        return Colors.red;
+      case LogicValue.one:
+        return Colors.green;
+      case LogicValue.z:
+        return Colors.yellow;
+      case LogicValue.x:
+        return Colors.grey;
+    }
+  }
+
   static double alignSizeToGrid(double size, {double div = 1}) {
     return size + ((gridSize / div) - (size % (gridSize / div)));
   }
@@ -147,10 +162,9 @@ class ComponentState extends State<Component> {
   @override
   Widget build(BuildContext context) {
     if (widget.moduleType == BinarySwitch) {
-      _portOffsets['left'] = const [Offset(0, gridSize), Offset(gridSize, 0)];
+      _portOffsets['left'] = const [];
       _portOffsets['right'] = const [
-        Offset(gridSize * 2, gridSize),
-        Offset(gridSize, gridSize * 2)
+        Offset(gridSize, gridSize),
       ];
       return buttonBuildOverride();
     }
@@ -170,7 +184,10 @@ class ComponentState extends State<Component> {
 
     double leftPortsNameWidth = 0; // Width of longest input name
     for (final port in module.leftPorts) {
-      TextSpan span = TextSpan(style: portNameTextStyle, text: port.portName);
+      TextSpan span = TextSpan(
+          style: const TextStyle(
+              fontSize: portNameSize, fontFamily: 'Courier New'),
+          text: port.portName);
       TextPainter tp = TextPainter(
           text: span,
           textAlign: TextAlign.left,
@@ -182,7 +199,10 @@ class ComponentState extends State<Component> {
 
     double rightPortsNameWidth = 0; // Width of longest output name
     for (final port in module.rightPorts) {
-      TextSpan span = TextSpan(style: portNameTextStyle, text: port.portName);
+      TextSpan span = TextSpan(
+          style: const TextStyle(
+              fontSize: portNameSize, fontFamily: 'Courier New'),
+          text: port.portName);
       TextPainter tp = TextPainter(
           text: span,
           textAlign: TextAlign.right,
@@ -207,12 +227,12 @@ class ComponentState extends State<Component> {
 
     _portOffsets['left'] = [
       for (int i = 0; i < module.leftPorts.length; i++)
-        Offset(0, nameAreaHeight + (gridSize / 2) + (portHeight * i))
+        Offset(gridSize, nameAreaHeight + (gridSize / 2) + (portHeight * i))
     ];
     _portOffsets['right'] = [
       for (int i = 0; i < module.rightPorts.length; i++)
-        Offset(
-            componentWidth, nameAreaHeight + (gridSize / 2) + (portHeight * i))
+        Offset(gridSize + componentWidth,
+            nameAreaHeight + (gridSize / 2) + (portHeight * i))
     ];
 
     int numLines = max(module.leftPorts.length, module.rightPorts.length);
@@ -222,166 +242,275 @@ class ComponentState extends State<Component> {
     double componentHeight = nameAreaHeight + portAreaHeight;
 
     if (widget.moduleType == HexDisplay) {
-      return Container(
-        padding: const EdgeInsets.all(paddingSize),
-        width: alignSizeToGrid(minComponentWidth =
-            ((borderSize + paddingSize) * 2) +
-                max((leftPortsNameWidth + minCenterPadding + 150), nameWidth)),
+      return SizedBox(
+        width: alignSizeToGrid(minComponentWidth = ((borderSize + paddingSize) *
+                    2) +
+                max((leftPortsNameWidth + minCenterPadding + 150), nameWidth)) +
+            gridSize * 2,
         height: componentHeight,
-        decoration: BoxDecoration(
-            color: Colors.white, border: Border.all(width: borderSize)),
-        child: Column(
-          children: [
-            // Component Name
-            SizedBox(
-              height: nameAreaHeight - (borderSize + paddingSize),
-              child: Text(
-                module.name,
-                style: const TextStyle(
-                  fontSize: componentNameSize,
-                ),
-              ),
-            ),
-            // Inputs and Outputs
-            SizedBox(
-              height: portAreaHeight - (borderSize + paddingSize),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Input column
-                  Column(
-                    mainAxisAlignment: MainAxisAlignment.start,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      for (var port in module.ports)
-                        SizedBox(
-                          height: portHeight,
-                          child: Center(
-                              child: Text(port.portName,
-                                  style: portNameTextStyle)),
-                        )
-                    ],
-                  ),
-                  // Output column
+        child: Stack(
+          children: <Widget>[
+                for (int i = 0; i < module.leftPorts.length; i++)
                   Container(
-                    width: 150,
-                    height: portAreaHeight,
+                    width: gridSize / 4,
+                    height: 2,
                     color: Colors.black,
-                    child: FittedBox(
-                      fit: BoxFit.scaleDown,
-                      child: Stack(
-                        children: [
-                          //Creates a hex display/ nixie tube type effect
-                          for (var char in '1234567890ABCDEF'.characters)
-                            Opacity(
-                              opacity: 0.05,
-                              child: Text(
-                                char,
-                                style: const TextStyle(
-                                  fontSize: 1000,
-                                  fontFamily: 'Consolas',
-                                  color: Colors.grey,
-                                ),
-                                textAlign: TextAlign.center,
-                              ),
-                            ),
-                          Text(
-                            (module.leftPorts.any(
-                                    (element) => element.value == LogicValue.x)
-                                ? '?'
-                                : ((module.ports[0].value == LogicValue.one
-                                            ? 8
-                                            : 0) +
-                                        (module.ports[1].value == LogicValue.one
-                                            ? 4
-                                            : 0) +
-                                        (module.ports[2].value == LogicValue.one
-                                            ? 2
-                                            : 0) +
-                                        (module.ports[3].value == LogicValue.one
-                                            ? 1
-                                            : 0))
-                                    .toRadixString(16)
-                                    .toUpperCase()),
-                            style: const TextStyle(
-                                fontSize: 1000,
-                                fontFamily: 'Consolas',
-                                color: Colors.amber,
-                                shadows: [
-                                  Shadow(blurRadius: 12, color: Colors.red)
-                                ]),
-                            textAlign: TextAlign.center,
-                          ),
-                        ],
-                      ),
-                    ),
+                    margin: EdgeInsets.only(
+                        top: gridSize * (i + 2) - 1, left: gridSize * 3 / 4),
                   )
-                ],
-              ),
-            )
-          ],
+              ] +
+              <Widget>[
+                Center(
+                  child: Container(
+                    padding: const EdgeInsets.all(paddingSize),
+                    width: alignSizeToGrid(minComponentWidth =
+                        ((borderSize + paddingSize) * 2) +
+                            max((leftPortsNameWidth + minCenterPadding + 150),
+                                nameWidth)),
+                    height: componentHeight,
+                    decoration: BoxDecoration(
+                        color: Colors.white,
+                        border: Border.all(
+                            color: _selected ? Colors.blue : Colors.black,
+                            width: borderSize)),
+                    child: Column(
+                      children: [
+                        // Component Name
+                        SizedBox(
+                          height: nameAreaHeight - (borderSize + paddingSize),
+                          child: Text(
+                            module.name,
+                            style: const TextStyle(
+                              fontSize: componentNameSize,
+                            ),
+                          ),
+                        ),
+                        // Inputs and Outputs
+                        SizedBox(
+                          height: portAreaHeight - (borderSize + paddingSize),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              // Input column
+                              Column(
+                                mainAxisAlignment: MainAxisAlignment.start,
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  for (var port in module.ports)
+                                    SizedBox(
+                                      height: portHeight,
+                                      child: Center(
+                                          child: Text(port.portName,
+                                              style: TextStyle(
+                                                  fontSize: portNameSize,
+                                                  fontFamily: 'Courier New',
+                                                  color: colorMode
+                                                      ? getColor(port.value)
+                                                      : null))),
+                                    )
+                                ],
+                              ),
+                              // Output column
+                              Container(
+                                width: 150,
+                                height: portAreaHeight,
+                                color: Colors.black,
+                                child: FittedBox(
+                                  fit: BoxFit.scaleDown,
+                                  child: Stack(
+                                    children: [
+                                      //Creates a hex display/ nixie tube type effect
+                                      for (var char
+                                          in '1234567890ABCDEF'.characters)
+                                        Opacity(
+                                          opacity: 0.05,
+                                          child: Text(
+                                            char,
+                                            style: const TextStyle(
+                                              fontSize: 1000,
+                                              fontFamily: 'Consolas',
+                                              color: Colors.grey,
+                                            ),
+                                            textAlign: TextAlign.center,
+                                          ),
+                                        ),
+                                      Text(
+                                        (module.leftPorts.any((element) =>
+                                                element.value == LogicValue.x)
+                                            ? '?'
+                                            : ((module.ports[0].value ==
+                                                            LogicValue.one
+                                                        ? 8
+                                                        : 0) +
+                                                    (module.ports[1].value ==
+                                                            LogicValue.one
+                                                        ? 4
+                                                        : 0) +
+                                                    (module.ports[2].value ==
+                                                            LogicValue.one
+                                                        ? 2
+                                                        : 0) +
+                                                    (module.ports[3].value ==
+                                                            LogicValue.one
+                                                        ? 1
+                                                        : 0))
+                                                .toRadixString(16)
+                                                .toUpperCase()),
+                                        style: const TextStyle(
+                                            fontSize: 1000,
+                                            fontFamily: 'Consolas',
+                                            color: Colors.amber,
+                                            shadows: [
+                                              Shadow(
+                                                  blurRadius: 12,
+                                                  color: Colors.red)
+                                            ]),
+                                        textAlign: TextAlign.center,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              )
+                            ],
+                          ),
+                        )
+                      ],
+                    ),
+                  ),
+                ),
+              ],
         ),
       );
     }
 
-    return Container(
-      padding: const EdgeInsets.all(paddingSize),
-      width: componentWidth,
+    return SizedBox(
+      width: componentWidth + gridSize * 2,
       height: componentHeight,
-      decoration: BoxDecoration(
-          color: Colors.white, border: Border.all(width: borderSize)),
-      child: Column(
-        children: [
-          // Component Name
-          SizedBox(
-            height: nameAreaHeight - (borderSize + paddingSize),
-            child: Text(
-              module.name,
-              style: const TextStyle(
-                fontSize: componentNameSize,
-              ),
-            ),
-          ),
-          // Inputs and Outputs
-          SizedBox(
-            height: portAreaHeight - (borderSize + paddingSize),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Left side column (Normally inputs)
-                Column(
-                    mainAxisAlignment: MainAxisAlignment.start,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      for (var port in module.leftPorts)
+      child: Stack(
+          children: <Widget>[
+                for (int i = 0; i < module.leftPorts.length; i++)
+                  module.leftPorts.elementAt(i).portName.contains("'")
+                      ? Container(
+                          width: gridSize / 4,
+                          height: gridSize / 4,
+                          decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              border:
+                                  Border.all(color: Colors.black, width: 2)),
+                          margin: EdgeInsets.only(
+                              top: gridSize * (i + 2) - (gridSize / 4 / 2),
+                              left: gridSize * 3 / 4),
+                        )
+                      : Container(
+                          width: gridSize / 4,
+                          height: 2,
+                          color: Colors.black,
+                          margin: EdgeInsets.only(
+                              top: gridSize * (i + 2) - 1,
+                              left: gridSize * 3 / 4),
+                        )
+              ] +
+              <Widget>[
+                for (int i = 0; i < module.rightPorts.length; i++)
+                  module.rightPorts.elementAt(i).portName.contains("'")
+                      ? Container(
+                          width: gridSize / 4,
+                          height: gridSize / 4,
+                          decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              border:
+                                  Border.all(color: Colors.black, width: 2)),
+                          margin: EdgeInsets.only(
+                              top: gridSize * (i + 2) - (gridSize / 4 / 2),
+                              left: componentWidth + gridSize),
+                        )
+                      : Container(
+                          width: gridSize / 4,
+                          height: 2,
+                          color: Colors.black,
+                          margin: EdgeInsets.only(
+                              top: gridSize * (i + 2) - 1,
+                              left: componentWidth + gridSize),
+                        )
+              ] +
+              <Widget>[
+                Center(
+                  child: Container(
+                    padding: const EdgeInsets.all(paddingSize),
+                    width: componentWidth,
+                    height: componentHeight,
+                    decoration: BoxDecoration(
+                        color: Colors.white,
+                        border: Border.all(
+                            color: _selected ? Colors.blue : Colors.black,
+                            width: borderSize)),
+                    child: Column(
+                      children: [
+                        // Component Name
                         SizedBox(
-                            width: leftPortsNameWidth,
-                            height: portHeight,
-                            child: Text(port.portName,
-                                textAlign: TextAlign.left,
-                                style: portNameTextStyle))
-                    ]),
-                // Right side column (normally outputs)
-                Column(
-                  mainAxisAlignment: MainAxisAlignment.start,
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    for (var port in module.rightPorts)
-                      SizedBox(
-                          width: rightPortsNameWidth,
-                          height: portHeight,
-                          child: Text(port.portName,
-                              textAlign: TextAlign.right,
-                              style: portNameTextStyle))
-                  ],
+                          height: nameAreaHeight - (borderSize + paddingSize),
+                          child: Text(
+                            module.name,
+                            style: const TextStyle(
+                              fontSize: componentNameSize,
+                            ),
+                          ),
+                        ),
+                        // Inputs and Outputs
+                        SizedBox(
+                          height: portAreaHeight - (borderSize + paddingSize),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              // Left side column (Normally inputs)
+                              Column(
+                                  mainAxisAlignment: MainAxisAlignment.start,
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    for (var port in module.leftPorts)
+                                      SizedBox(
+                                          width: leftPortsNameWidth,
+                                          height: portHeight,
+                                          child: Text(port.portName,
+                                              textAlign: TextAlign.left,
+                                              style: TextStyle(
+                                                  fontSize: portNameSize,
+                                                  fontFamily: 'Courier New',
+                                                  color: colorMode
+                                                      ? getColor(port.value)
+                                                      : null)))
+                                  ]),
+                              // Right side column (normally outputs)
+                              Column(
+                                mainAxisAlignment: MainAxisAlignment.start,
+                                crossAxisAlignment: CrossAxisAlignment.end,
+                                children: [
+                                  for (var port in module.rightPorts)
+                                    SizedBox(
+                                        width: rightPortsNameWidth,
+                                        height: portHeight,
+                                        child: Text(
+                                          port.portName,
+                                          textAlign: TextAlign.right,
+                                          style: TextStyle(
+                                              fontSize: portNameSize,
+                                              fontFamily: 'Courier New',
+                                              color: colorMode
+                                                  ? getColor(port.value)
+                                                  : null),
+                                        ))
+                                ],
+                              ),
+                            ],
+                          ),
+                        )
+                      ],
+                    ),
+                  ),
                 ),
-              ],
-            ),
-          )
-        ],
-      ),
+              ]),
     );
   }
 
@@ -389,49 +518,42 @@ class ComponentState extends State<Component> {
     return SizedBox(
       height: gridSize * 2,
       width: gridSize * 2,
-      child: Stack(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
+          SizedBox(
+              width: gridSize,
+              height: gridSize,
+              child: ElevatedButton(
+                onPressed: () {
+                  for (var port in module.ports) {
+                    _toggleInputValue(port);
+                  }
+                },
+                style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.white,
+                    foregroundColor: Colors.black,
+                    side: BorderSide(
+                        color: _selected ? Colors.blue : Colors.black),
+                    shape: const RoundedRectangleBorder(
+                        borderRadius: BorderRadius.zero),
+                    padding: EdgeInsets.zero),
+                child: Text(
+                  module.ports[0].value == LogicValue.one
+                      ? 'H'
+                      : module.ports[0].value == LogicValue.zero
+                          ? 'L'
+                          : module.ports[0].value == LogicValue.z
+                              ? 'Z'
+                              : 'X',
+                  style: const TextStyle(
+                      fontSize: 32, fontWeight: FontWeight.w900),
+                ),
+              )),
           Container(
-            width: gridSize * 2,
+            width: gridSize / 4,
             height: 2,
             color: Colors.black,
-            margin: const EdgeInsets.only(top: gridSize - 1),
-          ),
-          Container(
-            width: 2,
-            height: gridSize * 2,
-            color: Colors.black,
-            margin: const EdgeInsets.only(left: gridSize - 1),
-          ),
-          Center(
-            child: SizedBox(
-                width: gridSize,
-                height: gridSize,
-                child: ElevatedButton(
-                  onPressed: () {
-                    for (var port in module.ports) {
-                      _toggleInputValue(port);
-                    }
-                  },
-                  style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.white,
-                      foregroundColor: Colors.black,
-                      side: const BorderSide(),
-                      shape: const RoundedRectangleBorder(
-                          borderRadius: BorderRadius.zero),
-                      padding: EdgeInsets.zero),
-                  child: Text(
-                    module.ports[0].value == LogicValue.one
-                        ? 'H'
-                        : module.ports[0].value == LogicValue.zero
-                            ? 'L'
-                            : module.ports[0].value == LogicValue.z
-                                ? 'Z'
-                                : 'X',
-                    style: const TextStyle(
-                        fontSize: 32, fontWeight: FontWeight.w900),
-                  ),
-                )),
           ),
         ],
       ),

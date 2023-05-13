@@ -9,6 +9,7 @@ import 'waveform.dart';
 import 'package:resizable_widget/resizable_widget.dart';
 
 const double gridSize = 40;
+var colorMode = false;
 
 Duration tickRate = const Duration(milliseconds: 1);
 
@@ -266,7 +267,15 @@ class _MainPageState extends State<MainPage> {
             color: editorCanvasKey.currentState?.mode == CanvasMode.removeProbe
                 ? Colors.blue
                 : null,
-          )
+          ),
+          const Spacer(),
+          IconButton(
+            onPressed: () => setState(() => colorMode = !colorMode),
+            icon: const Icon(Icons.color_lens),
+            iconSize: toolbarIconSize,
+            tooltip: 'Color Mode',
+            color: colorMode ? Colors.blue : null,
+          ),
         ],
       ),
     );
