@@ -340,7 +340,8 @@ class SimulationUpdater {
       element.call();
     }
     queue.removeFirst();
-    updateWaveformAnalyzer();
+    print('help');
+    newUpdateWaveformAnalyzer();
   }
 
   static void submitStage(String moduleKey) {

@@ -169,67 +169,23 @@ class EditorCanvasState extends State<EditorCanvas> {
               case CanvasMode.draw:
                 break;
               case CanvasMode.addProbe:
-                // Go through all the components
-                for (final Map<String, dynamic> component in _components) {
-                  ComponentState componentState =
-                      component['key'].currentState!;
-
-                  // get offsets of all ports
-                  Map<String, List<Offset>> componentPortOffsets =
-                      Map.from(componentState.portOffsets);
-                  componentPortOffsets.forEach((side, portOffsets) =>
-                      componentPortOffsets[side] = [
-                        for (final Offset portOffset in portOffsets)
-                          component['offset'] + portOffset
-                      ]);
-
-                  // If any of the left/right port positions is equal to where we tapped,
-                  // Add that component to the probedPorts map
-                  if (componentPortOffsets['right']!.contains(tapOffset)) {
-                    probedPorts[component['key']] =
-                        componentState.module.rightPorts.elementAt(
-                            componentPortOffsets['right']!.indexOf(tapOffset));
-                    return;
-                  } else if (componentPortOffsets['left']!
-                      .contains(tapOffset)) {
-                    probedPorts[component['key']] =
-                        componentState.module.leftPorts.elementAt(
-                            componentPortOffsets['left']!.indexOf(tapOffset));
-                  }
-                }
+                Offset tapOffset = _snapToGrid(
+                    Offset(details.localPosition.dx, details.localPosition.dy));
+                Map<String, dynamic>? component = findComponentAt(tapOffset);
+                ComponentState componentState = component?['key'].currentState!;
+                int portIndex = componentState.portIndexAt(tapOffset - component?['offset']) ?? 0;
+                newProbedPorts[componentState]?.add(componentState.module.ports[portIndex].key);
                 break;
               case CanvasMode.removeProbe:
-                // Go through all the components
-                for (final Map<String, dynamic> component in _components) {
-                  if (probedPorts.containsKey(component['key'])) {
-                    ComponentState componentState =
-                        component['key'].currentState!;
-
-                    // get offsets of all ports
-                    Map<String, List<Offset>> componentPortOffsets =
-                        Map.from(componentState.portOffsets);
-                    componentPortOffsets.forEach((side, portOffsets) =>
-                        componentPortOffsets[side] = [
-                          for (final Offset portOffset in portOffsets)
-                            component['offset'] + portOffset
-                        ]);
-
-                    // If any of the left/right port positions is equal to where we tapped,
-                    // Remove the probed component from the map
-                    if (componentPortOffsets['right']!.contains(tapOffset)) {
-                      probedPorts.remove(component['key']);
-                      waveformAnalyzerKey.currentState!
-                          .removeWaveform(component['key']);
-                      return;
-                    } else if (componentPortOffsets['left']!
-                        .contains(tapOffset)) {
-                      probedPorts.remove(component['key']);
-                      waveformAnalyzerKey.currentState!
-                          .removeWaveform(component['key']);
-                      return;
-                    }
-                  }
-                }
+                Offset tapOffset = _snapToGrid(
+                    Offset(details.localPosition.dx, details.localPosition.dy));
+                Map<String, dynamic>? component = findComponentAt(tapOffset);
+                ComponentState componentState = component?['key'].currentState!;
+                int portIndex = componentState.portIndexAt(tapOffset - component?['offset']) ?? 0;
+                String portKey = componentState.module.ports[portIndex].key;
+                newProbedPorts.remove(portKey);
+                waveformAnalyzerKey.currentState!
+                  .newAddWaveform(component?['key'], portKey);
                 break;
             }
           },

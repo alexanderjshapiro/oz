@@ -9,18 +9,19 @@ const BorderSide blackBorder = BorderSide(color: Colors.black, width: 2);
 const BorderSide zBorder = BorderSide(color: Colors.red);
 const BorderSide xBorder = BorderSide(color: Colors.grey);
 
-void updateWaveformAnalyzer() {
+void newUpdateWaveformAnalyzer() {
   if (editorCanvasKey.currentState!.components.isNotEmpty &&
-      probedPorts.isNotEmpty) {
+      newProbedPorts.isNotEmpty) {
     // Update current output port states
-    probedPorts.forEach((key, value) {
-      currentComponentStates[key] = (value.value);
-      // Add the component output port if it hasn't been added to the analyzer yet
-      if (!waveformAnalyzerKey.currentState!.getWaveforms().containsKey(key)) {
-        waveformAnalyzerKey.currentState!.addWaveform(key);
+    newProbedPorts.forEach((componentKey, probedPortKeyList) {
+      List<PhysicalPort> modulePorts = componentKey.currentState!.module.ports;
+      for (String portKey in probedPortKeyList) {
+        PhysicalPort probedPort = modulePorts.firstWhere((port) => port.key == portKey);
+        newCurrentPortStates[portKey] = probedPort.value;
       }
     });
-    waveformAnalyzerKey.currentState!.updateWaveforms(currentComponentStates);
+    debugPrint('updating analyzer');
+    waveformAnalyzerKey.currentState!.newUpdateWaveforms(newCurrentPortStates);
   }
 }
 
@@ -94,6 +95,7 @@ class WaveformAnalyzer extends StatefulWidget {
 
 class WaveformAnalyzerState extends State<WaveformAnalyzer> {
   final Map<GlobalKey<ComponentState>, List<LogicValue>> _waveforms = {};
+  final Map<GlobalKey<ComponentState>, Map<String, List<LogicValue>>> _newWaveforms = {};
   final scrollController = ScrollController();
 
   @override
@@ -101,34 +103,44 @@ class WaveformAnalyzerState extends State<WaveformAnalyzer> {
     super.initState();
   }
 
-  void addWaveform(GlobalKey<ComponentState> componentKey) {
+  void newAddWaveform(GlobalKey<ComponentState> componentKey, String portKey) {
     setState(() {
-      if (_waveforms.isNotEmpty) {
-        _waveforms[componentKey] = [];
+      if (_newWaveforms.isNotEmpty) {
+        _newWaveforms[componentKey]?[portKey] = [];
         // Find the longest list
         List<LogicValue> longestList = [];
-        // This breaks everything if there's only one element in _waveforms
-        if (_waveforms.length > 1) {
-          longestList = _waveforms.values.reduce((value, element) =>
-              value.length > element.length ? value : element);
+        int maxLength = 0;
+        if (_newWaveforms.length > 1) {
+        for (var componentData in _newWaveforms.values) {
+          for (var list in componentData.values) {
+            if (list.length > maxLength) {
+              maxLength = list.length;
+              longestList = list;
+            }
+          }
+        }
         } else {
-          longestList = _waveforms.values.first;
+        _newWaveforms[componentKey]?.values.first;
         }
 
         // Fill the new component list with LogicValue.zero
         // so that the new waveform gets displayed properly
         for (int i = 0; i < longestList.length; i++) {
-          _waveforms[componentKey]!.add(LogicValue.x);
+          _newWaveforms[componentKey]?[portKey]?.add(LogicValue.x);
         }
       } else {
-        _waveforms[componentKey] = [];
+        _newWaveforms[componentKey]?[portKey] = [];
       }
     });
   }
 
-  void removeWaveform(GlobalKey<ComponentState> componentKey) {
+  void newRemoveWaveforms(GlobalKey<ComponentState> componentKey, String portKey) {
     setState(() {
-      _waveforms.remove(componentKey);
+      _newWaveforms[componentKey]?.remove(portKey);
+      bool waveformsIsEmpty = _newWaveforms[componentKey]?.isEmpty ?? false;
+      if (waveformsIsEmpty) {
+        _newWaveforms.remove(componentKey);
+      }
     });
   }
 
@@ -138,23 +150,28 @@ class WaveformAnalyzerState extends State<WaveformAnalyzer> {
     });
   }
 
-  void updateWaveforms(Map<GlobalKey<ComponentState>, LogicValue> newStates) {
+  void newUpdateWaveforms(Map<String, LogicValue> newStates) {
     setState(() {
-      newStates.forEach((key, value) {
-        _waveforms[key]?.add(value);
+      _newWaveforms.forEach((componentKey, ports) {
+        ports.forEach((portKey, _) {
+          LogicValue newState = newStates[portKey] ?? LogicValue.x;
+          _newWaveforms[componentKey]![portKey]?.add(newState);
+        });
       });
     });
   }
 
-  Widget getComponentName(GlobalKey<ComponentState> componentKey) {
+  Widget newGetComponetName(GlobalKey<ComponentState> componentKey, String portKey) {
     String name = componentKey.currentState!.module.name;
-    String port = probedPorts[componentKey]!.portName;
+    List<PhysicalPort> ports = componentKey.currentState!.module.ports;
+    PhysicalPort port = ports.firstWhere((port) => port.key == portKey);
+    String portName = port.portName;
     return SizedBox(
       height: 50,
       child: Container (
         child: Column(children: [
           Text(name, style: const TextStyle(fontSize: 16)), 
-          Text(port, style: const TextStyle(fontSize: 16)),
+          Text(portName, style: const TextStyle(fontSize: 16)),
           ],
         )
       ),
@@ -171,14 +188,16 @@ class WaveformAnalyzerState extends State<WaveformAnalyzer> {
     List<Widget> waveformNames = [];
 
     int count = 0;
-    _waveforms.forEach((key, value) {
-      waveformWidgets.add(WaveformGraph(waveform: value));
-      waveformNames.add(getComponentName(key));
-      if (count < _waveforms.length - 1) {
-        waveformWidgets.add(const SizedBox(height: 10));
-        waveformNames.add(const SizedBox(height: 10));
-      }
-      count++;
+    _newWaveforms.forEach((componentKey, portStates) {
+      portStates.forEach((portKey, states) {
+        waveformWidgets.add(WaveformGraph(waveform: states));
+        waveformNames.add(newGetComponetName(componentKey, portKey));
+        if (count < _newWaveforms.length - 1) {
+          waveformWidgets.add(const SizedBox(height: 10));
+          waveformNames.add(const SizedBox(height: 10));
+        }
+        count++;
+      });
     });
 
     //Update the position of the scrollbar must occur after the widget is updated
