@@ -1,4 +1,3 @@
-import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'logic.dart';
 import 'package:flutter/services.dart';
@@ -7,6 +6,7 @@ import 'dart:async';
 import 'editor_canvas.dart';
 import 'waveform.dart';
 import 'package:resizable_widget/resizable_widget.dart';
+import 'package:flutter/foundation.dart';
 
 const double gridSize = 40;
 var colorMode = false;
@@ -15,12 +15,13 @@ Duration tickRate = const Duration(milliseconds: 1);
 
 Map<GlobalKey<ComponentState>, LogicValue> currentComponentStates = {};
 Map<GlobalKey<ComponentState>, PhysicalPort> probedPorts = {};
+final FocusNode globalFocus = FocusNode();
 
 void main() {
   // TODO: Enable this code section as a fail safe
   // If we get an error the program just restarts.
   // ignore: dead_code
-  if (false) {
+  if (!kDebugMode) {
     bool goodExit = false;
     while (!goodExit) {
       try {
@@ -161,122 +162,153 @@ class _MainPageState extends State<MainPage> {
   }
 
   Widget toolbar() {
-    return Container(
-      decoration: const BoxDecoration(
-          border: Border(bottom: BorderSide(color: Colors.black))),
-      child: Row(
-        children: [
-          IconButton(
-            onPressed: () => setState(
-                () => editorCanvasKey.currentState!.mode = CanvasMode.select),
-            icon: const Icon(Icons.highlight_alt),
-            iconSize: toolbarIconSize,
-            tooltip: 'Select Components',
-            color: editorCanvasKey.currentState?.mode == CanvasMode.select
-                ? Colors.blue
-                : null,
-          ),
-          IconButton(
-            onPressed: () => setState(
-                () => editorCanvasKey.currentState!.mode = CanvasMode.draw),
-            icon: const Icon(Icons.mode),
-            iconSize: toolbarIconSize,
-            tooltip: 'Draw Wires',
-            color: editorCanvasKey.currentState?.mode == CanvasMode.draw
-                ? Colors.blue
-                : null,
-          ),
-          IconButton(
-            onPressed: () =>
-                setState(() => editorCanvasKey.currentState!.removeSelected()),
-            icon: const Icon(Icons.delete),
-            iconSize: toolbarIconSize,
-            tooltip: 'Remove Selected',
-          ),
-          IconButton(
-            onPressed: () => setState(() {
-              _scrollControllerHorizontal.jumpTo(0);
-              _scrollControllerVertical.jumpTo(0);
-              editorCanvasKey.currentState!.clear();
-              currentComponentStates.clear();
-              waveformAnalyzerKey.currentState!.clearWaveforms();
-              probedPorts.clear();
-            }),
-            icon: const Icon(Icons.restart_alt),
-            iconSize: toolbarIconSize,
-            tooltip: 'Reset Canvas',
-          ),
-          const SizedBox(width: 40),
-          IconButton(
-            onPressed: () =>
-                _isRunning ? _stopSimulation() : _startSimulation(),
-            icon: _isRunning
-                ? const Icon(Icons.stop_circle_outlined)
-                : const Icon(Icons.play_circle_outline),
-            iconSize: toolbarIconSize,
-            tooltip: _isRunning ? 'Stop Simulation' : 'Run Simulation',
-          ),
-          SizedBox(
-            height: toolbarIconSize,
-            width: 1.5 * toolbarIconSize,
-            child: Tooltip(
-              message: 'Simulation Speed (ms)',
-              child: TextFormField(
-                keyboardType: TextInputType.number,
-                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                initialValue: '${tickRate.inMilliseconds}',
-                textAlign: TextAlign.center,
-                decoration: const InputDecoration(
-                  suffixText: 'ms',
-                  border: OutlineInputBorder(),
+    return RawKeyboardListener(
+      focusNode: globalFocus,
+      onKey: (RawKeyEvent event) {
+        if (event is RawKeyDownEvent &&
+            event.logicalKey == LogicalKeyboardKey.keyD &&
+            !event.data.isControlPressed) {
+          setState(() {
+            editorCanvasKey.currentState?.deselectSelected();
+            editorCanvasKey.currentState!.mode = CanvasMode.draw;
+          });
+        } else if (event is RawKeyDownEvent &&
+            event.logicalKey == LogicalKeyboardKey.keyS &&
+            !event.data.isControlPressed) {
+          setState(
+              () => editorCanvasKey.currentState!.mode = CanvasMode.select);
+        } else if (event is RawKeyDownEvent &&
+            event.logicalKey == LogicalKeyboardKey.keyP &&
+            !event.data.isControlPressed) {
+          setState(
+              () => editorCanvasKey.currentState!.mode = CanvasMode.addProbe);
+        } else if (event is RawKeyDownEvent &&
+            event.logicalKey == LogicalKeyboardKey.keyC &&
+            !event.data.isControlPressed) {
+          setState(() => colorMode = !colorMode);
+        }
+      },
+      child: Container(
+        decoration: const BoxDecoration(
+            border: Border(bottom: BorderSide(color: Colors.black))),
+        child: Row(
+          children: [
+            IconButton(
+              onPressed: () => setState(
+                  () => editorCanvasKey.currentState!.mode = CanvasMode.select),
+              icon: const Icon(Icons.highlight_alt),
+              iconSize: toolbarIconSize,
+              tooltip: 'Select Components',
+              color: editorCanvasKey.currentState?.mode == CanvasMode.select
+                  ? Colors.blue
+                  : null,
+            ),
+            IconButton(
+              onPressed: () => setState(() {
+                editorCanvasKey.currentState?.deselectSelected();
+                editorCanvasKey.currentState!.mode = CanvasMode.draw;
+              }),
+              icon: const Icon(Icons.mode),
+              iconSize: toolbarIconSize,
+              tooltip: 'Draw Wires',
+              color: editorCanvasKey.currentState?.mode == CanvasMode.draw
+                  ? Colors.blue
+                  : null,
+            ),
+            IconButton(
+              onPressed: () => setState(
+                  () => editorCanvasKey.currentState!.removeSelected()),
+              icon: const Icon(Icons.delete),
+              iconSize: toolbarIconSize,
+              tooltip: 'Remove Selected',
+            ),
+            IconButton(
+              onPressed: () => setState(() {
+                _scrollControllerHorizontal.jumpTo(0);
+                _scrollControllerVertical.jumpTo(0);
+                editorCanvasKey.currentState!.clear();
+                currentComponentStates.clear();
+                waveformAnalyzerKey.currentState!.clearWaveforms();
+                probedPorts.clear();
+              }),
+              icon: const Icon(Icons.restart_alt),
+              iconSize: toolbarIconSize,
+              tooltip: 'Reset Canvas',
+            ),
+            const SizedBox(width: 40),
+            IconButton(
+              onPressed: () =>
+                  _isRunning ? _stopSimulation() : _startSimulation(),
+              icon: _isRunning
+                  ? const Icon(Icons.stop_circle_outlined)
+                  : const Icon(Icons.play_circle_outline),
+              iconSize: toolbarIconSize,
+              tooltip: _isRunning ? 'Stop Simulation' : 'Run Simulation',
+            ),
+            SizedBox(
+              height: toolbarIconSize,
+              width: 1.5 * toolbarIconSize,
+              child: Tooltip(
+                message: 'Simulation Speed (ms)',
+                child: TextFormField(
+                  keyboardType: TextInputType.number,
+                  inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                  initialValue: '${tickRate.inMilliseconds}',
+                  textAlign: TextAlign.center,
+                  decoration: const InputDecoration(
+                    suffixText: 'ms',
+                    border: OutlineInputBorder(),
+                  ),
+                  onChanged: (String value) {
+                    _stopSimulation();
+                    int newtick =
+                        int.tryParse(value) ?? tickRate.inMilliseconds;
+                    tickRate = Duration(milliseconds: newtick);
+                  },
                 ),
-                onChanged: (String value) {
-                  _stopSimulation();
-                  int newtick = int.tryParse(value) ?? tickRate.inMilliseconds;
-                  tickRate = Duration(milliseconds: newtick);
-                },
               ),
             ),
-          ),
-          IconButton(
-            onPressed: () {
-              _stopSimulation();
-              SimulationUpdater.tick();
-            },
-            icon: const Icon(Icons.slow_motion_video_rounded),
-            iconSize: toolbarIconSize,
-            tooltip: 'Step Simulation',
-          ),
-          const SizedBox(width: 40),
-          IconButton(
-            onPressed: () => setState(
-                () => editorCanvasKey.currentState!.mode = CanvasMode.addProbe),
-            icon: const Icon(Icons.near_me),
-            iconSize: toolbarIconSize,
-            tooltip: 'Add Port Waveform',
-            color: editorCanvasKey.currentState?.mode == CanvasMode.addProbe
-                ? Colors.blue
-                : null,
-          ),
-          IconButton(
-            onPressed: () => setState(() =>
-                editorCanvasKey.currentState!.mode = CanvasMode.removeProbe),
-            icon: const Icon(Icons.near_me_disabled),
-            iconSize: toolbarIconSize,
-            tooltip: 'Remove Port Waveform',
-            color: editorCanvasKey.currentState?.mode == CanvasMode.removeProbe
-                ? Colors.blue
-                : null,
-          ),
-          const Spacer(),
-          IconButton(
-            onPressed: () => setState(() => colorMode = !colorMode),
-            icon: const Icon(Icons.color_lens),
-            iconSize: toolbarIconSize,
-            tooltip: 'Color Mode',
-            color: colorMode ? Colors.blue : null,
-          ),
-        ],
+            IconButton(
+              onPressed: () {
+                _stopSimulation();
+                SimulationUpdater.tick();
+              },
+              icon: const Icon(Icons.slow_motion_video_rounded),
+              iconSize: toolbarIconSize,
+              tooltip: 'Step Simulation',
+            ),
+            const SizedBox(width: 40),
+            IconButton(
+              onPressed: () => setState(() =>
+                  editorCanvasKey.currentState!.mode = CanvasMode.addProbe),
+              icon: const Icon(Icons.near_me),
+              iconSize: toolbarIconSize,
+              tooltip: 'Add Port Waveform',
+              color: editorCanvasKey.currentState?.mode == CanvasMode.addProbe
+                  ? Colors.blue
+                  : null,
+            ),
+            IconButton(
+              onPressed: () => setState(() =>
+                  editorCanvasKey.currentState!.mode = CanvasMode.removeProbe),
+              icon: const Icon(Icons.near_me_disabled),
+              iconSize: toolbarIconSize,
+              tooltip: 'Remove Port Waveform',
+              color:
+                  editorCanvasKey.currentState?.mode == CanvasMode.removeProbe
+                      ? Colors.blue
+                      : null,
+            ),
+            const Spacer(),
+            IconButton(
+              onPressed: () => setState(() => colorMode = !colorMode),
+              icon: const Icon(Icons.color_lens),
+              iconSize: toolbarIconSize,
+              tooltip: 'Color Mode',
+              color: colorMode ? Colors.blue : null,
+            ),
+          ],
+        ),
       ),
     );
   }
