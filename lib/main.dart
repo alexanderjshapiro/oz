@@ -1,3 +1,4 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'logic.dart';
 import 'package:flutter/services.dart';
@@ -71,6 +72,22 @@ class _MainPageState extends State<MainPage> {
     _startSimulation();
     editorCanvasKey = GlobalKey<EditorCanvasState>();
     waveformAnalyzerKey = GlobalKey<WaveformAnalyzerState>();
+    _scrollControllerHorizontal.addListener(() {
+      if (_scrollControllerHorizontal.position.pixels ==
+          _scrollControllerHorizontal.position.maxScrollExtent) {
+        editorCanvasKey.currentState?.setState(() {
+          editorCanvasKey.currentState?.tilingHorizontal += 1;
+        });
+      }
+    });
+    _scrollControllerVertical.addListener(() {
+      if (_scrollControllerVertical.position.pixels ==
+          _scrollControllerVertical.position.maxScrollExtent) {
+        editorCanvasKey.currentState?.setState(() {
+          editorCanvasKey.currentState?.tilingVertical += 1;
+        });
+      }
+    });
   }
 
   @override
@@ -98,23 +115,30 @@ class _MainPageState extends State<MainPage> {
                                 thumbVisibility: true,
                                 trackVisibility: true,
                                 controller: _scrollControllerVertical,
-                                child: SingleChildScrollView(
-                                  controller: _scrollControllerVertical,
-                                  scrollDirection: Axis.vertical,
-                                  child: Scrollbar(
-                                    thumbVisibility: true,
-                                    trackVisibility: true,
-                                    scrollbarOrientation:
-                                        ScrollbarOrientation.top,
-                                    controller: _scrollControllerHorizontal,
-                                    child: SingleChildScrollView(
-                                        controller: _scrollControllerHorizontal,
-                                        scrollDirection: Axis.horizontal,
-                                        child: SizedBox(
-                                            width: gridSize * 100,
-                                            height: gridSize * 100,
+                                child: ScrollConfiguration(
+                                  behavior: ScrollConfiguration.of(context)
+                                      .copyWith(dragDevices: {}),
+                                  child: SingleChildScrollView(
+                                    controller: _scrollControllerVertical,
+                                    scrollDirection: Axis.vertical,
+                                    child: Scrollbar(
+                                      thumbVisibility: true,
+                                      trackVisibility: true,
+                                      scrollbarOrientation:
+                                          ScrollbarOrientation.top,
+                                      controller: _scrollControllerHorizontal,
+                                      child: ScrollConfiguration(
+                                        behavior:
+                                            ScrollConfiguration.of(context)
+                                                .copyWith(dragDevices: {}),
+                                        child: SingleChildScrollView(
+                                            controller:
+                                                _scrollControllerHorizontal,
+                                            scrollDirection: Axis.horizontal,
                                             child: EditorCanvas(
-                                                key: editorCanvasKey))),
+                                                key: editorCanvasKey)),
+                                      ),
+                                    ),
                                   ),
                                 ),
                               ),
@@ -170,6 +194,8 @@ class _MainPageState extends State<MainPage> {
           ),
           IconButton(
             onPressed: () => setState(() {
+              _scrollControllerHorizontal.jumpTo(0);
+              _scrollControllerVertical.jumpTo(0);
               editorCanvasKey.currentState!.clear();
               currentComponentStates.clear();
               waveformAnalyzerKey.currentState!.clearWaveforms();
@@ -376,7 +402,12 @@ class _MainPageState extends State<MainPage> {
                     )),
                 collapsedTextColor: Colors.blueGrey,
                 children: [
-                  for (var moduleType in [SN74LS245, SN74LS373, SN74LS138, SRAM6116])
+                  for (var moduleType in [
+                    SN74LS245,
+                    SN74LS373,
+                    SN74LS138,
+                    SRAM6116
+                  ])
                     Draggable(
                       data: Component(
                         moduleType: moduleType,
