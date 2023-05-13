@@ -245,48 +245,220 @@ class _MainPageState extends State<MainPage> {
         padding: const EdgeInsets.all(padding),
         child: ListView(
           children: [
-            for (var moduleType in gateNames.keys)
-              Draggable(
-                data: Component(
-                  moduleType: moduleType,
-                ),
-                feedback: DefaultTextStyle(
-                    style: const TextStyle(
-                        color: Colors.black,
-                        fontWeight: FontWeight.normal,
-                        decoration: TextDecoration.none),
-                    child: ComponentPreview(
-                      component: Component(
+            ExpansionTile(
+                title: const Text('Interface',
+                    style: TextStyle(
+                      fontSize: 24,
+                    )),
+                collapsedTextColor: Colors.blueGrey,
+                children: [
+                  for (var moduleType in [BinarySwitch, HexDisplay])
+                    Draggable(
+                      data: Component(
                         moduleType: moduleType,
                       ),
+                      feedback: DefaultTextStyle(
+                          style: const TextStyle(
+                              color: Colors.black,
+                              fontWeight: FontWeight.normal,
+                              decoration: TextDecoration.none),
+                          child: ComponentPreview(
+                            component: Component(
+                              moduleType: moduleType,
+                            ),
+                          )),
+                      childWhenDragging: Text(
+                        gateNames[moduleType]!,
+                        style:
+                            const TextStyle(fontSize: 24, color: Colors.grey),
+                      ),
+                      child: Text(
+                        gateNames[moduleType]!,
+                        style: const TextStyle(
+                          fontSize: 24,
+                        ),
+                      ),
+                      onDragEnd: (DraggableDetails details) {
+                        setState(() {
+                          editorCanvasKey.currentState!.addComponent(moduleType,
+                              offset: Offset(
+                                  details.offset.dx +
+                                      _scrollControllerHorizontal.offset,
+                                  details.offset.dy +
+                                      _scrollControllerVertical.offset -
+                                      toolbarIconSize));
+                          for (final component
+                              in editorCanvasKey.currentState!.components) {
+                            currentComponentStates.putIfAbsent(
+                                component['key'], () => LogicValue.zero);
+                          }
+                        });
+                      },
+                    ),
+                ]),
+            ExpansionTile(
+                title: const Text('Gates',
+                    style: TextStyle(
+                      fontSize: 24,
                     )),
-                childWhenDragging: Text(
-                  gateNames[moduleType]!,
-                  style: const TextStyle(fontSize: 24, color: Colors.grey),
-                ),
-                child: Text(
-                  gateNames[moduleType]!,
-                  style: const TextStyle(
-                    fontSize: 24,
-                  ),
-                ),
-                onDragEnd: (DraggableDetails details) {
-                  setState(() {
-                    editorCanvasKey.currentState!.addComponent(moduleType,
-                        offset: Offset(
-                            details.offset.dx +
-                                _scrollControllerHorizontal.offset,
-                            details.offset.dy +
-                                _scrollControllerVertical.offset -
-                                toolbarIconSize));
-                    for (final component
-                        in editorCanvasKey.currentState!.components) {
-                      currentComponentStates.putIfAbsent(
-                          component['key'], () => LogicValue.zero);
-                    }
-                  });
-                },
-              ),
+                collapsedTextColor: Colors.blueGrey,
+                children: [
+                  for (var moduleType in [
+                    And2Gate,
+                    NotGate,
+                    Nor2Gate,
+                    Xor2Gate,
+                    BufferGate,
+                    TriStateBuffer,
+                    Nand2Gate,
+                    Or2Gate,
+                    Mux2Gate,
+                  ])
+                    Draggable(
+                      data: Component(
+                        moduleType: moduleType,
+                      ),
+                      feedback: DefaultTextStyle(
+                          style: const TextStyle(
+                              color: Colors.black,
+                              fontWeight: FontWeight.normal,
+                              decoration: TextDecoration.none),
+                          child: ComponentPreview(
+                            component: Component(
+                              moduleType: moduleType,
+                            ),
+                          )),
+                      childWhenDragging: Text(
+                        gateNames[moduleType]!,
+                        style:
+                            const TextStyle(fontSize: 24, color: Colors.grey),
+                      ),
+                      child: Text(
+                        gateNames[moduleType]!,
+                        style: const TextStyle(
+                          fontSize: 24,
+                        ),
+                      ),
+                      onDragEnd: (DraggableDetails details) {
+                        setState(() {
+                          editorCanvasKey.currentState!.addComponent(moduleType,
+                              offset: Offset(
+                                  details.offset.dx +
+                                      _scrollControllerHorizontal.offset,
+                                  details.offset.dy +
+                                      _scrollControllerVertical.offset -
+                                      toolbarIconSize));
+                          for (final component
+                              in editorCanvasKey.currentState!.components) {
+                            currentComponentStates.putIfAbsent(
+                                component['key'], () => LogicValue.zero);
+                          }
+                        });
+                      },
+                    ),
+                ]),
+            ExpansionTile(
+                title: const Text('ICs',
+                    style: TextStyle(
+                      fontSize: 24,
+                    )),
+                collapsedTextColor: Colors.blueGrey,
+                children: [
+                  for (var moduleType in [SN74LS245, SN74LS373, SN74LS138, SRAM6116])
+                    Draggable(
+                      data: Component(
+                        moduleType: moduleType,
+                      ),
+                      feedback: DefaultTextStyle(
+                          style: const TextStyle(
+                              color: Colors.black,
+                              fontWeight: FontWeight.normal,
+                              decoration: TextDecoration.none),
+                          child: ComponentPreview(
+                            component: Component(
+                              moduleType: moduleType,
+                            ),
+                          )),
+                      childWhenDragging: Text(
+                        gateNames[moduleType]!,
+                        style:
+                            const TextStyle(fontSize: 24, color: Colors.grey),
+                      ),
+                      child: Text(
+                        gateNames[moduleType]!,
+                        style: const TextStyle(
+                          fontSize: 24,
+                        ),
+                      ),
+                      onDragEnd: (DraggableDetails details) {
+                        setState(() {
+                          editorCanvasKey.currentState!.addComponent(moduleType,
+                              offset: Offset(
+                                  details.offset.dx +
+                                      _scrollControllerHorizontal.offset,
+                                  details.offset.dy +
+                                      _scrollControllerVertical.offset -
+                                      toolbarIconSize));
+                          for (final component
+                              in editorCanvasKey.currentState!.components) {
+                            currentComponentStates.putIfAbsent(
+                                component['key'], () => LogicValue.zero);
+                          }
+                        });
+                      },
+                    ),
+                ]),
+            ExpansionTile(
+                title: const Text('All Gates',
+                    style: TextStyle(
+                      fontSize: 24,
+                    )),
+                collapsedTextColor: Colors.blueGrey,
+                children: [
+                  for (var moduleType in gateNames.keys)
+                    Draggable(
+                      data: Component(
+                        moduleType: moduleType,
+                      ),
+                      feedback: DefaultTextStyle(
+                          style: const TextStyle(
+                              color: Colors.black,
+                              fontWeight: FontWeight.normal,
+                              decoration: TextDecoration.none),
+                          child: ComponentPreview(
+                            component: Component(
+                              moduleType: moduleType,
+                            ),
+                          )),
+                      childWhenDragging: Text(
+                        gateNames[moduleType]!,
+                        style:
+                            const TextStyle(fontSize: 24, color: Colors.grey),
+                      ),
+                      child: Text(
+                        gateNames[moduleType]!,
+                        style: const TextStyle(
+                          fontSize: 24,
+                        ),
+                      ),
+                      onDragEnd: (DraggableDetails details) {
+                        setState(() {
+                          editorCanvasKey.currentState!.addComponent(moduleType,
+                              offset: Offset(
+                                  details.offset.dx +
+                                      _scrollControllerHorizontal.offset,
+                                  details.offset.dy +
+                                      _scrollControllerVertical.offset -
+                                      toolbarIconSize));
+                          for (final component
+                              in editorCanvasKey.currentState!.components) {
+                            currentComponentStates.putIfAbsent(
+                                component['key'], () => LogicValue.zero);
+                          }
+                        });
+                      },
+                    ),
+                ]),
           ],
         ),
       ),

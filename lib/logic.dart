@@ -44,6 +44,148 @@ class NotGate extends Module {
   }
 }
 
+class BufferGate extends Module {
+  BufferGate() : super(name: 'Buffer') {
+    ports = [
+      for (int i = 0; i < 1; i++)
+        PhysicalPort(
+            portName: 'In $i',
+            module: this,
+            portLocation: PortLocation.left,
+            initalState: LogicValue.z),
+      for (int i = 0; i < 1; i++)
+        PhysicalPort(
+            portName: 'Out $i', module: this, portLocation: PortLocation.right)
+    ];
+  }
+
+  @override
+  update() {
+    ports[1].drivePort(ports[0].value);
+  }
+}
+
+class Mux2Gate extends Module {
+  Mux2Gate() : super(name: 'Mux2Gate') {
+    ports = [
+      for (int i = 0; i < 2; i++)
+        PhysicalPort(
+            portName: 'In $i',
+            module: this,
+            portLocation: PortLocation.left,
+            initalState: LogicValue.z),
+      PhysicalPort(
+          portName: 'Sel', module: this, portLocation: PortLocation.left),
+      PhysicalPort(
+          portName: 'Out', module: this, portLocation: PortLocation.right)
+    ];
+  }
+
+  @override
+  update() {
+    if (ports[2].value == LogicValue.x || ports[2].value == LogicValue.z) {
+      ports[3].drivePort(LogicValue.z);
+    }
+    ports[3].drivePort(
+        ports[2].value == LogicValue.zero ? ports[0].value : ports[1].value);
+  }
+}
+
+class SN74LS138 extends Module {
+  SN74LS138() : super(name: 'SN74LS138') {
+    ports = [
+      PhysicalPort(
+          portName: 'G1',
+          module: this,
+          portLocation: PortLocation.left,
+          initalState: LogicValue.z),
+      PhysicalPort(
+          portName: "G2A'",
+          module: this,
+          portLocation: PortLocation.left,
+          initalState: LogicValue.z),
+      PhysicalPort(
+          portName: "G2B'",
+          module: this,
+          portLocation: PortLocation.left,
+          initalState: LogicValue.z),
+      PhysicalPort(
+          portName: 'A',
+          module: this,
+          portLocation: PortLocation.left,
+          initalState: LogicValue.z),
+      PhysicalPort(
+          portName: 'B',
+          module: this,
+          portLocation: PortLocation.left,
+          initalState: LogicValue.z),
+      PhysicalPort(
+          portName: 'C',
+          module: this,
+          portLocation: PortLocation.left,
+          initalState: LogicValue.z),
+      for (int i = 0; i < 8; i++)
+        PhysicalPort(
+            portName: "Y$i'", module: this, portLocation: PortLocation.right)
+    ];
+  }
+
+  @override
+  update() {
+    if (ports.firstWhere((element) => element.portName == "G1").value !=
+        LogicValue.one || ports.firstWhere((element) => element.portName == "G2A'").value !=
+        LogicValue.zero || ports.firstWhere((element) => element.portName == "G2B'").value !=
+        LogicValue.zero) {
+      for (int i = 6; i < 14; i++) {
+        ports[i].queueDrivePort(LogicValue.one);
+      }
+      SimulationUpdater.submitStage(key);
+    }else{
+      int address = 0;
+      for (int i = 0; i < 3; i++) {
+        if (ports[i+3].value == LogicValue.one) {
+          address |= (1 << i);
+        }
+      }
+      int mask = ~(1 << address);
+      for (int i = 6; i < 14; i++) {
+        ports[i].queueDrivePort(mask & 1 == 1 ? LogicValue.one: LogicValue.zero);
+        mask >>= 1;
+      }
+      SimulationUpdater.submitStage(key);
+    }
+  }
+}
+
+class TriStateBuffer extends Module {
+  TriStateBuffer() : super(name: 'TriStateBuffer') {
+    ports = [
+      PhysicalPort(
+          portName: 'In',
+          module: this,
+          portLocation: PortLocation.left,
+          initalState: LogicValue.z),
+      PhysicalPort(
+          portName: 'En',
+          module: this,
+          portLocation: PortLocation.left,
+          initalState: LogicValue.z),
+      PhysicalPort(
+          portName: 'Out', module: this, portLocation: PortLocation.right)
+    ];
+  }
+
+  @override
+  update() {
+    if (ports.firstWhere((element) => element.portName == 'En').value ==
+        LogicValue.zero) {
+      ports[2].drivePort(LogicValue.z);
+    } else {
+      ports[2].drivePort(ports[0].value);
+    }
+  }
+}
+
 //OCTAL BUS TRANSCEIVERS WITH 3-STATE OUTPUTS
 class SN74LS245 extends Module {
   SN74LS245() : super(name: 'SN74LS245') {
@@ -265,6 +407,78 @@ class Nor2Gate extends Module {
   }
 }
 
+class Or2Gate extends Module {
+  Or2Gate() : super(name: 'Or2Gate') {
+    ports = [
+      for (int i = 0; i < 2; i++)
+        PhysicalPort(
+            portName: 'In $i',
+            module: this,
+            portLocation: PortLocation.left,
+            initalState: LogicValue.z),
+      for (int i = 0; i < 1; i++)
+        PhysicalPort(
+            portName: 'Out $i',
+            module: this,
+            portLocation: PortLocation.right,
+            initalState: LogicValue.x)
+    ];
+  }
+
+  @override
+  update() {
+    ports[2].drivePort(ports[0].value | ports[1].value);
+  }
+}
+
+class And2Gate extends Module {
+  And2Gate() : super(name: 'And2Gate') {
+    ports = [
+      for (int i = 0; i < 2; i++)
+        PhysicalPort(
+            portName: 'In $i',
+            module: this,
+            portLocation: PortLocation.left,
+            initalState: LogicValue.z),
+      for (int i = 0; i < 1; i++)
+        PhysicalPort(
+            portName: 'Out $i',
+            module: this,
+            portLocation: PortLocation.right,
+            initalState: LogicValue.x)
+    ];
+  }
+
+  @override
+  update() {
+    ports[2].drivePort((ports[0].value & ports[1].value));
+  }
+}
+
+class Nand2Gate extends Module {
+  Nand2Gate() : super(name: 'Nand2Gate') {
+    ports = [
+      for (int i = 0; i < 2; i++)
+        PhysicalPort(
+            portName: 'In $i',
+            module: this,
+            portLocation: PortLocation.left,
+            initalState: LogicValue.z),
+      for (int i = 0; i < 1; i++)
+        PhysicalPort(
+            portName: 'Out $i',
+            module: this,
+            portLocation: PortLocation.right,
+            initalState: LogicValue.x)
+    ];
+  }
+
+  @override
+  update() {
+    ports[2].drivePort(~(ports[0].value & ports[1].value));
+  }
+}
+
 class Xor2GateRev extends Module {
   Xor2GateRev() : super(name: 'Xor2GateRev') {
     ports = [
@@ -341,6 +555,14 @@ class HexDisplay extends Module {
 
   @override
   update() {}
+}
+
+class LoadedModule extends Module {
+  LoadedModule(String componentName) : super(name: componentName) {
+    // TODO Im not sure how to do this, it turns out simulating actual verilog is not an easy task to do
+    // Rohd can connect to an external simulator or verilator can convert verilog to c code,
+    // but these solutions arn't very cross platform
+  }
 }
 
 class SimulationUpdater {

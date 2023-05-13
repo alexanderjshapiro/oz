@@ -16,6 +16,14 @@ Map<String, Function> gateTypes = {
   'SN74LS373': () => SN74LS373(),
   'SN74LS245': () => SN74LS245(),
   'SRAM6116': () => SRAM6116(),
+  'Buffer': () => BufferGate(),
+  'TriBuffer': () => TriStateBuffer(),
+  'And2Gate': () => And2Gate(),
+  'Nand2Gate': () => Nand2Gate(),
+  'Or2Gate': () => Or2Gate(),
+  'Mux2Gate': () => Mux2Gate(),
+  'SN74LS138': () => SN74LS138(),
+
 };
 
 Map<Type, String> gateNames = {
@@ -27,6 +35,13 @@ Map<Type, String> gateNames = {
   SN74LS373: 'SN74LS373',
   SN74LS245: 'SN74LS245',
   SRAM6116: 'SRAM6116',
+  BufferGate: 'Buffer',
+  TriStateBuffer: 'TriBuffer',
+  And2Gate: 'And2Gate',
+  Nand2Gate: 'Nand2Gate',
+  Or2Gate: 'Or2Gate',
+  Mux2Gate: 'Mux2Gate',
+  SN74LS138: 'SN74LS138',
 };
 
 class Component extends StatefulWidget {
