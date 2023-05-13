@@ -133,23 +133,26 @@ class SN74LS138 extends Module {
   @override
   update() {
     if (ports.firstWhere((element) => element.portName == 'G1').value !=
-        LogicValue.one || ports.firstWhere((element) => element.portName == "G2A'").value !=
-        LogicValue.zero || ports.firstWhere((element) => element.portName == "G2B'").value !=
-        LogicValue.zero) {
+            LogicValue.one ||
+        ports.firstWhere((element) => element.portName == "G2A'").value !=
+            LogicValue.zero ||
+        ports.firstWhere((element) => element.portName == "G2B'").value !=
+            LogicValue.zero) {
       for (int i = 6; i < 14; i++) {
         ports[i].queueDrivePort(LogicValue.one);
       }
       SimulationUpdater.submitStage(key);
-    }else{
+    } else {
       int address = 0;
       for (int i = 0; i < 3; i++) {
-        if (ports[i+3].value == LogicValue.one) {
+        if (ports[i + 3].value == LogicValue.one) {
           address |= (1 << i);
         }
       }
       int mask = ~(1 << address);
       for (int i = 6; i < 14; i++) {
-        ports[i].queueDrivePort(mask & 1 == 1 ? LogicValue.one: LogicValue.zero);
+        ports[i]
+            .queueDrivePort(mask & 1 == 1 ? LogicValue.one : LogicValue.zero);
         mask >>= 1;
       }
       SimulationUpdater.submitStage(key);

@@ -144,10 +144,10 @@ class EditorCanvasState extends State<EditorCanvas> {
   }
 
   Offset _snapToGrid(Offset offset) {
-    double dx =
-        ((offset.dx / gridSize).round() * gridSize).clamp(0, gridSize * tilingHorizontal);
-    double dy =
-        ((offset.dy / gridSize).round() * gridSize).clamp(0, gridSize * tilingHorizontal);
+    double dx = ((offset.dx / gridSize).round() * gridSize)
+        .clamp(0, gridSize * tilingHorizontal);
+    double dy = ((offset.dy / gridSize).round() * gridSize)
+        .clamp(0, gridSize * tilingHorizontal);
 
     return Offset(dx, dy);
   }
@@ -201,7 +201,7 @@ class EditorCanvasState extends State<EditorCanvas> {
                     ?.selected = true;
               },
             );
-          } 
+          }
         },
         child: Stack(
           children: [

@@ -63,6 +63,7 @@ class _MainPageState extends State<MainPage> {
   bool _isRunning = false;
   Timer? _simulationTickTimer;
 
+  bool _componentListShown = true;
   bool _componentListPreviewMode = false;
 
   final _scrollControllerVertical = ScrollController();
@@ -94,6 +95,33 @@ class _MainPageState extends State<MainPage> {
 
   @override
   Widget build(BuildContext context) {
+    Widget canvas = Scrollbar(
+      thumbVisibility: true,
+      trackVisibility: true,
+      controller: _scrollControllerVertical,
+      child: ScrollConfiguration(
+        behavior: ScrollConfiguration.of(context).copyWith(dragDevices: {}),
+        child: SingleChildScrollView(
+          controller: _scrollControllerVertical,
+          scrollDirection: Axis.vertical,
+          child: Scrollbar(
+            thumbVisibility: true,
+            trackVisibility: true,
+            scrollbarOrientation: ScrollbarOrientation.top,
+            controller: _scrollControllerHorizontal,
+            child: ScrollConfiguration(
+              behavior:
+                  ScrollConfiguration.of(context).copyWith(dragDevices: {}),
+              child: SingleChildScrollView(
+                  controller: _scrollControllerHorizontal,
+                  scrollDirection: Axis.horizontal,
+                  child: EditorCanvas(key: editorCanvasKey)),
+            ),
+          ),
+        ),
+      ),
+    );
+
     return Scaffold(
       body: Container(
         color: Colors.white,
@@ -107,51 +135,20 @@ class _MainPageState extends State<MainPage> {
                     child: Row(
                       children: [
                         Expanded(
-                          child: ResizableWidget(
-                            isHorizontalSeparator: true,
-                            separatorSize: 8.0,
-                            separatorColor: Colors.black,
-                            percentages: const [0.7, 0.3],
-                            children: [
-                              Scrollbar(
-                                thumbVisibility: true,
-                                trackVisibility: true,
-                                controller: _scrollControllerVertical,
-                                child: ScrollConfiguration(
-                                  behavior: ScrollConfiguration.of(context)
-                                      .copyWith(dragDevices: {}),
-                                  child: SingleChildScrollView(
-                                    controller: _scrollControllerVertical,
-                                    scrollDirection: Axis.vertical,
-                                    child: Scrollbar(
-                                      thumbVisibility: true,
-                                      trackVisibility: true,
-                                      scrollbarOrientation:
-                                          ScrollbarOrientation.top,
-                                      controller: _scrollControllerHorizontal,
-                                      child: ScrollConfiguration(
-                                        behavior:
-                                            ScrollConfiguration.of(context)
-                                                .copyWith(dragDevices: {}),
-                                        child: SingleChildScrollView(
-                                            controller:
-                                                _scrollControllerHorizontal,
-                                            scrollDirection: Axis.horizontal,
-                                            child: EditorCanvas(
-                                                key: editorCanvasKey)),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                              WaveformAnalyzer(key: waveformAnalyzerKey),
-                            ],
-                          ),
-                        ),
+                            child: ResizableWidget(
+                          isHorizontalSeparator: true,
+                          separatorSize: 8.0,
+                          separatorColor: Colors.black,
+                          percentages: const [0.7, 0.3],
+                          children: [
+                            canvas,
+                            WaveformAnalyzer(key: waveformAnalyzerKey),
+                          ],
+                        )),
                       ],
                     ),
                   ),
-                  componentList(),
+                  if (_componentListShown) componentList(),
                 ],
               ),
             ),
@@ -243,7 +240,7 @@ class _MainPageState extends State<MainPage> {
                   ? const Icon(Icons.stop_circle_outlined)
                   : const Icon(Icons.play_circle_outline),
               iconSize: toolbarIconSize,
-              tooltip: _isRunning ? 'Stop Simulation' : 'Run Simulation',
+              tooltip: '${_isRunning ? 'Stop' : 'Start'} Simulation',
             ),
             SizedBox(
               height: toolbarIconSize,
@@ -314,6 +311,15 @@ class _MainPageState extends State<MainPage> {
               iconSize: toolbarIconSize,
               tooltip: 'Component Preview Mode',
               color: _componentListPreviewMode ? Colors.blue : null,
+            ),
+            IconButton(
+              onPressed: () =>
+                  setState(() => _componentListShown = !_componentListShown),
+              icon: const Icon(Icons.view_sidebar),
+              iconSize: toolbarIconSize,
+              tooltip:
+                  '${_componentListShown ? 'Hide' : 'Show'} Component List',
+              color: _componentListShown ? Colors.blue : null,
             ),
           ],
         ),
@@ -412,7 +418,7 @@ class _MainPageState extends State<MainPage> {
     };
 
     return Container(
-      width: 400,
+      width: gridSize * 9,
       decoration: const BoxDecoration(
           border: Border(left: BorderSide(color: Colors.black))),
       padding: const EdgeInsets.all(padding),
