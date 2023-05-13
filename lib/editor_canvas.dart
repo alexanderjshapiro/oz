@@ -57,10 +57,44 @@ class EditorCanvasState extends State<EditorCanvas> {
   }
 
   void removeSelected() {
-    setState(() {
-      _components.removeWhere((component) => component['selected']);
-      _wires.removeWhere((wire) => wire['selected']);
-    });
+    // if a wire is selected
+    Map<String, dynamic>? selectedWire;
+    for (final Map<String, dynamic> wire in _wires) {
+      if (wire['selected']) selectedWire = wire;
+    }
+
+    if (selectedWire != null) {
+      Map<String, dynamic>? componentAtFirst =
+          findComponentAt(selectedWire['points'].first);
+      if (componentAtFirst != null) {
+        ComponentState componentState = componentAtFirst['key'].currentState!;
+        int? portIndex = componentState.portIndexAt(
+            selectedWire['points'].first - componentAtFirst['offset']);
+
+        if (componentState.widget.moduleType != BinarySwitch) {
+          componentState.module.ports[portIndex!]
+              .connectNode(Node(componentState.module));
+        }
+      }
+
+      Map<String, dynamic>? componentAtLast =
+          findComponentAt(selectedWire['points'].last);
+      if (componentAtLast != null) {
+        ComponentState componentState = componentAtLast['key'].currentState!;
+        int? portIndex = componentState.portIndexAt(
+            selectedWire['points'].last - componentAtLast['offset']);
+
+        if (componentState.widget.moduleType != BinarySwitch) {
+          componentState.module.ports[portIndex!]
+              .connectNode(Node(componentState.module));
+        }
+      }
+
+      setState(() => _wires.removeWhere((wire) => wire['selected']));
+    }
+
+    setState(
+        () => _components.removeWhere((component) => component['selected']));
   }
 
   void clear() {
@@ -77,6 +111,27 @@ class EditorCanvasState extends State<EditorCanvas> {
       return true;
     }
     return false;
+  }
+
+  Map<String, dynamic>? findComponentAt(Offset point) {
+    Map<String, dynamic>? match;
+
+    for (final Map<String, dynamic> component in _components) {
+      ComponentState componentState = component['key'].currentState!;
+      // get offsets of all ports
+      Map<String, List<Offset>> componentPortOffsets =
+          Map.from(componentState.portOffsets);
+      componentPortOffsets.forEach((side, portOffsets) =>
+          componentPortOffsets[side] = [
+            for (final Offset portOffset in portOffsets)
+              component['offset'] + portOffset
+          ]);
+
+      componentPortOffsets.forEach((String side, List<Offset> portOffsets) {
+        if (portOffsets.contains(point)) match = component;
+      });
+    }
+    return match;
   }
 
   static Offset _snapToGrid(Offset offset) {
@@ -273,77 +328,38 @@ class EditorCanvasState extends State<EditorCanvas> {
                   }
                 }
 
+                List<Offset> points = _wires[wireIndex]['points'];
+
                 Node? node;
-                for (final Map<String, dynamic> component in _components) {
-                  ComponentState componentState =
-                      component['key'].currentState!;
+                Map<String, dynamic>? from = findComponentAt(points.first);
+                if (from != null) {
+                  ComponentState fromState = from['key'].currentState!;
+                  node = fromState
+                      .module
+                      .ports[
+                          fromState.portIndexAt(points.first - from['offset'])!]
+                      .connectedNode;
 
-                  // get offsets of all ports
-                  Map<String, List<Offset>> componentPortOffsets =
-                      Map.from(componentState.portOffsets);
-                  componentPortOffsets.forEach((side, portOffsets) =>
-                      componentPortOffsets[side] = [
-                        for (final Offset portOffset in portOffsets)
-                          component['offset'] + portOffset
-                      ]);
-
-                  for (int i = 0;
-                      i < componentPortOffsets['right']!.length;
-                      i++) {
-                    if (_wires[wireIndex]['points'].first ==
-                        componentPortOffsets['right']![i]) {
-                      node = componentState.module.rightPorts
-                          .elementAt(i)
+                  Map<String, dynamic>? to = findComponentAt(points.last);
+                  if (to != null) {
+                    ComponentState toState = to['key'].currentState!;
+                    if (toState.widget.moduleType == BinarySwitch) {
+                      node = toState
+                          .module
+                          .ports[
+                              toState.portIndexAt(points.last - to['offset'])!]
                           .connectedNode;
-                    }
-                  }
-
-                  for (int i = 0;
-                      i < componentPortOffsets['left']!.length;
-                      i++) {
-                    if (_wires[wireIndex]['points'].first ==
-                        componentPortOffsets['left']![i]) {
-                      node = componentState.module.leftPorts
-                          .elementAt(i)
-                          .connectedNode;
-                    }
-                  }
-                }
-
-                for (final Map<String, dynamic> component in _components) {
-                  ComponentState componentState =
-                      component['key'].currentState!;
-
-                  // get offsets of all ports
-                  Map<String, List<Offset>> componentPortOffsets =
-                      Map.from(componentState.portOffsets);
-                  componentPortOffsets.forEach((side, portOffsets) =>
-                      componentPortOffsets[side] = [
-                        for (final Offset portOffset in portOffsets)
-                          component['offset'] + portOffset
-                      ]);
-
-                  if (node != null) {
-                    for (int i = 0;
-                        i < componentPortOffsets['left']!.length;
-                        i++) {
-                      if (_wires[wireIndex]['points'].last ==
-                          componentPortOffsets['left']![i]) {
-                        node = componentState.module.leftPorts
-                            .elementAt(i)
-                            .connectNode(node);
-                      }
-                    }
-
-                    for (int i = 0;
-                        i < componentPortOffsets['right']!.length;
-                        i++) {
-                      if (_wires[wireIndex]['points'].last ==
-                          componentPortOffsets['right']![i]) {
-                        node = componentState.module.rightPorts
-                            .elementAt(i)
-                            .connectNode(node);
-                      }
+                      fromState
+                          .module
+                          .ports[fromState
+                              .portIndexAt(points.first - from['offset'])!]
+                          .connectNode(node!);
+                    } else {
+                      toState
+                          .module
+                          .ports[
+                              toState.portIndexAt(points.last - to['offset'])!]
+                          .connectNode(node!);
                     }
                   }
                 }
@@ -371,6 +387,9 @@ class EditorCanvasState extends State<EditorCanvas> {
                     setState(() => component['selected'] = true);
                   },
                   onPanStart: (_) {
+                    // deselect all other Components and wires, then select this Component
+                    deselectSelected();
+
                     // select Component if it is dragged without already being selected
                     if (!component['selected']) {
                       setState(() => component['selected'] = true);

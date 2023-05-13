@@ -109,7 +109,7 @@ class ComponentState extends State<Component> {
     };
   }
 
-  _toggleInputValue(PhysicalPort port) {
+  void _toggleInputValue(PhysicalPort port) {
     if (port.value == LogicValue.zero) {
       SimulationUpdater.queue.addFirst([
         () => port.connectedNode!
@@ -121,6 +121,23 @@ class ComponentState extends State<Component> {
             .drive(portKey: port.key, driveValue: LogicValue.zero)
       ]);
     }
+  }
+
+  int? portIndexAt(Offset point) {
+    if (widget.moduleType == BinarySwitch) return 0;
+    for (int i = 0; i < _portOffsets['right']!.length; i++) {
+      if (point == _portOffsets['right']![i]) {
+        return module.ports.indexOf(module.rightPorts.elementAt(i));
+      }
+    }
+
+    for (int i = 0; i < _portOffsets['left']!.length; i++) {
+      if (point == _portOffsets['left']![i]) {
+        return module.ports.indexOf(module.leftPorts.elementAt(i));
+      }
+    }
+
+    return null;
   }
 
   static double alignSizeToGrid(double size, {double div = 1}) {
@@ -404,7 +421,13 @@ class ComponentState extends State<Component> {
                           borderRadius: BorderRadius.zero),
                       padding: EdgeInsets.zero),
                   child: Text(
-                    module.ports[0].value == LogicValue.one ? 'H' : 'L',
+                    module.ports[0].value == LogicValue.one
+                        ? 'H'
+                        : module.ports[0].value == LogicValue.zero
+                            ? 'L'
+                            : module.ports[0].value == LogicValue.z
+                                ? 'Z'
+                                : 'X',
                     style: const TextStyle(
                         fontSize: 32, fontWeight: FontWeight.w900),
                   ),
