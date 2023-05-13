@@ -48,7 +48,12 @@ class EditorCanvasState extends State<EditorCanvas> {
 
   void deselectSelected() {
     for (final Map<String, dynamic> component in _components) {
-      if (component['selected']) setState(() => component['selected'] = false);
+      if (component['selected']) {
+        setState(() {
+          component['selected'] = false;
+          component['key'].currentState!.selected = false;
+        });
+      }
     }
 
     for (final Map<String, dynamic> wire in _wires) {
@@ -135,8 +140,11 @@ class EditorCanvasState extends State<EditorCanvas> {
   }
 
   static Offset _snapToGrid(Offset offset) {
-    double dx = (offset.dx / gridSize).round() * gridSize;
-    double dy = (offset.dy / gridSize).round() * gridSize;
+    double dx =
+        ((offset.dx / gridSize).round() * gridSize).clamp(0, gridSize * 100);
+    double dy =
+        ((offset.dy / gridSize).round() * gridSize).clamp(0, gridSize * 100);
+
     return Offset(dx, dy);
   }
 
@@ -376,15 +384,16 @@ class EditorCanvasState extends State<EditorCanvas> {
           for (final Map<String, dynamic> component in _components)
             Positioned(
               // always visually snap to grid, especially when dragging to move Component
-              left: _snapToGrid(component['offset']).dx -
-                  (component['selected'] ? selectedComponentBorderWidth : 0),
-              top: _snapToGrid(component['offset']).dy -
-                  (component['selected'] ? selectedComponentBorderWidth : 0),
+              left: _snapToGrid(component['offset']).dx,
+              top: _snapToGrid(component['offset']).dy,
               child: GestureDetector(
                   onTap: () {
                     // deselect all other Components and wires, then select this Component
                     deselectSelected();
-                    setState(() => component['selected'] = true);
+                    setState(() {
+                      component['selected'] = true;
+                      component['key'].currentState!.selected = true;
+                    });
                   },
                   onPanStart: (_) {
                     // deselect all other Components and wires, then select this Component
@@ -392,7 +401,10 @@ class EditorCanvasState extends State<EditorCanvas> {
 
                     // select Component if it is dragged without already being selected
                     if (!component['selected']) {
-                      setState(() => component['selected'] = true);
+                      setState(() {
+                        component['selected'] = true;
+                        component['key'].currentState!.selected = true;
+                      });
                     }
                   },
                   onPanUpdate: (details) {
@@ -404,11 +416,7 @@ class EditorCanvasState extends State<EditorCanvas> {
                     setState(() =>
                         component['offset'] = _snapToGrid(component['offset']));
                   },
-                  child: Container(
-                      decoration: component['selected']
-                          ? selectedComponentDecoration
-                          : null,
-                      child: component['widget'])),
+                  child: component['widget']),
             )
         ]),
         CustomPaint(painter: MyPainter(_wires)),
