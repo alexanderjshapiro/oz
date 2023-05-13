@@ -289,23 +289,8 @@ class BinarySwitch extends Module {
       PhysicalPort(
           portName: 'Button',
           module: this,
-          portLocation: PortLocation.left,
-          initalState: LogicValue.zero),
-      PhysicalPort(
-          portName: 'Button',
-          module: this,
-          portLocation: PortLocation.left,
-          initalState: LogicValue.zero),
-      PhysicalPort(
-          portName: 'Button',
-          module: this,
           portLocation: PortLocation.right,
-          initalState: LogicValue.zero),
-      PhysicalPort(
-          portName: 'Button',
-          module: this,
-          portLocation: PortLocation.right,
-          initalState: LogicValue.zero),
+          initalState: LogicValue.zero)
     ];
   }
 

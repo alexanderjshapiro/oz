@@ -94,17 +94,29 @@ class _MainPageState extends State<MainPage> {
                             separatorColor: Colors.black,
                             percentages: const [0.7, 0.3],
                             children: [
-                              SingleChildScrollView(
+                              Scrollbar(
+                                thumbVisibility: true,
+                                trackVisibility: true,
                                 controller: _scrollControllerVertical,
-                                scrollDirection: Axis.vertical,
                                 child: SingleChildScrollView(
+                                  controller: _scrollControllerVertical,
+                                  scrollDirection: Axis.vertical,
+                                  child: Scrollbar(
+                                    thumbVisibility: true,
+                                    trackVisibility: true,
+                                    scrollbarOrientation:
+                                        ScrollbarOrientation.top,
                                     controller: _scrollControllerHorizontal,
-                                    scrollDirection: Axis.horizontal,
-                                    child: SizedBox(
-                                        width: gridSize * 100,
-                                        height: gridSize * 100,
-                                        child: EditorCanvas(
-                                            key: editorCanvasKey))),
+                                    child: SingleChildScrollView(
+                                        controller: _scrollControllerHorizontal,
+                                        scrollDirection: Axis.horizontal,
+                                        child: SizedBox(
+                                            width: gridSize * 100,
+                                            height: gridSize * 100,
+                                            child: EditorCanvas(
+                                                key: editorCanvasKey))),
+                                  ),
+                                ),
                               ),
                               WaveformAnalyzer(key: waveformAnalyzerKey),
                             ],
