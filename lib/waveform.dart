@@ -3,7 +3,11 @@ import 'package:flutter/material.dart';
 import 'logic.dart';
 import 'main.dart';
 
-const BorderSide blackBorder = BorderSide(color: Colors.black);
+const Color backgroundColor = Color.fromARGB(255, 240, 239, 239);
+
+const BorderSide blackBorder = BorderSide(color: Colors.black, width: 2);
+const BorderSide zBorder = BorderSide(color: Colors.red);
+const BorderSide xBorder = BorderSide(color: Colors.grey);
 
 void updateWaveformAnalyzer() {
   if (editorCanvasKey.currentState!.components.isNotEmpty &&
@@ -35,16 +39,26 @@ class WaveformGraph extends StatelessWidget {
     List<Widget> stateWaves = [];
     var previousVal = waveform[0];
     for (var value in waveform) {
-      bool state = false;
+      late BorderSide topBorderSide;
+      late BorderSide bottomBorderSide;
+      late BorderSide leftBorderSide;
       if (value == LogicValue.one) {
-        state = true;
+        topBorderSide = blackBorder;
+        bottomBorderSide = BorderSide.none;
       } else if (value == LogicValue.zero) {
-        state = false;
+        topBorderSide = BorderSide.none;
+        bottomBorderSide = blackBorder;
+      } else if (value == LogicValue.z) {
+        topBorderSide = BorderSide.none;
+        bottomBorderSide = zBorder;
+      } else {
+        topBorderSide = BorderSide.none;
+        bottomBorderSide = xBorder;
       }
-      BorderSide topBorderSide = state ? blackBorder : BorderSide.none;
-      BorderSide bottomBorderSide = state ? BorderSide.none : blackBorder;
-      BorderSide leftBorderSide;
+
       if (previousVal == value) {
+        leftBorderSide = BorderSide.none;
+      } else if (value == LogicValue.zero && [LogicValue.x, LogicValue.z].contains(previousVal)) {
         leftBorderSide = BorderSide.none;
       } else {
         leftBorderSide = blackBorder;
@@ -104,7 +118,7 @@ class WaveformAnalyzerState extends State<WaveformAnalyzer> {
         // Fill the new component list with LogicValue.zero
         // so that the new waveform gets displayed properly
         for (int i = 0; i < longestList.length; i++) {
-          _waveforms[componentKey]!.add(LogicValue.zero);
+          _waveforms[componentKey]!.add(LogicValue.x);
         }
       } else {
         _waveforms[componentKey] = [];
@@ -182,7 +196,7 @@ class WaveformAnalyzerState extends State<WaveformAnalyzer> {
     if (waveformWidgets.isEmpty) {
       return Container(
         decoration: const BoxDecoration(
-            color: Colors.grey,
+            color: backgroundColor,
             border: Border(top: BorderSide(color: Colors.black))),
         height: 200,
         padding: const EdgeInsets.all(20),
@@ -193,7 +207,7 @@ class WaveformAnalyzerState extends State<WaveformAnalyzer> {
       height: 200,
       child: Container(
         decoration: const BoxDecoration(
-          color: Colors.grey,
+          color: backgroundColor,
           border: Border(top: BorderSide(color: Colors.black)),
         ),
         padding: const EdgeInsets.all(10),
@@ -202,7 +216,7 @@ class WaveformAnalyzerState extends State<WaveformAnalyzer> {
             Row(
               children: [
                 Column(children: waveformNames),
-                const SizedBox(width: 10),
+                const SizedBox(width: 20),
                 Expanded(
                   child: Scrollbar(
                     controller: scrollController,

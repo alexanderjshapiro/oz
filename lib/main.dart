@@ -291,11 +291,6 @@ class _MainPageState extends State<MainPage> {
                             details.offset.dy +
                                 _scrollControllerVertical.offset -
                                 toolbarIconSize));
-                    for (final component
-                        in editorCanvasKey.currentState!.components) {
-                      currentComponentStates.putIfAbsent(
-                          component['key'], () => LogicValue.zero);
-                    }
                   });
                 },
               ),
