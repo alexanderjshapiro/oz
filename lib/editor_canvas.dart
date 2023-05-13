@@ -143,11 +143,11 @@ class EditorCanvasState extends State<EditorCanvas> {
     return match;
   }
 
-  static Offset _snapToGrid(Offset offset) {
+  Offset _snapToGrid(Offset offset) {
     double dx =
-        ((offset.dx / gridSize).round() * gridSize).clamp(0, gridSize * 100);
+        ((offset.dx / gridSize).round() * gridSize).clamp(0, gridSize * tilingHorizontal);
     double dy =
-        ((offset.dy / gridSize).round() * gridSize).clamp(0, gridSize * 100);
+        ((offset.dy / gridSize).round() * gridSize).clamp(0, gridSize * tilingHorizontal);
 
     return Offset(dx, dy);
   }
