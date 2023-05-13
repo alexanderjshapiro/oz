@@ -22,19 +22,11 @@ void updateWaveformAnalyzer() {
 
 class WaveformGraph extends StatelessWidget {
   final List<LogicValue> waveform;
-  final GlobalKey<ComponentState> componentKey;
 
   const WaveformGraph({
     Key? key,
     required this.waveform,
-    required this.componentKey,
   }) : super(key: key);
-
-  List<String> getComponentName() {
-    String name = componentKey.currentState!.module.name;
-    String port = probedPorts[componentKey]!.portName;
-    return [name, port];
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -73,26 +65,8 @@ class WaveformGraph extends StatelessWidget {
       previousVal = value;
     }
 
-    List<Widget> names = [];
-    for (var name in getComponentName()) {
-      names.add(
-        Text(
-          name,
-          style: const TextStyle(fontSize: 12),
-        ),
-      );
-    }
-
     return Row(
-      children: [
-        Column(
-          children: names,
-        ),
-        const SizedBox(width: 16), // Adjust the spacing between names and stateWaves
-        Row(
           children: stateWaves,
-        ),
-      ],
     );
   }
 }
@@ -158,6 +132,21 @@ class WaveformAnalyzerState extends State<WaveformAnalyzer> {
     });
   }
 
+  Widget getComponentName(GlobalKey<ComponentState> componentKey) {
+    String name = componentKey.currentState!.module.name;
+    String port = probedPorts[componentKey]!.portName;
+    return SizedBox(
+      height: 50,
+      child: Container (
+        child: Column(children: [
+          Text(name, style: const TextStyle(fontSize: 16)), 
+          Text(port, style: const TextStyle(fontSize: 16)),
+          ],
+        )
+      ),
+    );
+  }
+
   int getWaveformsLength() => _waveforms.length;
 
   Map<GlobalKey<ComponentState>, List<LogicValue>> getWaveforms() => _waveforms;
@@ -165,12 +154,15 @@ class WaveformAnalyzerState extends State<WaveformAnalyzer> {
   @override
   Widget build(BuildContext context) {
     List<Widget> waveformWidgets = [];
+    List<Widget> waveformNames = [];
 
     int count = 0;
     _waveforms.forEach((key, value) {
-      waveformWidgets.add(WaveformGraph(waveform: value, componentKey: key,));
+      waveformWidgets.add(WaveformGraph(waveform: value));
+      waveformNames.add(getComponentName(key));
       if (count < _waveforms.length - 1) {
         waveformWidgets.add(const SizedBox(height: 10));
+        waveformNames.add(const SizedBox(height: 10));
       }
       count++;
     });
@@ -205,19 +197,31 @@ class WaveformAnalyzerState extends State<WaveformAnalyzer> {
           border: Border(top: BorderSide(color: Colors.black)),
         ),
         padding: const EdgeInsets.all(10),
-        child: Scrollbar(
-          controller: scrollController,
-          child: SingleChildScrollView(
-            controller: scrollController,
-            scrollDirection: Axis.horizontal,
-            child: SingleChildScrollView(
-              scrollDirection: Axis.vertical,
-              child: Column(
-                children: waveformWidgets,
-              ),
-            ),
-          ),
-        ),
+        child: ListView(
+          children: [
+            Row(
+              children: [
+                Column(children: waveformNames),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Scrollbar(
+                    controller: scrollController,
+                    child: SingleChildScrollView(
+                      controller: scrollController,
+                      scrollDirection: Axis.horizontal,
+                      child: SingleChildScrollView(
+                        scrollDirection: Axis.vertical,
+                        child: Column(
+                          children: waveformWidgets,
+                        ),
+                      ),
+                    ),
+                  ),
+                )
+              ],
+            )
+          ]
+        )
       ),
     );
   }
