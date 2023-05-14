@@ -199,131 +199,144 @@ class _MainPageState extends State<MainPage> {
 
   AppBar appBar() {
     return AppBar(
+      centerTitle: false,
+      titleSpacing: 0,
       toolbarHeight: toolbarHeight,
-      actions: [
-        IconButton(
-          onPressed: () => setState(
-              () => editorCanvasKey.currentState!.mode = CanvasMode.select),
-          icon: const Icon(Icons.highlight_alt),
-          iconSize: toolbarIconSize,
-          tooltip: 'Select',
-          color: editorCanvasKey.currentState?.mode == CanvasMode.select
-              ? spartanYellow
-              : null,
-        ),
-        IconButton(
-          onPressed: () => setState(() {
-            editorCanvasKey.currentState?.deselectSelected();
-            editorCanvasKey.currentState!.mode = CanvasMode.draw;
-          }),
-          icon: const Icon(Icons.mode),
-          iconSize: toolbarIconSize,
-          tooltip: 'Draw Wires',
-          color: editorCanvasKey.currentState?.mode == CanvasMode.draw
-              ? spartanYellow
-              : null,
-        ),
-        IconButton(
-          onPressed: () =>
-              setState(() => editorCanvasKey.currentState!.removeSelected()),
-          icon: const Icon(Icons.delete),
-          iconSize: toolbarIconSize,
-          tooltip: 'Remove Selected',
-        ),
-        IconButton(
-          onPressed: () => setState(() {
-            _scrollControllerHorizontal.jumpTo(0);
-            _scrollControllerVertical.jumpTo(0);
-            editorCanvasKey.currentState!.clear();
-            currentComponentStates.clear();
-            waveformAnalyzerKey.currentState!.clearWaveforms();
-            probedPorts.clear();
-          }),
-          icon: const Icon(Icons.restart_alt),
-          iconSize: toolbarIconSize,
-          tooltip: 'Reset Canvas',
-        ),
-        const SizedBox(width: toolbarIconSize),
-        IconButton(
-          onPressed: () => _isRunning ? _stopSimulation() : _startSimulation(),
-          icon: Icon(_isRunning
-              ? Icons.pause_circle_outline
-              : Icons.play_circle_outline),
-          iconSize: toolbarIconSize,
-          tooltip: '${_isRunning ? 'Pause' : 'Start'} Simulation',
-        ),
-        SizedBox(
-          width: toolbarIconSize * 2,
-          child: Center(
-            child: Tooltip(
-              message: 'Simulation Speed (ms)',
-              child: TextFormField(
-                focusNode: timerFocus,
-                keyboardType: TextInputType.number,
-                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                initialValue: '${tickRate.inMilliseconds}',
-                textAlign: TextAlign.end,
-                style: const TextStyle(fontSize: 18, fontFamily: 'Courier New'),
-                decoration: const InputDecoration(
-                    filled: true,
-                    fillColor: Colors.white,
-                    suffixText: 'ms',
-                    border: InputBorder.none),
-                onChanged: (String value) {
-                  _stopSimulation();
-                  int newtick = int.tryParse(value) ?? tickRate.inMilliseconds;
-                  tickRate = Duration(milliseconds: newtick);
-                },
+      title: SizedBox(
+        height: toolbarHeight,
+        // width: double.infinity,
+        child: ListView(scrollDirection: Axis.horizontal, children: [
+          IconButton(
+            onPressed: () => setState(
+                () => editorCanvasKey.currentState!.mode = CanvasMode.select),
+            icon: const Icon(Icons.highlight_alt),
+            iconSize: toolbarIconSize,
+            tooltip: 'Select',
+            color: (editorCanvasKey.currentState?.mode ?? CanvasMode.select) ==
+                    CanvasMode.select
+                ? spartanYellow
+                : null,
+          ),
+          IconButton(
+            onPressed: () => setState(() {
+              editorCanvasKey.currentState?.deselectSelected();
+              editorCanvasKey.currentState!.mode = CanvasMode.draw;
+            }),
+            icon: const Icon(Icons.mode),
+            iconSize: toolbarIconSize,
+            tooltip: 'Draw Wires',
+            color: editorCanvasKey.currentState?.mode == CanvasMode.draw
+                ? spartanYellow
+                : null,
+          ),
+          IconButton(
+            onPressed: () =>
+                setState(() => editorCanvasKey.currentState!.removeSelected()),
+            icon: const Icon(Icons.delete),
+            iconSize: toolbarIconSize,
+            tooltip: 'Remove Selected',
+          ),
+          const SizedBox(width: toolbarIconSize),
+          IconButton(
+            onPressed: () =>
+                _isRunning ? _stopSimulation() : _startSimulation(),
+            icon: Icon(_isRunning
+                ? Icons.pause_circle_outline
+                : Icons.play_circle_outline),
+            iconSize: toolbarIconSize,
+            tooltip: '${_isRunning ? 'Pause' : 'Start'} Simulation',
+          ),
+          SizedBox(
+            width: toolbarIconSize * 2,
+            child: Center(
+              child: Tooltip(
+                message: 'Simulation Speed (ms)',
+                child: TextFormField(
+                  focusNode: timerFocus,
+                  keyboardType: TextInputType.number,
+                  inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                  initialValue: '${tickRate.inMilliseconds}',
+                  textAlign: TextAlign.end,
+                  style:
+                      const TextStyle(fontSize: 18, fontFamily: 'Courier New'),
+                  decoration: const InputDecoration(
+                      filled: true,
+                      fillColor: Colors.white,
+                      suffixText: 'ms',
+                      border: InputBorder.none),
+                  onChanged: (String value) {
+                    _stopSimulation();
+                    int newtick =
+                        int.tryParse(value) ?? tickRate.inMilliseconds;
+                    tickRate = Duration(milliseconds: newtick);
+                  },
+                ),
               ),
             ),
           ),
-        ),
-        IconButton(
-          onPressed: () {
-            _stopSimulation();
-            SimulationUpdater.tick();
-          },
-          icon: const Icon(Icons.slow_motion_video),
-          iconSize: toolbarIconSize,
-          tooltip: 'Step Simulation',
-        ),
-        const SizedBox(width: toolbarIconSize),
-        IconButton(
-          onPressed: () => setState(
-              () => editorCanvasKey.currentState!.mode = CanvasMode.addProbe),
-          icon: const Icon(Icons.near_me),
-          iconSize: toolbarIconSize,
-          tooltip: 'Add Port Waveform',
-          color: editorCanvasKey.currentState?.mode == CanvasMode.addProbe
-              ? spartanYellow
-              : null,
-        ),
-        IconButton(
-          onPressed: () => setState(() =>
-              editorCanvasKey.currentState!.mode = CanvasMode.removeProbe),
-          icon: const Icon(Icons.near_me_disabled),
-          iconSize: toolbarIconSize,
-          tooltip: 'Remove Port Waveform',
-          color: editorCanvasKey.currentState?.mode == CanvasMode.removeProbe
-              ? spartanYellow
-              : null,
-        ),
-        const Spacer(),
-        IconButton(
-          onPressed: () => setState(() => colorMode = !colorMode),
-          icon: const Icon(Icons.color_lens),
-          iconSize: toolbarIconSize,
-          tooltip: 'Color Mode',
-          color: colorMode ? spartanYellow : null,
-        ),
-        IconButton(
-          onPressed: () => setState(
-              () => _componentListPreviewMode = !_componentListPreviewMode),
-          icon: const Icon(Icons.preview),
-          iconSize: toolbarIconSize,
-          tooltip: 'Component Preview Mode',
-          color: _componentListPreviewMode ? spartanYellow : null,
-        ),
+          IconButton(
+            onPressed: () {
+              _stopSimulation();
+              SimulationUpdater.tick();
+            },
+            icon: const Icon(Icons.slow_motion_video),
+            iconSize: toolbarIconSize,
+            tooltip: 'Step Simulation',
+          ),
+          const SizedBox(width: toolbarIconSize),
+          IconButton(
+            onPressed: () => setState(
+                () => editorCanvasKey.currentState!.mode = CanvasMode.addProbe),
+            icon: const Icon(Icons.near_me),
+            iconSize: toolbarIconSize,
+            tooltip: 'Add Port Waveform',
+            color: editorCanvasKey.currentState?.mode == CanvasMode.addProbe
+                ? spartanYellow
+                : null,
+          ),
+          IconButton(
+            onPressed: () => setState(() =>
+                editorCanvasKey.currentState!.mode = CanvasMode.removeProbe),
+            icon: const Icon(Icons.near_me_disabled),
+            iconSize: toolbarIconSize,
+            tooltip: 'Remove Port Waveform',
+            color: editorCanvasKey.currentState?.mode == CanvasMode.removeProbe
+                ? spartanYellow
+                : null,
+          ),
+          const SizedBox(width: toolbarIconSize),
+          IconButton(
+            onPressed: () => setState(() => colorMode = !colorMode),
+            icon: const Icon(Icons.color_lens),
+            iconSize: toolbarIconSize,
+            tooltip: 'Color Mode',
+            color: colorMode ? spartanYellow : null,
+          ),
+          IconButton(
+            onPressed: () => setState(
+                () => _componentListPreviewMode = !_componentListPreviewMode),
+            icon: const Icon(Icons.preview),
+            iconSize: toolbarIconSize,
+            tooltip: 'Component Preview Mode',
+            color: _componentListPreviewMode ? spartanYellow : null,
+          ),
+          IconButton(
+            onPressed: () => setState(() {
+              _scrollControllerHorizontal.jumpTo(0);
+              _scrollControllerVertical.jumpTo(0);
+              editorCanvasKey.currentState!.clear();
+              currentComponentStates.clear();
+              waveformAnalyzerKey.currentState!.clearWaveforms();
+              probedPorts.clear();
+            }),
+            icon: const Icon(Icons.restart_alt),
+            iconSize: toolbarIconSize,
+            tooltip: 'Reset Canvas',
+          ),
+        ]),
+      ),
+      actions: [
+        Container(width: 1, color: spartanGrayLight),
         IconButton(
           onPressed: () =>
               setState(() => _componentListShown = !_componentListShown),
