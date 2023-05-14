@@ -426,7 +426,7 @@ class _MainPageState extends State<MainPage> {
     }
 
     Map<String, List<Type>> tiles = {
-      'Interface': [BinarySwitch, LightBulb, HexDisplay, AnalogSwitch],
+      'Interface': [BinarySwitch, LightBulb, HexDisplay, AnalogSwitch, KeyBoard],
       'Gates': [
         And2Gate,
         NotGate,
