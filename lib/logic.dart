@@ -515,6 +515,21 @@ class BinarySwitch extends Module {
   update() {}
 }
 
+class LightBulb extends Module {
+  LightBulb() : super(name: 'LightBulb') {
+    ports = [
+      PhysicalPort(
+          portName: 'LightBulb',
+          module: this,
+          portLocation: PortLocation.left,
+          initalState: LogicValue.z)
+    ];
+  }
+
+  @override
+  update() {}
+}
+
 class HexDisplay extends Module {
   HexDisplay() : super(name: 'HexDisplay') {
     ports = [

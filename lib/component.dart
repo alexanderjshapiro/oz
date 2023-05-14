@@ -23,6 +23,7 @@ Map<String, Function> gateTypes = {
   'Or2Gate': () => Or2Gate(),
   'Mux2Gate': () => Mux2Gate(),
   'SN74LS138': () => SN74LS138(),
+  'LightBulb': () => LightBulb(),
 };
 
 Map<Type, String> gateNames = {
@@ -41,6 +42,7 @@ Map<Type, String> gateNames = {
   Or2Gate: 'Or2Gate',
   Mux2Gate: 'Mux2Gate',
   SN74LS138: 'SN74LS138',
+  LightBulb: 'LightBulb',
 };
 
 class Component extends StatefulWidget {
@@ -149,6 +151,48 @@ class ComponentState extends State<Component> {
         Offset(gridSize, gridSize),
       ];
       return buttonBuildOverride();
+    }
+
+    if (widget.moduleType == LightBulb) {
+      _portOffsets['left'] = const [
+        Offset(gridSize, gridSize),
+      ];
+      _portOffsets['right'] = const [];
+      return SizedBox(
+        height: gridSize * 2,
+        width: gridSize * 2,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.end,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Container(
+              width: gridSize / 4,
+              height: 2,
+              color: Colors.black,
+            ),
+            Container(
+              width: gridSize,
+              height: gridSize,
+              decoration: BoxDecoration(
+                  color: Colors.black,
+                  border: Border.all(
+                      color: _selected ? Colors.blue : Colors.black,
+                      width: borderSize)),
+              child: Center(
+                child: Icon(
+                  Icons.lightbulb,
+                  color: module.ports[0].value == LogicValue.one
+                      ? Colors.amber
+                      : Colors.grey,
+                  shadows: module.ports[0].value == LogicValue.one
+                      ? [const Shadow(color: Colors.orange, blurRadius: 4)]
+                      : null,
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
     }
 
     // Component Sizing
