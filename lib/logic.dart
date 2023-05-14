@@ -530,6 +530,7 @@ class LightBulb extends Module {
 
 class AnalogSwitch extends Module {
   bool isClosed = false;
+
   AnalogSwitch() : super(name: 'AnalogSwitch') {
     ports = [
       PhysicalPort(
@@ -544,6 +545,7 @@ class AnalogSwitch extends Module {
           initalState: LogicValue.z)
     ];
   }
+
   @override
   update() {
     if (isClosed) {

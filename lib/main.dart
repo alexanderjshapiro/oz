@@ -19,9 +19,10 @@ const Color spartanGrayDark = Color.fromRGBO(83, 86, 90, 1);
 Duration tickRate = const Duration(milliseconds: 1);
 
 Map<GlobalKey<ComponentState>, LogicValue> currentComponentStates = {};
-Map<GlobalKey<ComponentState>, PhysicalPort> probedPorts = {};
+Map<GlobalKey<ComponentState>, List<String>> probedPorts = {};
 final FocusNode globalFocus = FocusNode();
 final FocusNode timerFocus = FocusNode();
+Map<String, LogicValue> currentPortStates = {};
 
 void main() {
   // If we get an uncaught exception during the program in release build the program just restarts.
@@ -328,6 +329,7 @@ class _MainPageState extends State<MainPage> {
               currentComponentStates.clear();
               waveformAnalyzerKey.currentState!.clearWaveforms();
               probedPorts.clear();
+              currentPortStates.clear();
             }),
             icon: const Icon(Icons.restart_alt),
             iconSize: toolbarIconSize,
