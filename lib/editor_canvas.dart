@@ -181,9 +181,7 @@ class EditorCanvasState extends State<EditorCanvas> {
                   newProbedPorts[component?['key']] = [portKey];
                 } else {
                   newProbedPorts[component?['key']]?.add(portKey);
-                }       
-                debugPrint('Adding probe');
-                print(newProbedPorts);         
+                }          
                 break;
               case CanvasMode.removeProbe:
                 Offset tapOffset = _snapToGrid(
@@ -196,8 +194,6 @@ class EditorCanvasState extends State<EditorCanvas> {
                 removePort(component?['key'], portKey);
                 waveformAnalyzerKey.currentState!
                   .newRemoveWaveforms(component?['key'], portKey);
-                debugPrint('Removing probe');
-                print(newProbedPorts);
                 break;
             }
           },
