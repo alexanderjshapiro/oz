@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:oz/waveform.dart';
 import 'component.dart';
 import 'logic.dart';
 import 'main.dart';
@@ -174,7 +175,15 @@ class EditorCanvasState extends State<EditorCanvas> {
                 Map<String, dynamic>? component = findComponentAt(tapOffset);
                 ComponentState componentState = component?['key'].currentState!;
                 int portIndex = componentState.portIndexAt(tapOffset - component?['offset']) ?? 0;
-                newProbedPorts[componentState]?.add(componentState.module.ports[portIndex].key);
+                bool probesListIsEmpty = newProbedPorts[component?['key']]?.isEmpty ?? true;
+                String portKey = componentState.module.ports[portIndex].key;
+                if (probesListIsEmpty) {
+                  newProbedPorts[component?['key']] = [portKey];
+                } else {
+                  newProbedPorts[component?['key']]?.add(portKey);
+                }       
+                debugPrint('Adding probe');
+                print(newProbedPorts);         
                 break;
               case CanvasMode.removeProbe:
                 Offset tapOffset = _snapToGrid(
@@ -183,9 +192,12 @@ class EditorCanvasState extends State<EditorCanvas> {
                 ComponentState componentState = component?['key'].currentState!;
                 int portIndex = componentState.portIndexAt(tapOffset - component?['offset']) ?? 0;
                 String portKey = componentState.module.ports[portIndex].key;
-                newProbedPorts.remove(portKey);
+
+                removePort(component?['key'], portKey);
                 waveformAnalyzerKey.currentState!
-                  .newAddWaveform(component?['key'], portKey);
+                  .newRemoveWaveforms(component?['key'], portKey);
+                debugPrint('Removing probe');
+                print(newProbedPorts);
                 break;
             }
           },

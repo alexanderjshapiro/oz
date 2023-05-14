@@ -340,7 +340,6 @@ class SimulationUpdater {
       element.call();
     }
     queue.removeFirst();
-    print('help');
     newUpdateWaveformAnalyzer();
   }
 
