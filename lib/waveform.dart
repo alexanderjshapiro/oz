@@ -109,7 +109,7 @@ class WaveformAnalyzer extends StatefulWidget {
 }
 
 class WaveformAnalyzerState extends State<WaveformAnalyzer> {
-  final Map<GlobalKey<ComponentState>, Map<String, List<LogicValue>>> _newWaveforms = {};
+  final Map<GlobalKey<ComponentState>, Map<String, List<LogicValue>>> _waveforms = {};
   final scrollController = ScrollController();
 
   @override
@@ -120,12 +120,12 @@ class WaveformAnalyzerState extends State<WaveformAnalyzer> {
   void addWaveform(GlobalKey<ComponentState> componentKey, String portKey) {
     setState(() {
       debugPrint('Adding waveform');
-      if (_newWaveforms.isNotEmpty) {
+      if (_waveforms.isNotEmpty) {
         // Find the longest list
         List<LogicValue> longestList = [];
         int maxLength = 0;
-        if (_newWaveforms.length > 1) {
-        for (var componentData in _newWaveforms.values) {
+        if (_waveforms.length > 1) {
+        for (var componentData in _waveforms.values) {
           for (var list in componentData.values) {
             if (list.length > maxLength) {
               maxLength = list.length;
@@ -134,10 +134,10 @@ class WaveformAnalyzerState extends State<WaveformAnalyzer> {
           }
         }
         } else {
-        _newWaveforms[componentKey]?.values.first;
+        _waveforms[componentKey]?.values.first;
         }
         
-        if (_newWaveforms.containsKey(componentKey)) {
+        if (_waveforms.containsKey(componentKey)) {
           // If the component already exists and a new port needs to be added
           Map<String, List<LogicValue>> newPortWave = {
             portKey: []
@@ -145,21 +145,21 @@ class WaveformAnalyzerState extends State<WaveformAnalyzer> {
           for (int i = 0; i < longestList.length; i++) {
             newPortWave[portKey]?.add(LogicValue.x);
           }
-          _newWaveforms[componentKey]?.addAll(newPortWave);
+          _waveforms[componentKey]?.addAll(newPortWave);
         } else {
           // If the component does not already exist
-          _newWaveforms[componentKey] = {
+          _waveforms[componentKey] = {
             portKey: []
           };          
           List<LogicValue> newStates = [];
           for (int i = 0; i < longestList.length; i++) {
             newStates.add(LogicValue.x);
           }
-          _newWaveforms[componentKey]?[portKey] = newStates;
+          _waveforms[componentKey]?[portKey] = newStates;
         }
 
       } else {
-        _newWaveforms[componentKey] = {
+        _waveforms[componentKey] = {
           portKey: []
         };
       }
@@ -168,26 +168,26 @@ class WaveformAnalyzerState extends State<WaveformAnalyzer> {
 
   void removeWaveforms(GlobalKey<ComponentState> componentKey, String portKey) {
     setState(() {
-      _newWaveforms[componentKey]?.remove(portKey);
-      bool waveformsIsEmpty = _newWaveforms[componentKey]?.isEmpty ?? false;
+      _waveforms[componentKey]?.remove(portKey);
+      bool waveformsIsEmpty = _waveforms[componentKey]?.isEmpty ?? false;
       if (waveformsIsEmpty) {
-        _newWaveforms.remove(componentKey);
+        _waveforms.remove(componentKey);
       }
     });
   }
 
   void clearWaveforms() {
     setState(() {
-      _newWaveforms.clear();
+      _waveforms.clear();
     });
   }
 
   void updateWaveforms(Map<String, LogicValue> newStates) {
     setState(() {
-      _newWaveforms.forEach((componentKey, ports) {
+      _waveforms.forEach((componentKey, ports) {
         ports.forEach((portKey, _) {
           LogicValue newState = newStates[portKey] ?? LogicValue.x;
-          _newWaveforms[componentKey]![portKey]?.add(newState);
+          _waveforms[componentKey]![portKey]?.add(newState);
         });
       });
     });
@@ -210,14 +210,14 @@ class WaveformAnalyzerState extends State<WaveformAnalyzer> {
     );
   }
 
-  int getWaveformsLength() => _newWaveforms.length;
+  int getWaveformsLength() => _waveforms.length;
 
-  Map<GlobalKey<ComponentState>, Map<String, List<LogicValue>>> getWaveforms() => _newWaveforms;
+  Map<GlobalKey<ComponentState>, Map<String, List<LogicValue>>> getWaveforms() => _waveforms;
 
   bool inWaveforms(GlobalKey<ComponentState> componentKey, String portKey) {
-    bool componentProbed = _newWaveforms.containsKey(componentKey);
+    bool componentProbed = _waveforms.containsKey(componentKey);
     if (componentProbed) {
-      bool portProbed = _newWaveforms[componentKey]?.containsKey(portKey) ?? false;
+      bool portProbed = _waveforms[componentKey]?.containsKey(portKey) ?? false;
       return portProbed;
     }
     return componentProbed;
@@ -229,11 +229,11 @@ class WaveformAnalyzerState extends State<WaveformAnalyzer> {
     List<Widget> waveformNames = [];
 
     int count = 0;
-    _newWaveforms.forEach((componentKey, portStates) {
+    _waveforms.forEach((componentKey, portStates) {
       portStates.forEach((portKey, states) {
         waveformWidgets.add(WaveformGraph(waveform: states));
         waveformNames.add(getComponentName(componentKey, portKey));
-        if (count < _newWaveforms.length - 1) {
+        if (count < _waveforms.length - 1) {
           waveformWidgets.add(const SizedBox(height: 10));
           waveformNames.add(const SizedBox(height: 10));
         }
