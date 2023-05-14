@@ -21,6 +21,7 @@ Duration tickRate = const Duration(milliseconds: 1);
 Map<GlobalKey<ComponentState>, LogicValue> currentComponentStates = {};
 Map<GlobalKey<ComponentState>, PhysicalPort> probedPorts = {};
 final FocusNode globalFocus = FocusNode();
+final FocusNode timerFocus = FocusNode();
 
 void main() {
   // If we get an uncaught exception during the program in release build the program just restarts.
@@ -109,6 +110,11 @@ class _MainPageState extends State<MainPage> {
         editorCanvasKey.currentState?.setState(() {
           editorCanvasKey.currentState?.tilingVertical += 1;
         });
+      }
+    });
+    timerFocus.addListener(() {
+      if (!timerFocus.hasFocus) {
+        globalFocus.requestFocus();
       }
     });
   }
@@ -252,6 +258,7 @@ class _MainPageState extends State<MainPage> {
             child: Tooltip(
               message: 'Simulation Speed (ms)',
               child: TextFormField(
+                focusNode: timerFocus,
                 keyboardType: TextInputType.number,
                 inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                 initialValue: '${tickRate.inMilliseconds}',
