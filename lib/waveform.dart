@@ -9,19 +9,19 @@ const BorderSide blackBorder = BorderSide(color: Colors.black, width: 2);
 const BorderSide zBorder = BorderSide(color: Colors.red);
 const BorderSide xBorder = BorderSide(color: Colors.grey);
 
-void newUpdateWaveformAnalyzer() {
-  newCurrentPortStates.clear();
+void updateWaveformAnalyzer() {
+  currentPortStates.clear();
   if (editorCanvasKey.currentState!.components.isNotEmpty &&
-      newProbedPorts.isNotEmpty) {
+      probedPorts.isNotEmpty) {
     // Update current output port states
-    newProbedPorts.forEach((componentKey, probedPortKeyList) {
+    probedPorts.forEach((componentKey, probedPortKeyList) {
       List<PhysicalPort> modulePorts = componentKey.currentState!.module.ports;
       for (String portKey in probedPortKeyList) {
         PhysicalPort probedPort = modulePorts.firstWhere((port) => port.key == portKey);
-        newCurrentPortStates[portKey] = probedPort.value;
+        currentPortStates[portKey] = probedPort.value;
         // Add the waveform if it hasn't already been added
         if (!waveformAnalyzerKey.currentState!.inWaveforms(componentKey, portKey)) {
-          waveformAnalyzerKey.currentState!.newAddWaveform(componentKey, portKey);
+          waveformAnalyzerKey.currentState!.addWaveform(componentKey, portKey);
         }
       }
       
@@ -29,14 +29,14 @@ void newUpdateWaveformAnalyzer() {
     Map<GlobalKey<ComponentState>, Map<String, List<LogicValue>>> waveforms = waveformAnalyzerKey.currentState!.getWaveforms();
     waveforms.forEach((key, value) {
     });
-    waveformAnalyzerKey.currentState!.newUpdateWaveforms(newCurrentPortStates);
+    waveformAnalyzerKey.currentState!.updateWaveforms(currentPortStates);
   }
 }
 
 void removePort(GlobalKey<ComponentState> componentKey, String portKey) {
-  newProbedPorts[componentKey]?.remove(portKey);
-  if (newProbedPorts[componentKey]?.isEmpty ?? true) {
-    newProbedPorts.remove(componentKey);
+  probedPorts[componentKey]?.remove(portKey);
+  if (probedPorts[componentKey]?.isEmpty ?? true) {
+    probedPorts.remove(componentKey);
   }
 }
 
@@ -117,7 +117,7 @@ class WaveformAnalyzerState extends State<WaveformAnalyzer> {
     super.initState();
   }
 
-  void newAddWaveform(GlobalKey<ComponentState> componentKey, String portKey) {
+  void addWaveform(GlobalKey<ComponentState> componentKey, String portKey) {
     setState(() {
       debugPrint('Adding waveform');
       if (_newWaveforms.isNotEmpty) {
@@ -166,7 +166,7 @@ class WaveformAnalyzerState extends State<WaveformAnalyzer> {
     });
   }
 
-  void newRemoveWaveforms(GlobalKey<ComponentState> componentKey, String portKey) {
+  void removeWaveforms(GlobalKey<ComponentState> componentKey, String portKey) {
     setState(() {
       _newWaveforms[componentKey]?.remove(portKey);
       bool waveformsIsEmpty = _newWaveforms[componentKey]?.isEmpty ?? false;
@@ -182,7 +182,7 @@ class WaveformAnalyzerState extends State<WaveformAnalyzer> {
     });
   }
 
-  void newUpdateWaveforms(Map<String, LogicValue> newStates) {
+  void updateWaveforms(Map<String, LogicValue> newStates) {
     setState(() {
       _newWaveforms.forEach((componentKey, ports) {
         ports.forEach((portKey, _) {
@@ -193,7 +193,7 @@ class WaveformAnalyzerState extends State<WaveformAnalyzer> {
     });
   }
 
-  Widget newGetComponetName(GlobalKey<ComponentState> componentKey, String portKey) {
+  Widget getComponentName(GlobalKey<ComponentState> componentKey, String portKey) {
     String name = componentKey.currentState!.module.name;
     List<PhysicalPort> ports = componentKey.currentState!.module.ports;
     PhysicalPort port = ports.firstWhere((port) => port.key == portKey);
@@ -232,7 +232,7 @@ class WaveformAnalyzerState extends State<WaveformAnalyzer> {
     _newWaveforms.forEach((componentKey, portStates) {
       portStates.forEach((portKey, states) {
         waveformWidgets.add(WaveformGraph(waveform: states));
-        waveformNames.add(newGetComponetName(componentKey, portKey));
+        waveformNames.add(getComponentName(componentKey, portKey));
         if (count < _newWaveforms.length - 1) {
           waveformWidgets.add(const SizedBox(height: 10));
           waveformNames.add(const SizedBox(height: 10));

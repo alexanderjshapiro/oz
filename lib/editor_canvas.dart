@@ -175,12 +175,12 @@ class EditorCanvasState extends State<EditorCanvas> {
                 Map<String, dynamic>? component = findComponentAt(tapOffset);
                 ComponentState componentState = component?['key'].currentState!;
                 int portIndex = componentState.portIndexAt(tapOffset - component?['offset']) ?? 0;
-                bool probesListIsEmpty = newProbedPorts[component?['key']]?.isEmpty ?? true;
+                bool probesListIsEmpty = probedPorts[component?['key']]?.isEmpty ?? true;
                 String portKey = componentState.module.ports[portIndex].key;
                 if (probesListIsEmpty) {
-                  newProbedPorts[component?['key']] = [portKey];
+                  probedPorts[component?['key']] = [portKey];
                 } else {
-                  newProbedPorts[component?['key']]?.add(portKey);
+                  probedPorts[component?['key']]?.add(portKey);
                 }          
                 break;
               case CanvasMode.removeProbe:
@@ -193,7 +193,7 @@ class EditorCanvasState extends State<EditorCanvas> {
 
                 removePort(component?['key'], portKey);
                 waveformAnalyzerKey.currentState!
-                  .newRemoveWaveforms(component?['key'], portKey);
+                  .removeWaveforms(component?['key'], portKey);
                 break;
             }
           },

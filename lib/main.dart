@@ -11,8 +11,8 @@ const double gridSize = 40;
 
 Duration tickRate = const Duration(milliseconds: 1);
 
-Map<GlobalKey<ComponentState>, List<String>> newProbedPorts = {};
-Map<String, LogicValue> newCurrentPortStates = {};
+Map<GlobalKey<ComponentState>, List<String>> probedPorts = {};
+Map<String, LogicValue> currentPortStates = {};
 
 void main() {
   // TODO: Enable this code section as a fail safe
@@ -171,9 +171,9 @@ class _MainPageState extends State<MainPage> {
           IconButton(
             onPressed: () => setState(() {
               editorCanvasKey.currentState!.clear();
-              newCurrentPortStates.clear();
+              currentPortStates.clear();
               waveformAnalyzerKey.currentState!.clearWaveforms();
-              newProbedPorts.clear();
+              probedPorts.clear();
             }),
             icon: const Icon(Icons.restart_alt),
             iconSize: toolbarIconSize,
