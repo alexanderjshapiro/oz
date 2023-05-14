@@ -24,6 +24,7 @@ Map<String, Function> gateTypes = {
   'Mux2Gate': () => Mux2Gate(),
   'SN74LS138': () => SN74LS138(),
   'LightBulb': () => LightBulb(),
+  'AnalogSwitch': () => AnalogSwitch(),
 };
 
 Map<Type, String> gateNames = {
@@ -43,6 +44,7 @@ Map<Type, String> gateNames = {
   Mux2Gate: 'Mux2Gate',
   SN74LS138: 'SN74LS138',
   LightBulb: 'LightBulb',
+  AnalogSwitch: 'AnalogSwitch',
 };
 
 class Component extends StatefulWidget {
@@ -189,6 +191,63 @@ class ComponentState extends State<Component> {
                       : null,
                 ),
               ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (widget.moduleType == AnalogSwitch) {
+      _portOffsets['left'] = const [
+        Offset(gridSize, gridSize),
+      ];
+      _portOffsets['right'] = const [
+        Offset(2 * gridSize, gridSize),
+      ];
+      AnalogSwitch aSwitch = module as AnalogSwitch;
+      return SizedBox(
+        height: gridSize * 2,
+        width: gridSize * 3,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Container(
+              width: gridSize / 4,
+              height: 2,
+              color: Colors.black,
+            ),
+            SizedBox(
+              width: gridSize,
+              height: gridSize,
+              child: ElevatedButton(
+                onPressed: () {
+                  setState(() {
+                    aSwitch.isClosed = !aSwitch.isClosed;
+                    aSwitch.update();
+                  });
+                },
+                style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.black,
+                    foregroundColor: Colors.black,
+                    side: BorderSide(
+                        color: _selected ? Colors.blue : Colors.black),
+                    shape: const RoundedRectangleBorder(
+                        borderRadius: BorderRadius.zero),
+                    padding: EdgeInsets.zero),
+                child: Icon(
+                  aSwitch.isClosed ? Icons.flash_on : Icons.flash_off,
+                  color: aSwitch.isClosed ? Colors.amber : Colors.grey,
+                  shadows: aSwitch.isClosed
+                      ? [const Shadow(color: Colors.orange, blurRadius: 4)]
+                      : null,
+                ),
+              ),
+            ),
+            Container(
+              width: gridSize / 4,
+              height: 2,
+              color: Colors.black,
             ),
           ],
         ),

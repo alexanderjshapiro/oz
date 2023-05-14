@@ -265,9 +265,7 @@ class SN74LS373 extends Module {
     if (ports.firstWhere((element) => element.portName == 'EN').value ==
         LogicValue.one) {
       for (int i = 0; i < 8; i++) {
-        if (ports[i].value != ports[i + 8].value) {
-          ports[i + 8].queueDrivePort(ports[i].value);
-        }
+        ports[i + 8].queueDrivePort(ports[i].value);
       }
       SimulationUpdater.submitStage(key);
     }
@@ -528,6 +526,51 @@ class LightBulb extends Module {
 
   @override
   update() {}
+}
+
+class AnalogSwitch extends Module {
+  bool isClosed = false;
+  AnalogSwitch() : super(name: 'AnalogSwitch') {
+    ports = [
+      PhysicalPort(
+          portName: 'LeftSide',
+          module: this,
+          portLocation: PortLocation.left,
+          initalState: LogicValue.z),
+      PhysicalPort(
+          portName: 'RightSide',
+          module: this,
+          portLocation: PortLocation.right,
+          initalState: LogicValue.z)
+    ];
+  }
+  @override
+  update() {
+    if (isClosed) {
+      var a = ports[0].connectedNode!.drivers.keys.toSet();
+      a.remove(ports[0].key);
+      var b = ports[1].connectedNode!.drivers.keys.toSet();
+      b.remove(ports[1].key);
+      if (a.isNotEmpty && b.isNotEmpty) {
+        //Both sides are attempting to drive, thats ok if they have the same value.
+        if (ports[1].value != ports[0].value) {
+          ports[1].drivePort(ports[0].value);
+          ports[0].drivePort(ports[1].value);
+        }
+      } else {
+        if (a.isNotEmpty) {
+          ports[1].drivePort(ports[0].value);
+        } else if (b.isNotEmpty) {
+          ports[0].drivePort(ports[1].value);
+        }
+      }
+    } else {
+      for (var port in ports) {
+        port.queueDrivePort(LogicValue.z);
+      }
+      SimulationUpdater.submitStage(key);
+    }
+  }
 }
 
 class HexDisplay extends Module {
