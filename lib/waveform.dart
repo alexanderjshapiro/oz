@@ -136,7 +136,9 @@ class WaveformAnalyzerState extends State<WaveformAnalyzer> {
             }
           }
         } else {
-          _waveforms[componentKey]?.values.first;
+          // waveforms.values gets the Map<String, List<LogicValue>>
+          // waveforms.values.first.values.first will get the first available list
+          longestList = _waveforms.values.first.values.first;
         }
 
         if (_waveforms.containsKey(componentKey)) {

@@ -188,13 +188,6 @@ class EditorCanvasState extends State<EditorCanvas> {
                   selected: true);
               Map<String, dynamic> newComponent = components.singleWhere(
                   (component) => component['key'] == newComponentKey);
-
-              for (final component
-                  in editorCanvasKey.currentState!.components) {
-                currentComponentStates.putIfAbsent(
-                    component['key'], () => LogicValue.zero);
-              }
-
               newComponent['selected'] = true;
             });
           }
@@ -243,6 +236,7 @@ class EditorCanvasState extends State<EditorCanvas> {
                     } else {
                       probedPorts[component?['key']]?.add(portKey);
                     }
+                    updateWaveformAnalyzer();
                     break;
                   case CanvasMode.removeProbe:
                     Offset tapOffset = _snapToGrid(Offset(

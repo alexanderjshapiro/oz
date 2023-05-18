@@ -18,7 +18,6 @@ const Color spartanGrayDark = Color.fromRGBO(83, 86, 90, 1);
 
 Duration tickRate = const Duration(milliseconds: 1);
 
-Map<GlobalKey<ComponentState>, LogicValue> currentComponentStates = {};
 Map<GlobalKey<ComponentState>, List<String>> probedPorts = {};
 final FocusNode globalFocus = FocusNode();
 final FocusNode timerFocus = FocusNode();
@@ -326,7 +325,6 @@ class _MainPageState extends State<MainPage> {
               _scrollControllerHorizontal.jumpTo(0);
               _scrollControllerVertical.jumpTo(0);
               editorCanvasKey.currentState!.clear();
-              currentComponentStates.clear();
               waveformAnalyzerKey.currentState!.clearWaveforms();
               probedPorts.clear();
               currentPortStates.clear();
@@ -416,11 +414,6 @@ class _MainPageState extends State<MainPage> {
                                   as RenderBox)
                               .localToGlobal(Offset.zero)
                               .dy));
-              for (final component
-                  in editorCanvasKey.currentState!.components) {
-                currentComponentStates.putIfAbsent(
-                    component['key'], () => LogicValue.zero);
-              }
             });
           },
         ),
