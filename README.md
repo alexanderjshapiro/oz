@@ -23,9 +23,10 @@ versions, but we don't test for those and can't guarantee the quality or securit
 | Ubuntu   |         | 18.04 LTS and newer |
 | Debian   |         | 9 and newer         |
 | Chrome   |         | 96 and newer        |
+| Safari   |         | 14 and newer        |
+| Edge     |         | 96 and newer        |
 | Firefox  |         | 99 and newer        |
-| Edge     |         | 14 and newer        |
-| iOS      | 16      | 96 and newer        |
+| iOS      | 16      | 11 and newer        |
 | Android  |         | 19 and newer        |
 
 ## Features
