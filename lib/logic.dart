@@ -549,29 +549,57 @@ class AnalogSwitch extends Module {
   @override
   update() {
     if (isClosed) {
-      var a = ports[0].connectedNode!.drivers.keys.toSet();
-      a.remove(ports[0].key);
-      var b = ports[1].connectedNode!.drivers.keys.toSet();
-      b.remove(ports[1].key);
-      if (a.isNotEmpty && b.isNotEmpty) {
-        //Both sides are attempting to drive, thats ok if they have the same value.
-        if (ports[1].value != ports[0].value) {
-          ports[1].drivePort(ports[0].value);
-          ports[0].drivePort(ports[1].value);
-        }
-      } else {
-        if (a.isNotEmpty) {
-          ports[1].drivePort(ports[0].value);
-        } else if (b.isNotEmpty) {
-          ports[0].drivePort(ports[1].value);
-        }
-      }
+      bridgePorts(ports[0], ports[1]);
     } else {
       for (var port in ports) {
         port.queueDrivePort(LogicValue.z);
       }
-      SimulationUpdater.submitStage(key);
     }
+    SimulationUpdater.submitStage(key);
+  }
+}
+
+class KeyBoard extends Module {
+  int? buttonPressed;
+  KeyBoard() : super(name: 'KeyBoard') {
+    ports = [
+      for (int i = 0; i < 4; i++)
+        PhysicalPort(
+            portName: 'RowLine$i',
+            module: this,
+            portLocation: PortLocation.left,
+            initalState: LogicValue.z),
+      for (int i = 0; i < 4; i++)
+        PhysicalPort(
+            portName: 'ColumnLine$i',
+            module: this,
+            portLocation: PortLocation.right,
+            initalState: LogicValue.z)
+    ];
+  }
+
+  int? previousKeys;
+  @override
+  update() {
+    // Not sure why this is working as well as it is, Im sure there's a problem with it, but it seems to be working.
+    if (previousKeys == buttonPressed && buttonPressed != null) {
+      bridgePorts(ports[buttonPressed! ~/ 4], ports[(buttonPressed! % 4) + 4]);
+      SimulationUpdater.submitStage(key);
+      return;
+    }
+    if (previousKeys != null) {
+      ports[previousKeys! ~/ 4].queueDrivePort(LogicValue.z);
+      ports[(previousKeys! % 4) + 4].queueDrivePort(LogicValue.z);
+    }
+    if (buttonPressed != null) {
+      bridgePorts(ports[buttonPressed! ~/ 4], ports[(buttonPressed! % 4) + 4]);
+    } else if (previousKeys != null) {
+      ports[previousKeys! ~/ 4].queueDrivePort(LogicValue.z);
+      ports[(previousKeys! % 4) + 4].queueDrivePort(LogicValue.z);
+    }
+    previousKeys = buttonPressed;
+
+    SimulationUpdater.submitStage(key);
   }
 }
 
@@ -621,6 +649,7 @@ class SimulationUpdater {
   }
 
   static void submitStage(String moduleKey) {
+    if (staging[moduleKey] == null) return;
     queue.addLast(staging[moduleKey]!);
     staging.remove(moduleKey);
   }
@@ -652,6 +681,27 @@ class Module {
     for (var port in ports) {
       port.connectedNode?.impede(portKey: port.key);
       port.connectedNode?.connectedModules.remove(port.module);
+    }
+  }
+
+  //Used for switch and hex keyboard
+  bridgePorts(PhysicalPort first, PhysicalPort second) {
+    Set<String> a = first.connectedNode!.drivers.keys.toSet();
+    a.remove(first.key);
+    Set<String> b = second.connectedNode!.drivers.keys.toSet();
+    b.remove(second.key);
+    if (a.isNotEmpty && b.isNotEmpty) {
+      //Both sides are attempting to drive, thats ok if they have the same value.
+      if (second.value != first.value) {
+        second.queueDrivePort(first.value);
+        first.queueDrivePort(second.value);
+      }
+    } else {
+      if (a.isNotEmpty) {
+        second.queueDrivePort(first.value);
+      } else if (b.isNotEmpty) {
+        first.queueDrivePort(second.value);
+      }
     }
   }
 

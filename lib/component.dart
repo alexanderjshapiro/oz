@@ -25,6 +25,7 @@ Map<String, Function> gateTypes = {
   'SN74LS138': () => SN74LS138(),
   'LightBulb': () => LightBulb(),
   'AnalogSwitch': () => AnalogSwitch(),
+  'KeyBoard': () => KeyBoard(),
 };
 
 Map<Type, String> gateNames = {
@@ -45,6 +46,7 @@ Map<Type, String> gateNames = {
   SN74LS138: 'SN74LS138',
   LightBulb: 'LightBulb',
   AnalogSwitch: 'AnalogSwitch',
+  KeyBoard: 'KeyBoard',
 };
 
 class Component extends StatefulWidget {
@@ -249,6 +251,132 @@ class ComponentState extends State<Component> {
               height: 2,
               color: Colors.black,
             ),
+          ],
+        ),
+      );
+    }
+
+    if (widget.moduleType == KeyBoard) {
+      _portOffsets['left'] = [
+        for (int i = 0; i < module.leftPorts.length; i++)
+          Offset(gridSize, (gridSize * (i + 1)))
+      ];
+      _portOffsets['right'] = [
+        for (int i = 0; i < module.leftPorts.length; i++)
+          Offset((gridSize * (i + 2)), 5 * gridSize)
+      ];
+      String keys = '123A456B789C*0#D';
+      KeyBoard board = module as KeyBoard;
+      return SizedBox(
+        height: gridSize * 6,
+        width: gridSize * 6,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.end,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            //Left side ports
+            Column(
+              children: [
+                const SizedBox(
+                  height: gridSize - 1,
+                ),
+                for (int i = 0; i < 4; i++) ...[
+                  Container(
+                    width: gridSize / 4,
+                    height: 2,
+                    color: Colors.black,
+                  ),
+                  const SizedBox(
+                    height: gridSize - 2,
+                  ),
+                ]
+              ],
+            ),
+            Column(
+              //Body of keyboard
+              children: [
+                Container(
+                  width: gridSize * 5,
+                  height: gridSize * 5,
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    border: Border.all(color: Colors.black, width: 2),
+                    color: Colors.black,
+                  ),
+                  child: GridView.builder(
+                    gridDelegate:
+                        const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 4,
+                      mainAxisSpacing: 10.0, // Add margin between rows
+                      crossAxisSpacing: 10.0, // Add margin between columns
+                    ),
+                    itemCount: keys.characters.length,
+                    itemBuilder: (BuildContext context, int index) {
+                      return Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: BoxDecoration(
+                          border: Border.all(color: Colors.white, width: 2),
+                          borderRadius: BorderRadius.circular(4),
+                          color: keys.characters
+                                          .elementAt(index)
+                                          .codeUnits
+                                          .first >=
+                                      '0'.codeUnits.first &&
+                                  keys.characters
+                                          .elementAt(index)
+                                          .codeUnits
+                                          .first <=
+                                      '9'.codeUnits.first
+                              ? (board.buttonPressed == index
+                                  ? Colors.blue[900]
+                                  : Colors.blue)
+                              : (board.buttonPressed == index
+                                  ? Colors.red[900]
+                                  : Colors.red),
+                        ),
+                        child: TextButton(
+                          child: FittedBox(
+                              fit: BoxFit.scaleDown,
+                              child: Text(keys.characters.elementAt(index),
+                                  style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 32,
+                                      fontWeight: FontWeight.w900))),
+                          onPressed: () {
+                            setState(() {
+                              if (board.buttonPressed != null) {
+                                board.buttonPressed = board.buttonPressed == index ? null : index;
+                              } else {
+                                board.buttonPressed = index;
+                              }
+                              board.update();
+                            });
+                          },
+                        ),
+                      );
+                    },
+                  ),
+                ),
+                //Bottom side ports
+                Row(
+                  children: [
+                    const SizedBox(
+                      width: gridSize - 1,
+                    ),
+                    for (int i = 0; i < 4; i++) ...[
+                      Container(
+                        height: gridSize / 4,
+                        width: 2,
+                        color: Colors.black,
+                      ),
+                      const SizedBox(
+                        width: gridSize - 2,
+                      ),
+                    ]
+                  ],
+                )
+              ],
+            )
           ],
         ),
       );
