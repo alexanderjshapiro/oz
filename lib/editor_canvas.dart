@@ -85,10 +85,8 @@ class EditorCanvasState extends State<EditorCanvas> {
         int? portIndex = componentState.portIndexAt(
             selectedWire['points'].first - componentAtFirst['offset']);
 
-        if (componentState.widget.moduleType != BinarySwitch) {
-          componentState.module.ports[portIndex!]
-              .connectNode(Node(componentState.module));
-        }
+        componentState.module.ports[portIndex!].connectedNode =
+            Node(componentState.module, LogicValue.z);
       }
 
       Map<String, dynamic>? componentAtLast =
@@ -98,17 +96,18 @@ class EditorCanvasState extends State<EditorCanvas> {
         int? portIndex = componentState.portIndexAt(
             selectedWire['points'].last - componentAtLast['offset']);
 
-        if (componentState.widget.moduleType != BinarySwitch) {
-          componentState.module.ports[portIndex!]
-              .connectNode(Node(componentState.module));
-        }
+        componentState.module.ports[portIndex!].connectedNode =
+            Node(componentState.module, LogicValue.z);
       }
 
       setState(() => _wires.removeWhere((wire) => wire['selected']));
     }
 
-    setState(
-        () => _components.removeWhere((component) => component['selected']));
+    setState(() {
+      _components.where((component) => component['selected']).forEach(
+          (component) => component['key'].currentState!.module.delete());
+      _components.removeWhere((component) => component['selected']);
+    });
   }
 
   void clear() {
@@ -351,7 +350,9 @@ class EditorCanvasState extends State<EditorCanvas> {
                       }
                     }
 
-                    List<Offset> points = _wires[wireIndex]['points'];
+                    List<Offset> points = wireIndex < _wires.length
+                        ? _wires[wireIndex]['points']
+                        : _wires[wireIndex - 1]['points'];
 
                     Node? node;
                     Map<String, dynamic>? from = findComponentAt(points.first);
@@ -426,8 +427,16 @@ class EditorCanvasState extends State<EditorCanvas> {
                         }
                       },
                       onPanUpdate: (details) {
+                        component['key'].currentState!.module.ports.forEach(
+                            (port) => debugPrint(
+                                'Modules connected to port: ${port.connectedNode.connectedModules.length}'));
                         // update position of Component but only visually snap to the grid
-                        if (mode == CanvasMode.select) {
+                        if (mode == CanvasMode.select &&
+                            component['key'].currentState!.module.ports.every(
+                                (port) =>
+                                    port.connectedNode.connectedModules
+                                        .length ==
+                                    1)) {
                           updateComponentPosition(
                               component['key'], details.delta);
                         }
