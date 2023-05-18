@@ -327,10 +327,10 @@ class ComponentState extends State<Component> {
                                           .codeUnits
                                           .first <=
                                       '9'.codeUnits.first
-                              ? (board.pressedKeys[index]
+                              ? (board.buttonPressed == index
                                   ? Colors.blue[900]
                                   : Colors.blue)
-                              : (board.pressedKeys[index]
+                              : (board.buttonPressed == index
                                   ? Colors.red[900]
                                   : Colors.red),
                         ),
@@ -343,9 +343,12 @@ class ComponentState extends State<Component> {
                                       fontSize: 32,
                                       fontWeight: FontWeight.w900))),
                           onPressed: () {
-                            board.pressedKeys[index] =
-                                !board.pressedKeys[index];
                             setState(() {
+                              if (board.buttonPressed != null) {
+                                board.buttonPressed = board.buttonPressed == index ? null : index;
+                              } else {
+                                board.buttonPressed = index;
+                              }
                               board.update();
                             });
                           },

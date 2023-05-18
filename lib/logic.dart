@@ -558,7 +558,7 @@ class AnalogSwitch extends Module {
 }
 
 class KeyBoard extends Module {
-  List<bool> pressedKeys = List.filled(16, false);
+  int? buttonPressed;
   KeyBoard() : super(name: 'KeyBoard') {
     ports = [
       for (int i = 0; i < 4; i++)
@@ -576,49 +576,28 @@ class KeyBoard extends Module {
     ];
   }
 
-  List<bool> previousKeys = List.filled(16, false);
+  int? previousKeys;
   @override
   update() {
-    bool same = true;
-    for (int i = 0; i < 16; i++) {
-     if(previousKeys[i] != pressedKeys[i]){
-        same = false;
-        previousKeys[i] = pressedKeys[i];
-        if(pressedKeys[i] == true){
-          ports[i ~/ 4].queueDrivePort(ports[(i % 4) + 4].value);
-          ports[(i % 4) + 4].queueDrivePort(ports[i ~/ 4].value);
-          bridgePorts(ports[i ~/ 4], ports[(i % 4) + 4]);
-        }else{
-          ports[i ~/ 4].queueDrivePort(LogicValue.z);
-          ports[(i % 4) + 4].queueDrivePort(LogicValue.z);
-        }
-     }
-    }
-    if(!same){
+    // Not sure why this is working as well as it is, Im sure there's a problem with it, but it seems to be working.
+    if (previousKeys == buttonPressed && buttonPressed != null) {
+      bridgePorts(ports[buttonPressed! ~/ 4], ports[(buttonPressed! % 4) + 4]);
       SimulationUpdater.submitStage(key);
+      return;
     }
-    // if (same) {
-    //   print("old");
-    //   SimulationUpdater.submitStage(key);
-    //   return;
-    // }
-    
-    // print("new");
-    // for (int i = 0; i < 16; i++) {
-    //   if (pressedKeys[i]) {
-    //     bridgePorts(ports[i ~/ 4], ports[(i % 4) + 4]);
-    //   } else {
-    //     if (ports[i ~/ 4].value != LogicValue.z) {
-    //       ports[(i % 4) + 4].queueDrivePort(LogicValue.z);
-    //     } else if (ports[(i % 4) + 4].value != LogicValue.z) {
-    //       ports[i ~/ 4].queueDrivePort(LogicValue.z);
-    //     }
-    //     // a.remove(first.key);
-    //     // Set<String> b = second.connectedNode!.drivers.keys.toSet();
-    //     // b.remove(second.key);
-    //   }
-    // }
-    // SimulationUpdater.submitStage(key);
+    if (previousKeys != null) {
+      ports[previousKeys! ~/ 4].queueDrivePort(LogicValue.z);
+      ports[(previousKeys! % 4) + 4].queueDrivePort(LogicValue.z);
+    }
+    if (buttonPressed != null) {
+      bridgePorts(ports[buttonPressed! ~/ 4], ports[(buttonPressed! % 4) + 4]);
+    } else if (previousKeys != null) {
+      ports[previousKeys! ~/ 4].queueDrivePort(LogicValue.z);
+      ports[(previousKeys! % 4) + 4].queueDrivePort(LogicValue.z);
+    }
+    previousKeys = buttonPressed;
+
+    SimulationUpdater.submitStage(key);
   }
 }
 
