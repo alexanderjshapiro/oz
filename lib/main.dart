@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'logic.dart';
 import 'package:flutter/services.dart';
@@ -204,7 +206,6 @@ class _MainPageState extends State<MainPage> {
       toolbarHeight: toolbarHeight,
       title: SizedBox(
         height: toolbarHeight,
-        // width: double.infinity,
         child: ListView(scrollDirection: Axis.horizontal, children: [
           IconButton(
             onPressed: () => setState(
@@ -421,12 +422,10 @@ class _MainPageState extends State<MainPage> {
     }
 
     Map<String, List<Type>> tiles = {
-      'Interface': [
-        BinarySwitch,
+      'Interactables': [BinarySwitch, AnalogSwitch, KeyBoard],
+      'Indicators': [
         LightBulb,
         HexDisplay,
-        AnalogSwitch,
-        KeyBoard
       ],
       'Gates': [
         And2Gate,
@@ -443,8 +442,37 @@ class _MainPageState extends State<MainPage> {
       'All Gates': gateNames.keys.toList(),
     };
 
+    //Calculate this minimum width needed to display all text
+    double minWidth = 0.0;
+    for (var name in gateNames.values.toList()) {
+      var tp = TextPainter(
+          text: TextSpan(
+            text: name,
+            style: const TextStyle(
+              color: spartanBlue,
+              fontSize: 24,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          textAlign: TextAlign.right,
+          textDirection: TextDirection.ltr);
+      tp.layout();
+      minWidth = max(minWidth, tp.width);
+    }
+    for (var name in tiles.keys) {
+      var tp = TextPainter(
+          text: TextSpan(
+              text: name,
+              style:
+                  const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+          textAlign: TextAlign.right,
+          textDirection: TextDirection.ltr);
+      tp.layout();
+      minWidth = max(minWidth, tp.width);
+    }
+
     return Container(
-      width: gridSize * 9,
+      width: ((minWidth / gridSize).ceil() + 2) * gridSize,
       decoration: const BoxDecoration(
           border: Border(left: BorderSide(color: Colors.black))),
       padding: const EdgeInsets.all(padding),
