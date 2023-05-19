@@ -9,6 +9,7 @@ import 'editor_canvas.dart';
 import 'waveform.dart';
 import 'package:resizable_widget/resizable_widget.dart';
 import 'package:flutter/foundation.dart';
+import 'package:cross_scroll/cross_scroll.dart';
 
 const double gridSize = 40;
 var colorMode = false;
@@ -99,16 +100,16 @@ class _MainPageState extends State<MainPage> {
     editorCanvasKey = GlobalKey<EditorCanvasState>();
     waveformAnalyzerKey = GlobalKey<WaveformAnalyzerState>();
     _scrollControllerHorizontal.addListener(() {
-      if (_scrollControllerHorizontal.position.pixels ==
-          _scrollControllerHorizontal.position.maxScrollExtent) {
+      if (_scrollControllerHorizontal.position.pixels >=
+          _scrollControllerHorizontal.position.maxScrollExtent * 0.95) {
         editorCanvasKey.currentState?.setState(() {
           editorCanvasKey.currentState?.tilingHorizontal += 1;
         });
       }
     });
     _scrollControllerVertical.addListener(() {
-      if (_scrollControllerVertical.position.pixels ==
-          _scrollControllerVertical.position.maxScrollExtent) {
+      if (_scrollControllerVertical.position.pixels >=
+          _scrollControllerVertical.position.maxScrollExtent * 0.95) {
         editorCanvasKey.currentState?.setState(() {
           editorCanvasKey.currentState?.tilingVertical += 1;
         });
@@ -123,28 +124,14 @@ class _MainPageState extends State<MainPage> {
 
   @override
   Widget build(BuildContext context) {
-    Widget canvas = Scrollbar(
-      thumbVisibility: true,
-      controller: _scrollControllerVertical,
-      child: ScrollConfiguration(
-        behavior: ScrollConfiguration.of(context).copyWith(dragDevices: {}),
-        child: SingleChildScrollView(
-          controller: _scrollControllerVertical,
-          scrollDirection: Axis.vertical,
-          child: Scrollbar(
-            thumbVisibility: true,
-            scrollbarOrientation: ScrollbarOrientation.top,
-            controller: _scrollControllerHorizontal,
-            child: ScrollConfiguration(
-              behavior:
-                  ScrollConfiguration.of(context).copyWith(dragDevices: {}),
-              child: SingleChildScrollView(
-                  controller: _scrollControllerHorizontal,
-                  scrollDirection: Axis.horizontal,
-                  child: EditorCanvas(key: editorCanvasKey)),
-            ),
-          ),
-        ),
+    Widget canvas = ScrollConfiguration(
+      behavior: ScrollConfiguration.of(context).copyWith(dragDevices: {}),
+      child: CrossScroll(
+        horizontalScrollController: _scrollControllerHorizontal,
+        verticalScrollController: _scrollControllerVertical,
+        horizontalBar: const CrossScrollBar(thumb: ScrollThumb.alwaysShow),
+        verticalBar: const CrossScrollBar(thumb: ScrollThumb.alwaysShow),
+        child: EditorCanvas(key: editorCanvasKey),
       ),
     );
 
