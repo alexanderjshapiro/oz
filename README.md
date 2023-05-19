@@ -1,6 +1,6 @@
 # Oz: Digital Logic Design App
 
-<img src="assets/logo.png" width="256px" alt="Oz Logo"/>
+![](assets/demo.png)
 
 Welcome to the Oz digital logic design app source code repository. Oz is a digital logic design application meant for
 students and other people learning about digital design. It was created as the senior project for
