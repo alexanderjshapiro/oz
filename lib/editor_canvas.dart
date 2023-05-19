@@ -4,6 +4,7 @@ import 'package:oz/waveform.dart';
 import 'component.dart';
 import 'logic.dart';
 import 'main.dart';
+import 'dart:math';
 
 class EditorCanvas extends StatefulWidget {
   const EditorCanvas({Key? key}) : super(key: key);
@@ -33,7 +34,7 @@ class EditorCanvasState extends State<EditorCanvas> {
 
   List<Map<String, dynamic>> get components => _components;
 
-  /// Data structure: `[{'points': List<Offset>, 'selected': bool}]`
+  /// Data structure: `[{'points': List<Offset>, 'selected': bool, 'color': Color}]`
   final List<Map<String, dynamic>> _wires = [];
 
   int tilingHorizontal = 70;
@@ -85,10 +86,8 @@ class EditorCanvasState extends State<EditorCanvas> {
         int? portIndex = componentState.portIndexAt(
             selectedWire['points'].first - componentAtFirst['offset']);
 
-        if (componentState.widget.moduleType != BinarySwitch) {
-          componentState.module.ports[portIndex!]
-              .connectNode(Node(componentState.module));
-        }
+        componentState.module.ports[portIndex!].connectedNode =
+            Node(componentState.module, LogicValue.z);
       }
 
       Map<String, dynamic>? componentAtLast =
@@ -98,17 +97,18 @@ class EditorCanvasState extends State<EditorCanvas> {
         int? portIndex = componentState.portIndexAt(
             selectedWire['points'].last - componentAtLast['offset']);
 
-        if (componentState.widget.moduleType != BinarySwitch) {
-          componentState.module.ports[portIndex!]
-              .connectNode(Node(componentState.module));
-        }
+        componentState.module.ports[portIndex!].connectedNode =
+            Node(componentState.module, LogicValue.z);
       }
 
       setState(() => _wires.removeWhere((wire) => wire['selected']));
     }
 
-    setState(
-        () => _components.removeWhere((component) => component['selected']));
+    setState(() {
+      _components.where((component) => component['selected']).forEach(
+          (component) => component['key'].currentState!.module.delete());
+      _components.removeWhere((component) => component['selected']);
+    });
   }
 
   void clear() {
@@ -152,7 +152,7 @@ class EditorCanvasState extends State<EditorCanvas> {
     double dx = ((offset.dx / gridSize).round() * gridSize)
         .clamp(0, gridSize * tilingHorizontal);
     double dy = ((offset.dy / gridSize).round() * gridSize)
-        .clamp(0, gridSize * tilingHorizontal);
+        .clamp(0, gridSize * tilingVertical);
 
     return Offset(dx, dy);
   }
@@ -223,18 +223,19 @@ class EditorCanvasState extends State<EditorCanvas> {
                         details.localPosition.dx, details.localPosition.dy));
                     Map<String, dynamic>? component =
                         findComponentAt(tapOffset);
+                    if (component == null) break;
                     ComponentState componentState =
-                        component?['key'].currentState!;
+                        component['key'].currentState!;
                     int portIndex = componentState
-                            .portIndexAt(tapOffset - component?['offset']) ??
+                            .portIndexAt(tapOffset - component['offset']) ??
                         0;
                     bool probesListIsEmpty =
-                        probedPorts[component?['key']]?.isEmpty ?? true;
+                        probedPorts[component['key']]?.isEmpty ?? true;
                     String portKey = componentState.module.ports[portIndex].key;
                     if (probesListIsEmpty) {
-                      probedPorts[component?['key']] = [portKey];
+                      probedPorts[component['key']] = [portKey];
                     } else {
-                      probedPorts[component?['key']]?.add(portKey);
+                      probedPorts[component['key']]?.add(portKey);
                     }
                     updateWaveformAnalyzer();
                     break;
@@ -286,7 +287,10 @@ class EditorCanvasState extends State<EditorCanvas> {
                       // create new wire
                       setState(() => _wires.add({
                             'points': [panStartOffset],
-                            'selected': true
+                            'selected': true,
+                            'color': HSVColor.fromAHSV(
+                                    1.0, Random().nextDouble() * 360, 0.75, 0.7)
+                                .toColor(),
                           }));
                     }
 
@@ -351,7 +355,10 @@ class EditorCanvasState extends State<EditorCanvas> {
                       }
                     }
 
-                    List<Offset> points = _wires[wireIndex]['points'];
+                    //TODO this will probably cause a problem at some point, but it fixes when you try to connect wires end to end.
+                    List<Offset> points = wireIndex < _wires.length
+                        ? _wires[wireIndex]['points']
+                        : _wires[wireIndex - 1]['points'];
 
                     Node? node;
                     Map<String, dynamic>? from = findComponentAt(points.first);
@@ -426,8 +433,16 @@ class EditorCanvasState extends State<EditorCanvas> {
                         }
                       },
                       onPanUpdate: (details) {
+                        // component['key'].currentState!.module.ports.forEach(
+                        //     (port) => debugPrint(
+                        //         'Modules connected to port: ${port.connectedNode.connectedModules.length}'));
                         // update position of Component but only visually snap to the grid
-                        if (mode == CanvasMode.select) {
+                        if (mode == CanvasMode.select &&
+                            component['key'].currentState!.module.ports.every(
+                                (port) =>
+                                    port.connectedNode.connectedModules
+                                        .length ==
+                                    1)) {
                           updateComponentPosition(
                               component['key'], details.delta);
                         }
@@ -463,7 +478,9 @@ class MyPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     for (var wireMap in wireMaps) {
       final paint = Paint()
-        ..color = wireMap['selected'] ? selectedWireColor : wireColor
+        ..color = wireMap['selected']
+            ? selectedWireColor
+            : (colorMode ? wireMap['color']! : wireColor)
         ..strokeWidth = wireWidth;
 
       for (int j = 0; j < wireMap['points'].length - 1; j++) {

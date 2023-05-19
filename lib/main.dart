@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'logic.dart';
 import 'package:flutter/services.dart';
@@ -7,6 +9,7 @@ import 'editor_canvas.dart';
 import 'waveform.dart';
 import 'package:resizable_widget/resizable_widget.dart';
 import 'package:flutter/foundation.dart';
+import 'package:cross_scroll/cross_scroll.dart';
 
 const double gridSize = 40;
 var colorMode = false;
@@ -97,16 +100,16 @@ class _MainPageState extends State<MainPage> {
     editorCanvasKey = GlobalKey<EditorCanvasState>();
     waveformAnalyzerKey = GlobalKey<WaveformAnalyzerState>();
     _scrollControllerHorizontal.addListener(() {
-      if (_scrollControllerHorizontal.position.pixels ==
-          _scrollControllerHorizontal.position.maxScrollExtent) {
+      if (_scrollControllerHorizontal.position.pixels >=
+          _scrollControllerHorizontal.position.maxScrollExtent * 0.95) {
         editorCanvasKey.currentState?.setState(() {
           editorCanvasKey.currentState?.tilingHorizontal += 1;
         });
       }
     });
     _scrollControllerVertical.addListener(() {
-      if (_scrollControllerVertical.position.pixels ==
-          _scrollControllerVertical.position.maxScrollExtent) {
+      if (_scrollControllerVertical.position.pixels >=
+          _scrollControllerVertical.position.maxScrollExtent * 0.95) {
         editorCanvasKey.currentState?.setState(() {
           editorCanvasKey.currentState?.tilingVertical += 1;
         });
@@ -121,28 +124,14 @@ class _MainPageState extends State<MainPage> {
 
   @override
   Widget build(BuildContext context) {
-    Widget canvas = Scrollbar(
-      thumbVisibility: true,
-      controller: _scrollControllerVertical,
-      child: ScrollConfiguration(
-        behavior: ScrollConfiguration.of(context).copyWith(dragDevices: {}),
-        child: SingleChildScrollView(
-          controller: _scrollControllerVertical,
-          scrollDirection: Axis.vertical,
-          child: Scrollbar(
-            thumbVisibility: true,
-            scrollbarOrientation: ScrollbarOrientation.top,
-            controller: _scrollControllerHorizontal,
-            child: ScrollConfiguration(
-              behavior:
-                  ScrollConfiguration.of(context).copyWith(dragDevices: {}),
-              child: SingleChildScrollView(
-                  controller: _scrollControllerHorizontal,
-                  scrollDirection: Axis.horizontal,
-                  child: EditorCanvas(key: editorCanvasKey)),
-            ),
-          ),
-        ),
+    Widget canvas = ScrollConfiguration(
+      behavior: ScrollConfiguration.of(context).copyWith(dragDevices: {}),
+      child: CrossScroll(
+        horizontalScrollController: _scrollControllerHorizontal,
+        verticalScrollController: _scrollControllerVertical,
+        horizontalBar: const CrossScrollBar(thumb: ScrollThumb.alwaysShow),
+        verticalBar: const CrossScrollBar(thumb: ScrollThumb.alwaysShow),
+        child: EditorCanvas(key: editorCanvasKey),
       ),
     );
 
@@ -183,7 +172,7 @@ class _MainPageState extends State<MainPage> {
                 child: ResizableWidget(
                   isHorizontalSeparator: true,
                   separatorSize: 8.0,
-                  separatorColor: Colors.black,
+                  separatorColor: spartanBlue,
                   percentages: const [0.7, 0.3],
                   children: [
                     canvas,
@@ -204,7 +193,6 @@ class _MainPageState extends State<MainPage> {
       toolbarHeight: toolbarHeight,
       title: SizedBox(
         height: toolbarHeight,
-        // width: double.infinity,
         child: ListView(scrollDirection: Axis.horizontal, children: [
           IconButton(
             onPressed: () => setState(
@@ -351,7 +339,6 @@ class _MainPageState extends State<MainPage> {
 
   Widget componentList() {
     const double padding = 0;
-    final ScrollController scrollController = ScrollController();
 
     Map<Type, Widget> components = {};
     for (var moduleType in gateNames.keys) {
@@ -400,16 +387,16 @@ class _MainPageState extends State<MainPage> {
               : Text(
                   gateNames[moduleType]!,
                   style: const TextStyle(
-                    fontSize: 24,
-                  ),
+                      color: spartanBlue,
+                      fontSize: 24,
+                      fontWeight: FontWeight.w500),
                 ),
           onDragEnd: (DraggableDetails details) {
             setState(() {
               editorCanvasKey.currentState!.addComponent(moduleType,
                   offset: Offset(
                       details.offset.dx + _scrollControllerHorizontal.offset,
-                      details.offset.dy +
-                          _scrollControllerVertical.offset -
+                      details.offset.dy -
                           (editorCanvasKey.currentContext?.findRenderObject()
                                   as RenderBox)
                               .localToGlobal(Offset.zero)
@@ -421,7 +408,11 @@ class _MainPageState extends State<MainPage> {
     }
 
     Map<String, List<Type>> tiles = {
-      'Interface': [BinarySwitch, LightBulb, HexDisplay, AnalogSwitch, KeyBoard],
+      'Interactables': [BinarySwitch, AnalogSwitch, KeyBoard],
+      'Indicators': [
+        LightBulb,
+        HexDisplay,
+      ],
       'Gates': [
         And2Gate,
         NotGate,
@@ -437,32 +428,74 @@ class _MainPageState extends State<MainPage> {
       'All Gates': gateNames.keys.toList(),
     };
 
+    //Calculate this minimum width needed to display all text
+    double minWidth = 0.0;
+    for (var name in gateNames.values.toList()) {
+      var tp = TextPainter(
+          text: TextSpan(
+            text: name,
+            style: const TextStyle(
+              color: spartanBlue,
+              fontSize: 24,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          textAlign: TextAlign.right,
+          textDirection: TextDirection.ltr);
+      tp.layout();
+      minWidth = max(minWidth, tp.width);
+    }
+    for (var name in tiles.keys) {
+      var tp = TextPainter(
+          text: TextSpan(
+              text: name,
+              style:
+                  const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+          textAlign: TextAlign.right,
+          textDirection: TextDirection.ltr);
+      tp.layout();
+      minWidth = max(minWidth, tp.width);
+    }
+
     return Container(
-      width: gridSize * 9,
       decoration: const BoxDecoration(
           border: Border(left: BorderSide(color: Colors.black))),
       padding: const EdgeInsets.all(padding),
-      child: Scrollbar(
-        thumbVisibility: true,
-        trackVisibility: true,
-        controller: scrollController,
-        child: ListView(
-          controller: scrollController,
-          children: [
-            for (String tileName in tiles.keys)
-              ExpansionTile(
-                  childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                  expandedAlignment: Alignment.topLeft,
-                  expandedCrossAxisAlignment: CrossAxisAlignment.start,
-                  title: Text(tileName,
-                      style: const TextStyle(
-                          fontSize: 24, fontWeight: FontWeight.bold)),
-                  collapsedTextColor: Colors.blueGrey,
-                  children: [
-                    for (var moduleType in tiles[tileName]!)
-                      components[moduleType]!
-                  ]),
-          ],
+      child: SizedBox(
+        child: IntrinsicWidth(
+          stepWidth: gridSize,
+          child: Align(
+            alignment: Alignment.topLeft,
+            child: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  for (String tileName in tiles.keys)
+                    ExpansionTile(
+                      childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                      expandedAlignment: Alignment.topLeft,
+                      expandedCrossAxisAlignment: CrossAxisAlignment.start,
+                      title: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        alignment: Alignment.topLeft,
+                        child: Text(
+                          tileName,
+                          overflow: TextOverflow.visible,
+                          style: const TextStyle(
+                              fontSize: 24, fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                      collapsedTextColor: spartanGrayLight,
+                      textColor: spartanYellow,
+                      children: [
+                        for (var moduleType in tiles[tileName]!)
+                          components[moduleType]!
+                      ],
+                    ),
+                ],
+              ),
+            ),
+          ),
         ),
       ),
     );
