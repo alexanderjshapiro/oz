@@ -288,7 +288,9 @@ class EditorCanvasState extends State<EditorCanvas> {
                       setState(() => _wires.add({
                             'points': [panStartOffset],
                             'selected': true,
-                            'color': HSVColor.fromAHSV(1.0, Random().nextDouble() * 360, 0.75, 0.7).toColor(),
+                            'color': HSVColor.fromAHSV(
+                                    1.0, Random().nextDouble() * 360, 0.75, 0.7)
+                                .toColor(),
                           }));
                     }
 
@@ -431,9 +433,9 @@ class EditorCanvasState extends State<EditorCanvas> {
                         }
                       },
                       onPanUpdate: (details) {
-                        component['key'].currentState!.module.ports.forEach(
-                            (port) => debugPrint(
-                                'Modules connected to port: ${port.connectedNode.connectedModules.length}'));
+                        // component['key'].currentState!.module.ports.forEach(
+                        //     (port) => debugPrint(
+                        //         'Modules connected to port: ${port.connectedNode.connectedModules.length}'));
                         // update position of Component but only visually snap to the grid
                         if (mode == CanvasMode.select &&
                             component['key'].currentState!.module.ports.every(
@@ -476,7 +478,9 @@ class MyPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     for (var wireMap in wireMaps) {
       final paint = Paint()
-        ..color = wireMap['selected'] ? selectedWireColor : (colorMode ? wireMap['color']! : wireColor)
+        ..color = wireMap['selected']
+            ? selectedWireColor
+            : (colorMode ? wireMap['color']! : wireColor)
         ..strokeWidth = wireWidth;
 
       for (int j = 0; j < wireMap['points'].length - 1; j++) {
