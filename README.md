@@ -1,5 +1,7 @@
 # Oz: Digital Logic Design App
 
+<img src="assets/logo.png" width="256px" alt="Oz Logo"/>
+
 Welcome to the Oz digital logic design app source code repository. Oz is a digital logic design application meant for
 students and other people learning about digital design. It was created as the senior project for
 the [Computer Engineering Department](https://sjsu.edu/cmpe/index.php) at [San Jose State University](https://sjsu.edu).
@@ -16,18 +18,18 @@ on [GitHub](https://github.com/alexanderjshapiro/oz/releases).
 These are the operating systems and their versions that the app officially supports. It might work on many more
 versions, but we don't test for those and can't guarantee the quality or security.
 
-| Platform | Tested             | Supported           |
-|----------|--------------------|---------------------|
-| macOS    | Ventura            | Mojave and newer    |
-| Windows  | 10                 | 7 and newer         |
-| Ubuntu   | Untested           | 18.04 LTS and newer |
-| Debian   | Untested           | 9 and newer         |
-| Chrome   | 113.0.5672.126     | 96 and newer        |
-| Safari   | Untested           | 14 and newer        |
-| Edge     | 113.0.1774.42      | 14 and newer        |
-| Firefox  | 113.0.1            | 99 and newer        |
-| iOS      | 16                 | 11 and newer        |
-| Android  | 17 (not supported) | 19 and newer        |
+| Platform | Tested  | Supported           |
+|----------|---------|---------------------|
+| macOS    | Ventura | Mojave and newer    |
+| Windows  | 10      | 7 and newer         |
+| Ubuntu   | ×       | 18.04 LTS and newer |
+| Debian   | ×       | 9 and newer         |
+| Chrome   | 113     | 96 and newer        |
+| Safari   | ×       | 14 and newer        |
+| Edge     | 113     | 14 and newer        |
+| Firefox  | 113     | 99 and newer        |
+| iOS      | 16      | 11 and newer        |
+| Android  | ×       | 19 and newer        |
 
 ## Features
 
