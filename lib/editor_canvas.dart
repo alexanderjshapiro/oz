@@ -223,18 +223,19 @@ class EditorCanvasState extends State<EditorCanvas> {
                         details.localPosition.dx, details.localPosition.dy));
                     Map<String, dynamic>? component =
                         findComponentAt(tapOffset);
+                    if (component == null) break;
                     ComponentState componentState =
-                        component?['key'].currentState!;
+                        component['key'].currentState!;
                     int portIndex = componentState
-                            .portIndexAt(tapOffset - component?['offset']) ??
+                            .portIndexAt(tapOffset - component['offset']) ??
                         0;
                     bool probesListIsEmpty =
-                        probedPorts[component?['key']]?.isEmpty ?? true;
+                        probedPorts[component['key']]?.isEmpty ?? true;
                     String portKey = componentState.module.ports[portIndex].key;
                     if (probesListIsEmpty) {
-                      probedPorts[component?['key']] = [portKey];
+                      probedPorts[component['key']] = [portKey];
                     } else {
-                      probedPorts[component?['key']]?.add(portKey);
+                      probedPorts[component['key']]?.add(portKey);
                     }
                     updateWaveformAnalyzer();
                     break;
@@ -287,12 +288,7 @@ class EditorCanvasState extends State<EditorCanvas> {
                       setState(() => _wires.add({
                             'points': [panStartOffset],
                             'selected': true,
-                            'color': Color.fromARGB(
-                              255,
-                              Random().nextInt(256),
-                              Random().nextInt(256),
-                              Random().nextInt(256),
-                            ),
+                            'color': HSVColor.fromAHSV(1.0, Random().nextDouble() * 360, 0.75, 0.7).toColor(),
                           }));
                     }
 

@@ -300,9 +300,10 @@ class ComponentState extends State<Component> {
                   height: gridSize * 5,
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    border: Border.all(color: Colors.black, width: 2),
-                    color: Colors.black,
-                  ),
+                  color: Colors.black,
+                  border: Border.all(
+                      color: _selected ? Colors.blue : Colors.black,
+                      width: borderSize)),
                   child: GridView.builder(
                     gridDelegate:
                         const SliverGridDelegateWithFixedCrossAxisCount(

@@ -3,7 +3,8 @@ import 'package:flutter/material.dart';
 import 'logic.dart';
 import 'main.dart';
 
-const Color backgroundColor = spartanGrayLight;//Color.fromARGB(255, 240, 239, 239);
+const Color backgroundColor =
+    spartanGrayLight; //Color.fromARGB(255, 240, 239, 239);
 
 const BorderSide blackBorder = BorderSide(color: Colors.black, width: 2);
 const BorderSide zBorder = BorderSide(color: Colors.yellow, width: 2);
@@ -97,8 +98,13 @@ class WaveformGraph extends StatelessWidget {
       previousVal = value;
     }
 
-    return Row(
-      children: stateWaves,
+    return Column(
+      children: [
+        Row(
+          children: stateWaves,
+        ),
+        const SizedBox(height: 4,),
+      ],
     );
   }
 }
@@ -257,9 +263,9 @@ class WaveformAnalyzerState extends State<WaveformAnalyzer> {
     if (waveformWidgets.isEmpty) {
       return Container(
         decoration: const BoxDecoration(
-            color: backgroundColor,
-            //border: Border(top: BorderSide(color: Colors.black))
-            ),
+          color: backgroundColor,
+          //border: Border(top: BorderSide(color: Colors.black))
+        ),
         height: 200,
         padding: const EdgeInsets.all(20),
       );
