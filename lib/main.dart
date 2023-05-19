@@ -352,7 +352,6 @@ class _MainPageState extends State<MainPage> {
 
   Widget componentList() {
     const double padding = 0;
-    final ScrollController scrollController = ScrollController();
 
     Map<Type, Widget> components = {};
     for (var moduleType in gateNames.keys) {
@@ -472,32 +471,44 @@ class _MainPageState extends State<MainPage> {
     }
 
     return Container(
-      width: ((minWidth / gridSize).ceil() + 2) * gridSize,
       decoration: const BoxDecoration(
           border: Border(left: BorderSide(color: Colors.black))),
       padding: const EdgeInsets.all(padding),
-      child: Scrollbar(
-        thumbVisibility: true,
-        trackVisibility: true,
-        controller: scrollController,
-        child: ListView(
-          controller: scrollController,
-          children: [
-            for (String tileName in tiles.keys)
-              ExpansionTile(
-                  childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                  expandedAlignment: Alignment.topLeft,
-                  expandedCrossAxisAlignment: CrossAxisAlignment.start,
-                  title: Text(tileName,
-                      style: const TextStyle(
-                          fontSize: 24, fontWeight: FontWeight.bold)),
-                  collapsedTextColor: spartanGrayLight,
-                  textColor: spartanYellow,
-                  children: [
-                    for (var moduleType in tiles[tileName]!)
-                      components[moduleType]!
-                  ]),
-          ],
+      child: SizedBox(
+        child: IntrinsicWidth(
+          stepWidth: gridSize,
+          child: Align(
+            alignment: Alignment.topLeft,
+            child: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  for (String tileName in tiles.keys)
+                    ExpansionTile(
+                      childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                      expandedAlignment: Alignment.topLeft,
+                      expandedCrossAxisAlignment: CrossAxisAlignment.start,
+                      title: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        alignment: Alignment.topLeft,
+                        child: Text(
+                          tileName,
+                          overflow: TextOverflow.visible,
+                          style: const TextStyle(
+                              fontSize: 24, fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                      collapsedTextColor: spartanGrayLight,
+                      textColor: spartanYellow,
+                      children: [
+                        for (var moduleType in tiles[tileName]!)
+                          components[moduleType]!
+                      ],
+                    ),
+                ],
+              ),
+            ),
+          ),
         ),
       ),
     );

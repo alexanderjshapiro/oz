@@ -204,13 +204,12 @@ class WaveformAnalyzerState extends State<WaveformAnalyzer> {
     String portName = port.portName;
     return SizedBox(
       height: 50,
-      child: Container(
           child: Column(
         children: [
           Text(name, style: const TextStyle(fontSize: 16)),
           Text(portName, style: const TextStyle(fontSize: 16)),
         ],
-      )),
+      )
     );
   }
 
