@@ -183,7 +183,7 @@ class _MainPageState extends State<MainPage> {
                 child: ResizableWidget(
                   isHorizontalSeparator: true,
                   separatorSize: 8.0,
-                  separatorColor: Colors.black,
+                  separatorColor: spartanBlue,
                   percentages: const [0.7, 0.3],
                   children: [
                     canvas,
@@ -400,16 +400,16 @@ class _MainPageState extends State<MainPage> {
               : Text(
                   gateNames[moduleType]!,
                   style: const TextStyle(
-                    fontSize: 24,
-                  ),
+                      color: spartanBlue,
+                      fontSize: 24,
+                      fontWeight: FontWeight.w500),
                 ),
           onDragEnd: (DraggableDetails details) {
             setState(() {
               editorCanvasKey.currentState!.addComponent(moduleType,
                   offset: Offset(
                       details.offset.dx + _scrollControllerHorizontal.offset,
-                      details.offset.dy +
-                          _scrollControllerVertical.offset -
+                      details.offset.dy -
                           (editorCanvasKey.currentContext?.findRenderObject()
                                   as RenderBox)
                               .localToGlobal(Offset.zero)
@@ -421,7 +421,13 @@ class _MainPageState extends State<MainPage> {
     }
 
     Map<String, List<Type>> tiles = {
-      'Interface': [BinarySwitch, LightBulb, HexDisplay, AnalogSwitch, KeyBoard],
+      'Interface': [
+        BinarySwitch,
+        LightBulb,
+        HexDisplay,
+        AnalogSwitch,
+        KeyBoard
+      ],
       'Gates': [
         And2Gate,
         NotGate,
@@ -457,7 +463,8 @@ class _MainPageState extends State<MainPage> {
                   title: Text(tileName,
                       style: const TextStyle(
                           fontSize: 24, fontWeight: FontWeight.bold)),
-                  collapsedTextColor: Colors.blueGrey,
+                  collapsedTextColor: spartanGrayLight,
+                  textColor: spartanYellow,
                   children: [
                     for (var moduleType in tiles[tileName]!)
                       components[moduleType]!

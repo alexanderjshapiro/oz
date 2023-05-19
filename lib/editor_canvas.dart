@@ -4,6 +4,7 @@ import 'package:oz/waveform.dart';
 import 'component.dart';
 import 'logic.dart';
 import 'main.dart';
+import 'dart:math';
 
 class EditorCanvas extends StatefulWidget {
   const EditorCanvas({Key? key}) : super(key: key);
@@ -33,7 +34,7 @@ class EditorCanvasState extends State<EditorCanvas> {
 
   List<Map<String, dynamic>> get components => _components;
 
-  /// Data structure: `[{'points': List<Offset>, 'selected': bool}]`
+  /// Data structure: `[{'points': List<Offset>, 'selected': bool, 'color': Color}]`
   final List<Map<String, dynamic>> _wires = [];
 
   int tilingHorizontal = 70;
@@ -151,7 +152,7 @@ class EditorCanvasState extends State<EditorCanvas> {
     double dx = ((offset.dx / gridSize).round() * gridSize)
         .clamp(0, gridSize * tilingHorizontal);
     double dy = ((offset.dy / gridSize).round() * gridSize)
-        .clamp(0, gridSize * tilingHorizontal);
+        .clamp(0, gridSize * tilingVertical);
 
     return Offset(dx, dy);
   }
@@ -285,7 +286,13 @@ class EditorCanvasState extends State<EditorCanvas> {
                       // create new wire
                       setState(() => _wires.add({
                             'points': [panStartOffset],
-                            'selected': true
+                            'selected': true,
+                            'color': Color.fromARGB(
+                              255,
+                              Random().nextInt(256),
+                              Random().nextInt(256),
+                              Random().nextInt(256),
+                            ),
                           }));
                     }
 
@@ -350,6 +357,7 @@ class EditorCanvasState extends State<EditorCanvas> {
                       }
                     }
 
+                    //TODO this will probably cause a problem at some point, but it fixes when you try to connect wires end to end.
                     List<Offset> points = wireIndex < _wires.length
                         ? _wires[wireIndex]['points']
                         : _wires[wireIndex - 1]['points'];
@@ -472,7 +480,7 @@ class MyPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     for (var wireMap in wireMaps) {
       final paint = Paint()
-        ..color = wireMap['selected'] ? selectedWireColor : wireColor
+        ..color = wireMap['selected'] ? selectedWireColor : (colorMode ? wireMap['color']! : wireColor)
         ..strokeWidth = wireWidth;
 
       for (int j = 0; j < wireMap['points'].length - 1; j++) {

@@ -3,11 +3,11 @@ import 'package:flutter/material.dart';
 import 'logic.dart';
 import 'main.dart';
 
-const Color backgroundColor = Color.fromARGB(255, 240, 239, 239);
+const Color backgroundColor = spartanGrayLight;//Color.fromARGB(255, 240, 239, 239);
 
 const BorderSide blackBorder = BorderSide(color: Colors.black, width: 2);
-const BorderSide zBorder = BorderSide(color: Colors.red);
-const BorderSide xBorder = BorderSide(color: Colors.grey);
+const BorderSide zBorder = BorderSide(color: Colors.yellow, width: 2);
+const BorderSide xBorder = BorderSide(color: Colors.red, width: 2);
 
 void updateWaveformAnalyzer() {
   currentPortStates.clear();
@@ -258,7 +258,8 @@ class WaveformAnalyzerState extends State<WaveformAnalyzer> {
       return Container(
         decoration: const BoxDecoration(
             color: backgroundColor,
-            border: Border(top: BorderSide(color: Colors.black))),
+            //border: Border(top: BorderSide(color: Colors.black))
+            ),
         height: 200,
         padding: const EdgeInsets.all(20),
       );
