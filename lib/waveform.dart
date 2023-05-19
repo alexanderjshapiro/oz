@@ -103,7 +103,9 @@ class WaveformGraph extends StatelessWidget {
         Row(
           children: stateWaves,
         ),
-        const SizedBox(height: 4,),
+        const SizedBox(
+          height: 4,
+        ),
       ],
     );
   }
@@ -203,14 +205,13 @@ class WaveformAnalyzerState extends State<WaveformAnalyzer> {
     PhysicalPort port = ports.firstWhere((port) => port.key == portKey);
     String portName = port.portName;
     return SizedBox(
-      height: 50,
-          child: Column(
-        children: [
-          Text(name, style: const TextStyle(fontSize: 16)),
-          Text(portName, style: const TextStyle(fontSize: 16)),
-        ],
-      )
-    );
+        height: 50,
+        child: Column(
+          children: [
+            Text(name, style: const TextStyle(fontSize: 16)),
+            Text(portName, style: const TextStyle(fontSize: 16)),
+          ],
+        ));
   }
 
   int getWaveformsLength() => _waveforms.length;

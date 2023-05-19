@@ -561,6 +561,7 @@ class AnalogSwitch extends Module {
 
 class KeyBoard extends Module {
   int? buttonPressed;
+
   KeyBoard() : super(name: 'KeyBoard') {
     ports = [
       for (int i = 0; i < 4; i++)
@@ -579,6 +580,7 @@ class KeyBoard extends Module {
   }
 
   int? previousKeys;
+
   @override
   update() {
     // Not sure why this is working as well as it is, Im sure there's a problem with it, but it seems to be working.

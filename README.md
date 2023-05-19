@@ -16,17 +16,17 @@ on [GitHub](https://github.com/alexanderjshapiro/oz/releases).
 These are the operating systems and their versions that the app officially supports. It might work on many more
 versions, but we don't test for those and can't guarantee the quality or security.
 
-| Platform | Tested  | Supported           |
-|----------|---------|---------------------|
-| macOS    | Ventura | Mojave and newer    |
-| Windows  | 10      | 7 and newer         |
-| Ubuntu   | Untested| 18.04 LTS and newer |
-| Debian   | Untested| 9 and newer         |
-| Chrome   | 113.0.5672.126| 96 and newer        |
-| Safari   | Untested        | 14 and newer        |
-| Edge     | 113.0.1774.42 | 14 and newer        |
-| Firefox  | 113.0.1 | 99 and newer        |
-| iOS      | 16      | 11 and newer        |
+| Platform | Tested             | Supported           |
+|----------|--------------------|---------------------|
+| macOS    | Ventura            | Mojave and newer    |
+| Windows  | 10                 | 7 and newer         |
+| Ubuntu   | Untested           | 18.04 LTS and newer |
+| Debian   | Untested           | 9 and newer         |
+| Chrome   | 113.0.5672.126     | 96 and newer        |
+| Safari   | Untested           | 14 and newer        |
+| Edge     | 113.0.1774.42      | 14 and newer        |
+| Firefox  | 113.0.1            | 99 and newer        |
+| iOS      | 16                 | 11 and newer        |
 | Android  | 17 (not supported) | 19 and newer        |
 
 ## Features

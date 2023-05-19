@@ -300,10 +300,10 @@ class ComponentState extends State<Component> {
                   height: gridSize * 5,
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                  color: Colors.black,
-                  border: Border.all(
-                      color: _selected ? Colors.blue : Colors.black,
-                      width: borderSize)),
+                      color: Colors.black,
+                      border: Border.all(
+                          color: _selected ? Colors.blue : Colors.black,
+                          width: borderSize)),
                   child: GridView.builder(
                     gridDelegate:
                         const SliverGridDelegateWithFixedCrossAxisCount(
@@ -346,7 +346,8 @@ class ComponentState extends State<Component> {
                           onPressed: () {
                             setState(() {
                               if (board.buttonPressed != null) {
-                                board.buttonPressed = board.buttonPressed == index ? null : index;
+                                board.buttonPressed =
+                                    board.buttonPressed == index ? null : index;
                               } else {
                                 board.buttonPressed = index;
                               }
